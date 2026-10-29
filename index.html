@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Henry Veeck's Archive</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <button class="view-toggle-btn" id="view-toggle" onclick="toggleViewMode()">📱 Mobile View</button>
+
+    <header>
+        <div class="bio-card">
+            <h1>Henry Veeck's Archive</h1>
+            <p class="bio">Collection of my projects and games coded over the last 3 years. Deo Gratias!</p>
+        </div>
+    </header>
+
+    <h2>Browser Games</h2>
+    <div class="browser-grid">
+        <!-- Row 1: SneakyStalin & TallyGrid -->
+        <!-- SneakyStalin -->
+        <div class="card">
+            <div class="card-top">
+                <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
+                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+                    <line x1="2" y1="2" x2="22" y2="22"></line>
+                </svg>
+                <div class="card-content">
+                    <h3>SneakyStalin</h3>
+                    <p>Political stealth & subversion sim.</p>
+                    <span class="platform-badge">Desktop & Mobile</span>
+                </div>
+            </div>
+            <a href="MyGames/SneakyStalin/index.html" class="btn">Play</a>
+        </div>
+
+        <!-- TallyGrid -->
+        <div class="card">
+            <div class="card-top">
+                <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <div class="card-content">
+                    <h3>TallyGrid</h3>
+                    <p>Custom-designed strategic card game.</p>
+                    <span class="platform-badge">Desktop & Mobile</span>
+                </div>
+            </div>
+            <a href="MyGames/TallyGrid.html" class="btn">Play</a>
+        </div>
+
+        <!-- Row 2: Trivia & Cribbage -->
+        <!-- Trivia -->
+        <div class="card">
+            <div class="card-top">
+                <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <div class="card-content">
+                    <h3>Trivia</h3>
+                    <p>Reverse-trivia reasoning challenge.</p>
+                    <span class="platform-badge">Desktop & Mobile</span>
+                </div>
+            </div>
+            <a href="MyGames/Trivia.html" class="btn">Play</a>
+        </div>
+
+        <!-- Cribbage -->
+        <div class="card">
+            <div class="card-top">
+                <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                    <polyline points="2 17 12 22 22 17"></polyline>
+                    <polyline points="2 12 17 22 12"></polyline>
+                </svg>
+                <div class="card-content">
+                    <h3>Cribbage</h3>
+                    <p>Classic card pegging & hand scoring.</p>
+                    <span class="platform-badge">Desktop & Mobile</span>
+                </div>
+            </div>
+            <a href="MyGames/Cribbage.html" class="btn">Play</a>
+        </div>
+
+        <!-- Row 3: 1805 & Somme -->
+        <!-- 1805 -->
+        <div class="card">
+            <div class="card-top">
+                <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m8 3 4 8 5-5 5 15H2L8 3z"></path>
+                </svg>
+                <div class="card-content">
+                    <h3>1805</h3>
+                    <p>High-altitude mountain survival.</p>
+                    <span class="platform-badge desktop-only">Desktop Only</span>
+                </div>
+            </div>
+            <button class="btn" onclick="openDesktopWarning('MyGames/1805.html', '1805')">Play</button>
+        </div>
+
+        <!-- Somme -->
+        <div class="card">
+            <div class="card-top">
+                <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="22" y1="12" x2="18" y2="12"></line>
+                    <line x1="6" y1="12" x2="2" y2="12"></line>
+                    <line x1="12" y1="6" x2="12" y2="2"></line>
+                    <line x1="12" y1="22" x2="12" y2="18"></line>
+                </svg>
+                <div class="card-content">
+                    <h3>Somme</h3>
+                    <p>WWI Western Front trench offensive sim.</p>
+                    <span class="platform-badge desktop-only">Desktop Only</span>
+                </div>
+            </div>
+            <button class="btn" onclick="openDesktopWarning('MyGames/somme.html', 'Somme')">Play</button>
+        </div>
+
+        <!-- Row 4: MuggerHugger & Budget Slasher -->
+        <!-- MuggerHugger -->
+        <div class="card">
+            <div class="card-top">
+                <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                </svg>
+                <div class="card-content">
+                    <h3>MuggerHugger</h3>
+                    <p>Trivial Pursuit-style deduction word game.</p>
+                    <span class="platform-badge">Desktop & Mobile</span>
+                </div>
+            </div>
+            <a href="MyGames/MuggerHugger.html" class="btn">Play</a>
+        </div>
+
+        <!-- Budget Slasher -->
+        <div class="card">
+            <div class="card-top">
+                <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path>
+                    <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path>
+                    <path d="M7 21h10"></path>
+                    <path d="M12 3v18"></path>
+                    <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"></path>
+                </svg>
+                <div class="card-content">
+                    <h3>Budget Slasher</h3>
+                    <p>Fiscal policy sim: balance the US debt & deficit.</p>
+                    <span class="platform-badge">Desktop & Mobile</span>
+                </div>
+            </div>
+            <a href="MyGames/BudgetSlasher.html" class="btn">Play</a>
+        </div>
+    </div>
+
+    <h2>Desktop Release</h2>
+    <div class="desktop-grid">
+        <div class="card">
+            <div class="card-top">
+                <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="8"></circle>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <div class="card-content">
+                    <h3>Wheely Crazy</h3>
+                    <p>Infinite runner coded in Winter 2024.</p>
+                </div>
+            </div>
+            <div class="dual-btn-row">
+                <button class="btn" onclick="openSmartScreenWarning()">PC .zip</button>
+                <button class="btn" onclick="openMacModal()">Mac .app.zip</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tongue-out Easter Egg Link -->
+    <a href="https://youtube.com/shorts/gIGBBQ0_-ns?si=ZLAwzWas_FRVklm1" target="_blank" rel="noopener" class="easter-egg-link" title="???">😜</a>
+
+    <!-- Universal Desktop-Only Warning Modal -->
+    <div id="modal-desktop-warning" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Desktop Only Notice</h3>
+            <p><strong id="warning-game-title">Game</strong> is optimized exclusively for desktop screens and keyboard/mouse inputs. Running this on mobile will break layout and control scaling.</p>
+            <div class="modal-actions">
+                <button class="btn" onclick="proceedDesktopGame()">Proceed</button>
+                <button class="btn btn-secondary" onclick="closeDesktopModal()">Go Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Windows SmartScreen Warning Modal -->
+    <div id="smartscreen-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Windows SmartScreen Alert</h3>
+            <p><strong>Unsigned Archive Notice:</strong> Windows SmartScreen will display a warning ("Windows protected your PC") on the executable.<br><br>Click <strong>More Info</strong> → <strong>Run Anyway</strong> inside Windows.</p>
+            <div class="modal-actions">
+                <button class="btn" onclick="proceedPCDownload()">Proceed Download</button>
+                <button class="btn btn-secondary" onclick="closePCModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mac Gatekeeper Override Modal -->
+    <div id="mac-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Mac Security Notice</h3>
+            <p>Since you have apple (and apple is stupid,), it's going to think that this game is a virus. I pinky promise it is not[cite: 1]. Here is how to get around it:</p>
+            <p style="margin: 1rem 0;">Watch this video: <a href="https://www.youtube.com/watch?v=gHZnBzAtBhU" target="_blank" rel="noopener" style="color:#f3d03e;">YouTube Guide</a>[cite: 1]</p>
+            <p style="margin-bottom: 1.5rem;">Unzip the download, open Terminal, type <code>chmod -R 777 </code>, drag <code>NewWheelyCrazyMac.app</code> into the terminal window, and hit enter.</p>
+            <div class="modal-actions">
+                <button class="btn" onclick="proceedMacDownload()">Download .app.zip</button>
+                <button class="btn btn-secondary" onclick="closeMacModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let targetGameUrl = '';
+
+        function toggleViewMode() {
+            const body = document.body;
+            const btn = document.getElementById('view-toggle');
+            body.classList.toggle('mobile-mode-active');
+            if (body.classList.contains('mobile-mode-active')) {
+                btn.textContent = '🖥️ Desktop View';
+            } else {
+                btn.textContent = '📱 Mobile View';
+            }
+        }
+
+        function openDesktopWarning(url, gameTitle) {
+            targetGameUrl = url;
+            document.getElementById('warning-game-title').textContent = gameTitle;
+            document.getElementById('modal-desktop-warning').style.display = 'flex';
+        }
+        function closeDesktopModal() {
+            document.getElementById('modal-desktop-warning').style.display = 'none';
+        }
+        function proceedDesktopGame() {
+            if (targetGameUrl) {
+                window.location.href = targetGameUrl;
+            }
+        }
+
+        function openSmartScreenWarning() {
+            document.getElementById('smartscreen-modal').style.display = 'flex';
+        }
+        function closePCModal() {
+            document.getElementById('smartscreen-modal').style.display = 'none';
+        }
+        function proceedPCDownload() {
+            closePCModal();
+            const a = document.createElement('a');
+            a.href = 'Downloads/NewWheelyCrazyPC.zip';
+            a.download = 'NewWheelyCrazyPC.zip';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function openMacModal() {
+            document.getElementById('mac-modal').style.display = 'flex';
+        }
+        function closeMacModal() {
+            document.getElementById('mac-modal').style.display = 'none';
+        }
+        function proceedMacDownload() {
+            closeMacModal();
+            const a = document.createElement('a');
+            a.href = 'Downloads/NewWheelyCrazyMac.app.zip';
+            a.download = 'NewWheelyCrazyMac.app.zip';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>

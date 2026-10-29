@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SNEAKY STALIN</title>
+<link rel="stylesheet" href="styles.css?v=2.4">
+<base target="_blank">
+</head>
+<body>
+<span class="game-build-version" aria-label="Sneaky Stalin version 2.4">v2.4</span>
+<button id="viewToggleBtn" type="button" onclick="toggleDeviceView()">📱 MOBILE (1080x1920)</button>
+<div id="app">
+
+<!-- Title Screen -->
+<div id="screen-title" class="screen active">
+  <div class="soviet-emblem">☭</div>
+  <h1 class="game-title">Sneaky<br>Stalin</h1>
+  <p class="game-subtitle">Social Deduction Behind the Iron Curtain</p>
+  
+  <div class="mode-select">
+    <div class="mode-option selected" data-mode="bots" onclick="selectMode('bots')">
+      <h3>☭ Play vs Bots</h3>
+      <p>Singleplayer match with configurable bot AI & preferences</p>
+    </div>
+    <div class="mode-option" data-mode="online" onclick="window.location.href='online/index.html'">
+      <h3>🌐 Online Multiplayer</h3>
+      <p>Private rooms or public matchmaking. Ten seats, with bots filling the rest.</p>
+    </div>
+    <div class="mode-option" data-mode="local" onclick="selectMode('local')">
+      <h3>📱 Pass the Phone</h3>
+      <p>Local multiplayer with secret reveal screens</p>
+    </div>
+    <div class="mode-option" data-mode="watch" onclick="selectMode('watch')">
+      <h3>👁️ Watch Bots Play</h3>
+      <p>Sit back and watch bots play with live AI deductions & batch simulation</p>
+    </div>
+  </div>
+
+  <!-- Bot Settings -->
+  <div class="settings-panel" id="bot-settings-panel">
+    <div class="setting-group">
+      <label class="setting-label">Bot Skill & Strategy</label>
+      <div class="pill-select" id="diff-select">
+        <button class="pill-btn selected" onclick="selectDifficulty('random', this)">🎲 Mixed</button>
+        <button class="pill-btn" onclick="selectDifficulty('beginner', this)">🌱 Beginner</button>
+        <button class="pill-btn" onclick="selectDifficulty('advanced', this)">🧠 Game Theory</button>
+      </div>
+    </div>
+    <div class="setting-group">
+      <label class="setting-label">Your Preferred Allegiance</label>
+      <div class="pill-select" id="role-pref-select">
+        <button class="pill-btn selected" onclick="selectRolePref('random', this)">🎲 Random</button>
+        <button class="pill-btn" onclick="selectRolePref('white', this)">★ White</button>
+        <button class="pill-btn" onclick="selectRolePref('communist', this)">☭ Communist</button>
+        <button class="pill-btn" onclick="selectRolePref('stalin', this)">🎭 Stalin</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin:4px 0">
+    <p style="color:var(--td);text-transform:uppercase;letter-spacing:1px;font-size:.78rem;font-weight:700;margin-bottom:6px">Player Count</p>
+    <div class="player-count" id="pcs">
+      <button class="count-btn selected" onclick="selectCount(5, this)">5</button>
+      <button class="count-btn" onclick="selectCount(6, this)">6</button>
+      <button class="count-btn" onclick="selectCount(7, this)">7</button>
+      <button class="count-btn" onclick="selectCount(8, this)">8</button>
+      <button class="count-btn" onclick="selectCount(9, this)">9</button>
+      <button class="count-btn" onclick="selectCount(10, this)">10</button>
+    </div>
+  </div>
+  <button class="btn" onclick="startGame()">Begin Revolution</button>
+</div>
+
+<!-- Names Screen (Local Mode) -->
+<div id="screen-names" class="screen">
+  <div style="text-align:center;width:100%;max-width:380px">
+    <h2 style="color:var(--g);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">Identify Yourselves</h2>
+    <p style="color:var(--td);margin-bottom:20px;font-size:.85rem">Enter each comrade's name for secret role assignment.</p>
+    <div id="name-inputs"></div>
+    <button class="btn" onclick="confirmNames()" style="margin-top:16px">Assign Roles</button>
+  </div>
+</div>
+
+<!-- Role Assignment Screen (Local Mode) -->
+<div id="screen-roles" class="screen">
+  <div id="rac" style="width:100%;max-width:400px;text-align:center">
+    <h2 style="color:var(--g);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Secret Dossier</h2>
+    <p style="color:var(--td);margin-bottom:20px;font-size:.82rem">Pass the phone. Press and hold to view your assignment.</p>
+    <div id="rcc"></div>
+  </div>
+</div>
+
+<!-- Main Game Screen -->
+<div id="screen-game" class="screen">
+  <div class="game-header">
+    <div class="game-branding">
+      <h2>☭ SNEAKY STALIN</h2>
+    </div>
+    <div class="phase-pill" id="pt">Nomination</div>
+    <div class="deck-pill" id="di">Deck: 17 / 17 | Discard: 0</div>
+  </div>
+
+  <div class="identity-bar" id="id-bar" style="display:none">
+    <span style="color:var(--td)">Your Secret Identity:</span>
+    <span id="id-tag" class="identity-tag">★ White</span>
+  </div>
+
+  <!-- In-Place Victory Overlay -->
+  <div class="victory-overlay" id="victory-box" style="display:none">
+    <div class="victory-emblem" id="v-emblem">★</div>
+    <div class="victory-title" id="v-title">WHITES WIN!</div>
+    <div class="victory-reason" id="v-reason">5 White policies enacted! Whites prevail!</div>
+    <button class="btn" onclick="location.reload()" style="margin:6px auto 0;max-width:240px">Play Again</button>
+  </div>
+
+  <div class="board-container">
+    <div class="track">
+      <div class="track-header">
+        <span class="track-title whi">★ White Policies</span>
+        <span class="track-count" style="color:var(--whi-light)" id="dc">0 / 5</span>
+      </div>
+      <div class="track-slots whi-slots" id="dt"></div>
+    </div>
+
+    <div class="track">
+      <div class="track-header">
+        <span class="track-title comm">☭ Communist Policies</span>
+        <span class="track-count" style="color:var(--comm-red)" id="cc">0 / 6</span>
+      </div>
+      <div class="track-slots comm-slots" id="ct"></div>
+    </div>
+
+    <div class="election-tracker-bar">
+      <span>Election Tracker</span>
+      <div class="tracker-dots" id="et-dots">
+        <div class="tracker-dot"></div>
+        <div class="tracker-dot"></div>
+        <div class="tracker-dot"></div>
+      </div>
+      <span style="font-size:.7rem;color:var(--tdd)">3 Fails = Chaos</span>
+    </div>
+
+    <!-- Explicit 17-Card Policy Deck Audit Bar -->
+    <div class="deck-audit-bar" id="deck-audit-bar">
+      <span class="audit-label">🎴 Deck Audit:</span>
+      <span class="audit-value" id="audit-reported">0/6 Whites Reported Seen</span>
+      <span class="audit-sep">•</span>
+      <span class="audit-value" id="audit-remaining">6 Expected Left</span>
+    </div>
+  </div>
+
+  <div class="players-grid-header">
+    <span style="font-size:.78rem;font-weight:800;color:var(--td);text-transform:uppercase;letter-spacing:.8px">Council Comrades</span>
+    <div style="display:flex;gap:6px" id="trust-sus-counters">
+      <span class="trust-counter-badge" id="trust-counter">Trusted: 0/4</span>
+      <span class="sus-counter-badge" id="sus-counter">Suspects: 0/4</span>
+    </div>
+  </div>
+
+  <div class="players-grid" id="pg"></div>
+
+  <div class="action-area" id="aa">
+    <div class="action-title" id="at">Welcome</div>
+    <div class="action-desc" id="ad">The game is beginning...</div>
+    <div id="ac"></div>
+  </div>
+
+  <!-- Spectator AI Dashboard Container -->
+  <div id="spectator-dashboard" class="spectator-dashboard" style="display:none"></div>
+
+  <div class="game-log" id="gl"></div>
+</div>
+
+<!-- Dossier Modal -->
+<div class="modal-overlay" id="dossier-modal" onclick="closeDossier(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="dossier-title">Comrade Dossier</h3>
+      <button class="modal-close" onclick="closeDossier()">✕</button>
+    </div>
+    <div id="dossier-body"></div>
+  </div>
+</div>
+
+<!-- Simulation Results Modal -->
+<div class="modal-overlay" id="sim-modal" onclick="closeSimModal(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="sim-modal-title">Batch Simulation Analysis</h3>
+      <button class="modal-close" onclick="closeSimModal()">✕</button>
+    </div>
+    <div id="sim-body"></div>
+  </div>
+</div>
+
+</div>
+
+<script src="game.js?v=1.5"></script>
+</body>
+</html>

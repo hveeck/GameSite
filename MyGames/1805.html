@@ -1,0 +1,3382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>1805 - Bitterroot Crossing</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #03050c; font-family: 'Courier New', monospace; user-select: none; }
+    #crosshair {
+      position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
+      border: 2px solid rgba(255,255,255,0.75); border-radius: 50%; 
+      transform: translate(-50%, -50%); pointer-events: none; z-index: 10;
+    }
+    #start-blocker {
+      position: absolute; width: 100%; height: 100%;
+      background: #020407; display: flex;
+      flex-direction: column; align-items: center; justify-content: center;
+      color: #fff; cursor: pointer; text-align: center; z-index: 100;
+      overflow: hidden;
+    }
+    #mountain-backdrop {
+      position: absolute; bottom: 0; left: 0; width: 100%; height: 65%;
+      pointer-events: none; opacity: 0.65;
+    }
+    #start-title {
+      position: relative; font-size: 110px; font-weight: bold; color: #7a0000;
+      text-transform: uppercase; margin: 0; z-index: 2;
+      text-shadow: 0 0 35px rgba(160,0,0,0.9);
+      animation: flicker 4s infinite;
+    }
+    @keyframes flicker {
+      0%, 100% { opacity: 1; text-shadow: 0 0 30px rgba(160,0,0,0.9); }
+      5% { opacity: 0.75; text-shadow: 0 0 6px rgba(120,0,0,0.3); }
+      10% { opacity: 0.95; }
+      18% { opacity: 0.65; }
+      25% { opacity: 1; }
+      72% { opacity: 0.9; }
+      78% { opacity: 1; }
+    }
+    #start-sub { position: relative; font-size: 15px; color: #888; margin-top: 25px; letter-spacing: 2px; z-index: 2; }
+    #vignette-overlay {
+      position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 4;
+      background: radial-gradient(circle, rgba(0,0,0,0) 45%, rgba(1,3,6,0.94) 100%);
+      mix-blend-mode: multiply;
+      transition: box-shadow 0.2s ease;
+    }
+    #critical-blood-overlay {
+      position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 5;
+      box-shadow: inset 0 0 100px rgba(180, 0, 0, 0.9), inset 0 0 160px rgba(120, 0, 0, 0.6);
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+    @keyframes bloodPulse {
+      0%, 100% { opacity: 0.15; }
+      50% { opacity: 0.85; }
+    }
+    .flashing-blood {
+      animation: bloodPulse 0.9s infinite ease-in-out !important;
+    }
+    #condition-warning {
+      position: absolute; left: 18px; top: 46%; transform: translateY(-50%); color: #ffcc66;
+      background: rgba(8,12,18,0.88); border-left: 3px solid #ffcc66; padding: 8px 12px;
+      font-size: 12px; letter-spacing: 0.5px; opacity: 0; pointer-events: none; z-index: 16;
+    }
+    @keyframes conditionFlash { 0%,100% { opacity: 0; } 20%,80% { opacity: 1; } }
+    #condition-warning.flash-once { animation: conditionFlash 2.8s ease-out 1; }
+    #axe-level { display: inline-block; margin-left: 6px; color: #ffcc00; font-size: 10px; letter-spacing: 0.5px; }
+    #blocker {
+      position: absolute; width: 100%; height: 100%;
+      background: rgba(6,9,16,0.95); display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      color: white; cursor: pointer; text-align: center; z-index: 20;
+    }
+    #notification-toast {
+      position: absolute; top: 14%; left: 50%; transform: translateX(-50%);
+      color: #ffe8a3; background: rgba(8, 12, 18, 0.88); border: 1px solid #c9a44c;
+      padding: 10px 22px; font-size: 14px; font-weight: bold; border-radius: 3px;
+      letter-spacing: 1px; pointer-events: none; z-index: 15; opacity: 0;
+      transition: opacity 0.4s ease; text-shadow: 0 0 8px rgba(255,200,80,0.5); max-width: 800px; line-height: 1.5;
+    }
+    /* Lore pages: full-screen, paused, fixed-size torn parchment. Everything fits without scrolling. */
+    #lore-modal {
+      position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+      z-index: 80; background: rgba(3, 5, 8, 0.82); backdrop-filter: blur(4px);
+      cursor: pointer; padding: 3vh 3vw; box-sizing: border-box;
+    }
+    #lore-modal.open { display: flex; }
+    #lore-sheet {
+      position: relative; width: min(820px, 88vw); height: min(720px, 88vh);
+      overflow: hidden; box-sizing: border-box; color: #2b2115;
+      padding: clamp(34px, 5vh, 54px) clamp(38px, 6vw, 72px) clamp(28px, 4vh, 46px);
+      box-shadow: 0 22px 65px rgba(0,0,0,0.82), 0 0 0 1px rgba(255,255,255,0.14);
+      transform: rotate(-0.7deg); cursor: pointer;
+      display: flex; flex-direction: column;
+      background: radial-gradient(circle at 18% 15%, rgba(120,85,35,0.12), transparent 28%),
+                  radial-gradient(circle at 80% 75%, rgba(90,60,20,0.11), transparent 34%),
+                  linear-gradient(105deg, rgba(255,250,220,0.99), rgba(232,218,181,0.99));
+      clip-path: polygon(0 2%, 4% 0.7%, 9% 2%, 15% 0.5%, 22% 2%, 29% 0.8%, 37% 2%, 45% 0.4%, 53% 1.8%, 62% 0.6%, 70% 2%, 79% 0.7%, 87% 2%, 94% 0.5%, 100% 2%, 99% 98%, 94% 99.5%, 88% 98%, 80% 99.3%, 72% 98%, 63% 99.5%, 54% 98%, 45% 99.4%, 36% 98%, 27% 99.5%, 18% 98%, 10% 99.4%, 4% 98%, 0 99%);
+    }
+    #lore-sheet::before, #lore-sheet::after {
+      content: ""; position: absolute; left: 0; right: 0; height: 24px; pointer-events: none;
+      background: inherit; z-index: 0;
+    }
+    #lore-sheet::before { top: 0; clip-path: polygon(0 45%, 6% 78%, 12% 25%, 19% 68%, 28% 20%, 37% 72%, 46% 28%, 55% 76%, 64% 24%, 73% 67%, 82% 22%, 91% 73%, 100% 36%, 100% 100%, 0 100%); }
+    #lore-sheet::after { bottom: 0; clip-path: polygon(0 65%, 8% 25%, 16% 72%, 25% 30%, 34% 76%, 43% 24%, 52% 70%, 61% 28%, 70% 78%, 79% 25%, 88% 69%, 95% 32%, 100% 65%, 100% 0, 0 0); }
+    #lore-sheet > * { position: relative; z-index: 1; }
+    #lore-sheet .lore-kicker {
+      flex: 0 0 auto; font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+      opacity: 0.62; margin-bottom: 13px; text-align: center;
+    }
+    #lore-sheet .lore-count {
+      flex: 0 0 auto; align-self: center; margin-bottom: 18px;
+      padding: 4px 13px; border: 1px solid rgba(70,50,25,0.32); border-radius: 999px;
+      font-family: Georgia, serif; font-size: 12px; letter-spacing: 2px; font-weight: 700;
+      background: rgba(90,60,20,0.07); opacity: 0.78;
+    }
+    #lore-sheet .lore-author {
+      flex: 0 0 auto; font-size: clamp(20px, 2.7vw, 28px); line-height: 1.12;
+      font-weight: 700; margin-bottom: 5px; text-align: center;
+    }
+    #lore-sheet .lore-date {
+      flex: 0 0 auto; font-size: 13px; opacity: 0.66; margin-bottom: 20px; text-align: center;
+      font-style: italic;
+    }
+    #lore-sheet .lore-text {
+      flex: 1 1 auto; min-height: 0; font-size: clamp(16px, 1.8vw, 21px);
+      line-height: 1.48; white-space: pre-wrap; text-align: left;
+      overflow: hidden; display: flex; align-items: center;
+    }
+    #lore-sheet .lore-close {
+      flex: 0 0 auto; margin-top: 18px; text-align: center; font-size: 10px;
+      letter-spacing: 2px; opacity: 0.52; text-transform: uppercase;
+      border-top: 1px solid rgba(45,35,20,0.25); padding-top: 12px;
+    }
+    #lore-sheet.page-0, #lore-sheet.page-1, #lore-sheet.page-2, #lore-sheet.page-3 {
+      font-family: "Garamond", "EB Garamond", "Palatino Linotype", Palatino, Georgia, serif;
+    }
+    #lore-sheet.page-0 { transform: rotate(-0.8deg); }
+    #lore-sheet.page-0 .lore-text { font-family: "Palatino Linotype", Palatino, Georgia, serif; }
+    #lore-sheet.page-1 { transform: rotate(0.55deg); background: linear-gradient(96deg, #e7dfc8, #f4ecd7); }
+    #lore-sheet.page-1 .lore-text { font-family: Georgia, "Times New Roman", serif; }
+    #lore-sheet.page-2 { transform: rotate(1deg); background: linear-gradient(102deg, #eee3c7, #e2d2ad); }
+    #lore-sheet.page-2 .lore-text { font-family: "Book Antiqua", "Palatino Linotype", Palatino, serif; font-style: italic; }
+    #lore-sheet.page-3 { transform: rotate(-1.15deg); background: linear-gradient(98deg, #d8ccb0, #eee5cf); }
+    #lore-sheet.page-3 .lore-text { font-family: "Times New Roman", Georgia, serif; }
+    @media (max-height: 700px) {
+      #lore-sheet { height: 90vh; padding-top: 28px; padding-bottom: 24px; }
+      #lore-sheet .lore-kicker { margin-bottom: 8px; }
+      #lore-sheet .lore-count { margin-bottom: 10px; }
+      #lore-sheet .lore-date { margin-bottom: 12px; }
+      #lore-sheet .lore-close { margin-top: 10px; padding-top: 8px; }
+    }
+    @keyframes violentBearShake {
+      0% { transform: translate(0,0) rotate(0); } 8% { transform: translate(-12px, 8px) rotate(-0.7deg); }
+      16% { transform: translate(14px, -10px) rotate(0.8deg); } 25% { transform: translate(-16px, -5px) rotate(-0.9deg); }
+      34% { transform: translate(11px, 13px) rotate(0.7deg); } 45% { transform: translate(-13px, -12px) rotate(-0.8deg); }
+      56% { transform: translate(15px, 7px) rotate(0.75deg); } 68% { transform: translate(-9px, 11px) rotate(-0.55deg); }
+      80% { transform: translate(8px, -7px) rotate(0.45deg); } 92% { transform: translate(-4px, 4px) rotate(-0.2deg); }
+      100% { transform: translate(0,0) rotate(0); }
+    }
+    body.bear-hit-shake { animation: violentBearShake 0.5s linear 1; }
+    #ui {
+      position: absolute; top: 18px; left: 18px; color: #fff;
+      text-shadow: 2px 2px 2px rgba(0,0,0,0.9); font-size: 12px; pointer-events: none;
+      border-left: 4px solid #fff; padding-left: 10px; z-index: 10;
+    }
+    #day-counter {
+      position: absolute; top: 18px; right: 18px; color: #fff;
+      text-shadow: 2px 2px 2px rgba(0,0,0,0.9); font-size: 14px; letter-spacing: 1px;
+      pointer-events: none; z-index: 10; border-right: 4px solid #fff; padding-right: 10px;
+      font-weight: bold;
+    }
+    .bar-container {
+      width: 150px; height: 8px; background: rgba(0,0,0,0.65);
+      border: 1px solid #777; margin: 2px 0 6px 0; border-radius: 2px; overflow: hidden;
+    }
+    .bar-fill { height: 100%; transition: width 0.1s linear; }
+    #health-bar { background: #e63946; width: 100%; }
+    #warmth-bar { background: #457b9d; width: 100%; }
+    #hunger-bar { background: #e9c46a; width: 100%; }
+    #hotbar {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 12px; z-index: 10; pointer-events: none;
+    }
+    .hotbar-slot {
+      background: rgba(12, 16, 22, 0.85); border: 1px solid #555;
+      color: #aaa; padding: 7px 14px; font-size: 12px; border-radius: 3px;
+      letter-spacing: 1px;
+    }
+    .hotbar-slot.active {
+      border: 1px solid #ffcc00; color: #fff; background: rgba(25, 34, 44, 0.95);
+      box-shadow: 0 0 8px rgba(255, 204, 0, 0.35); font-weight: bold;
+    }
+    #death-screen, #win-screen {
+      position: absolute; width: 100%; height: 100%;
+      background: rgba(35,0,0,0.96); display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      color: white; font-size: 24px; font-weight: bold; z-index: 30; text-align: center;
+    }
+    #win-screen { background: rgba(0,25,35,0.96); }
+    #death-stats-box, #win-stats-box {
+      margin-top: 18px; background: rgba(12, 4, 4, 0.85); border: 1px solid #a83232;
+      padding: 16px 28px; font-size: 13px; color: #f2e6e6; text-align: left; line-height: 1.8;
+      letter-spacing: 0.5px; border-radius: 4px; box-shadow: 0 0 20px rgba(120,0,0,0.5);
+    }
+    #win-stats-box { background: rgba(4, 12, 16, 0.85); border: 1px solid #3294a8; color: #e6f2f2; box-shadow: 0 0 20px rgba(0,120,160,0.5); }
+    #death-tip, #win-tip {
+      position: absolute; bottom: 38px; left: 50%; transform: translateX(-50%);
+      color: #ffdc55; font-size: 14px; font-weight: bold; letter-spacing: 1px;
+      text-transform: uppercase; text-shadow: 0 0 10px rgba(255, 220, 85, 0.55);
+      background: rgba(12, 16, 24, 0.82); border: 1px solid #c9a44c;
+      padding: 10px 24px; border-radius: 3px; max-width: 820px; line-height: 1.5; cursor: pointer;
+    }
+    #win-tip { color: #55ffcc; border-color: #3294a8; background: rgba(4, 16, 24, 0.82); }
+    #reload-container {
+      position: absolute; bottom: 65px; left: 50%; transform: translateX(-50%);
+      width: 220px; height: 12px; background: rgba(0,0,0,0.85);
+      border: 1px solid #888; border-radius: 3px; display: none; overflow: hidden; z-index: 10;
+    }
+    #reload-fill { width: 0%; height: 100%; background: #ffcc00; }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.1/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.1/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="crosshair"></div>
+  <div id="vignette-overlay"></div>
+  <div id="critical-blood-overlay"></div>
+  <div id="notification-toast"></div>
+  <div id="condition-warning">PEAK CONDITION LOST — movement speed slowed; reload / tool recovery degraded</div>
+  
+  <div id="reload-container">
+    <div id="reload-fill"></div>
+  </div>
+
+  <div id="hotbar">
+    <div id="slot-1" class="hotbar-slot active">(1) RIFLE</div>
+    <div id="slot-2" class="hotbar-slot">(2) AXE / PICK <span id="axe-level">LVL 1</span></div>
+    <div id="slot-3" class="hotbar-slot">(3) FLINT & STEEL</div>
+  </div>
+
+  <div id="death-screen">
+    <div>
+      <h1 id="death-title" style="font-size: 46px; margin: 0;">EXPEDITION LOST</h1>
+      <p id="death-cause" style="margin-top: 8px; font-size: 15px; color: #ddd;">You perished in the snow.</p>
+      <div id="death-stats-box"></div>
+      <p style="font-size: 13px; color: #bbb; margin-top: 14px;">(Refresh page to restart)</p>
+    </div>
+    <div id="death-tip"></div>
+  </div>
+
+  <div id="win-screen">
+    <div>
+      <h1 style="font-size: 46px; margin: 0; color: #55ffcc; text-shadow: 0 0 20px rgba(85,255,204,0.6);">EXPEDITION CONQUERED</h1>
+      <p style="margin-top: 8px; font-size: 15px; color: #aaffee;">The Golden Mega Bear has fallen, and the Bitterroot mountains bow to you.</p>
+      <div id="win-stats-box"></div>
+      <p style="font-size: 13px; color: #88ccbb; margin-top: 14px;">(Click below to enter God Mode)</p>
+    </div>
+    <div id="win-tip">CLICK TO CONTINUE AS AN OVERPOWERED SURVIVOR</div>
+  </div>
+
+  <div id="ui">
+    <div style="font-size: 13px; margin-bottom: 5px;"><strong>MONTANA - 1805</strong></div>
+    <div>HEALTH</div><div class="bar-container"><div id="health-bar" class="bar-fill"></div></div>
+    <div>WARMTH (<span id="temp-val">98.6°F</span>)</div><div class="bar-container"><div id="warmth-bar" class="bar-fill"></div></div>
+    <div>STAMINA / FOOD</div><div class="bar-container"><div id="hunger-bar" class="bar-fill"></div></div>
+    
+    <div style="margin-top: 6px; color: #ccffcc;">BULLETS: <span id="ammo-val">8</span><span id="ore-ui" style="display:none;"> | ORE: <span id="ore-val">0</span></span></div>
+    <div id="wood-ui" style="display:none;">FIREWOOD: <span id="wood-val">0</span> logs</div>
+    <div id="stone-ui" style="display:none; color:#c7d1db;">STONE: <span id="stone-val">0</span></div>
+    <div id="meat-ui" style="display:none;"><span id="raw-meat-span" style="display:none;">RAW MEAT: <span id="meat-val">0</span></span><span id="cooked-meat-span" style="display:none;"> | COOKED: <span id="cooked-val">0</span></span></div>
+    <div id="pelt-ui" style="color:#f4a261; display:none;">PELTS: <span id="pelts-val">0</span> / 8</div>
+    <div id="snowshoe-ui" style="color:#80d4ff; display:none; margin-top:2px;">SNOWSHOES: <span id="snowshoe-val">0 / 2</span></div>
+    <div id="torch-ui" style="color:#ffaa44; display:none; margin-top:2px;">TORCH: <span id="torch-val">30s</span></div>
+    <div id="cabin-status-ui" style="color:#95d5b2; display:none; margin-top:2px;">CABIN SHELTER ACTIVE</div>
+  </div>
+
+  <div id="day-counter">DAY <span id="day-val">1.0</span></div>
+
+  <div id="blocker">
+    <div>
+      <h1 style="font-size: 32px; text-transform: uppercase; margin-bottom: 16px; letter-spacing: 2px;">EXPEDITION JOURNAL</h1>
+      <div style="font-size: 13px; max-width: 600px; margin: 10px auto; color: #ccc; text-align: left; background: rgba(0,0,0,0.6); padding: 18px 24px; border: 1px solid #444; line-height: 2.0;">
+        <div><strong>[1, 2, 3]</strong> Equip Rifle / Axe-Pick / Flint & Steel</div>
+        <div><strong>[LEFT CLICK]</strong> Strike, shoot, fell, mine, harvest, light torch, read journal pages</div>
+        <div><strong>[C]</strong> Away from fire: Build fire (1 log) | Near fire: Add log</div>
+        <div><strong>[F]</strong> Roast meat, forge bullets (6 per ore), sharpen axe</div>
+        <div><strong>[X]</strong> Eat cooked meat</div>
+      </div>
+      <p style="color: #ffaa44; font-size: 14px; margin-top: 15px;"><strong>CLICK TO RESUME EXPEDITION</strong></p>
+    </div>
+  </div>
+
+  <div id="lore-modal" aria-modal="true">
+    <div id="lore-sheet">
+      <div class="lore-kicker">FOUND JOURNAL · CLICK TO CLOSE</div>
+      <div class="lore-count" id="lore-count">1 / 4</div>
+      <div class="lore-author" id="lore-author"></div>
+      <div class="lore-date" id="lore-date"></div>
+      <div class="lore-text" id="lore-text"></div>
+      <div class="lore-close">CLICK ANYWHERE ON THE PAGE TO PUT IT AWAY</div>
+    </div>
+  </div>
+
+  <div id="start-blocker">
+    <svg id="mountain-backdrop" viewBox="0 0 1000 500" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#020306" stop-opacity="0" />
+          <stop offset="100%" stop-color="#050810" stop-opacity="0.8" />
+        </linearGradient>
+        <linearGradient id="mntFar" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#212735" />
+          <stop offset="100%" stop-color="#060910" />
+        </linearGradient>
+        <linearGradient id="mntNear" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#121720" />
+          <stop offset="100%" stop-color="#020408" />
+        </linearGradient>
+      </defs>
+      <rect width="1000" height="500" fill="url(#skyGrad)" />
+      <polygon points="0,500 0,380 90,260 180,340 310,180 430,310 520,140 640,300 780,160 890,280 1000,210 1000,500" fill="url(#mntFar)" />
+      <polygon points="0,500 0,320 120,410 240,290 350,380 490,220 610,360 740,250 860,390 1000,270 1000,500" fill="url(#mntNear)" />
+      <polygon points="110,410 190,320 250,360 380,240 430,310 510,160 560,250 690,190 730,260 840,210 930,340" fill="#020306" opacity="0.9" />
+    </svg>
+    <p id="start-title">1805</p>
+    <p id="start-sub">[CLICK TO ENTER THE MOUNTAINS]</p>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+    import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+    function paintGeometry(geo, color) {
+      if (geo.index) geo = geo.toNonIndexed();
+      const c = new THREE.Color(color);
+      const count = geo.attributes.position.count;
+      const colors = new Float32Array(count * 3);
+      for (let i = 0; i < count; i++) { colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b; }
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      return geo;
+    }
+
+    const PLAYABLE_RADIUS = 710;
+    const TOTAL_RADIUS = 950;
+    const LAKE_RADIUS = 110;
+    const INITIAL_BEARS = 10;
+    const MAX_BEARS = 20;
+    const TOTAL_ELK = 55;
+    const DAY_LENGTH_SECONDS = 300; // 5 minutes per day
+
+    let totalGameTime = 0.0;
+    let peltDecayTimer = 60.0;
+
+    const runStats = {
+      totalDistance: 0,
+      bearsSlain: 0,
+      elksSlain: 0,
+      logsChopped: 0,
+      stonesMined: 0,
+      oreSmelted: 0,
+      peltsCollected: 0,
+      cabinBuilt: false
+    };
+    let lastPlayerPos = new THREE.Vector3();
+    const iceMomentum = new THREE.Vector3();
+    let vVel = 0; 
+    let isGrounded = true; 
+    const GRAVITY = 32; 
+    const JUMP_FORCE = 12;
+
+    let godModeActive = false;
+    let lorePagesReadCount = 0;
+    let goldenBearActive = false;
+    const lorePages = [];
+    let goldenBearSpawned = false;
+    let goldenBear = null;
+    let loreModalOpen = false;
+    let pendingGoldenBearSpawn = false;
+    let victoryOrb = null;
+    let ominousMessagesTimer = 0;
+    let ominousMessageIndex = 0;
+    const ominousLines = [
+      "The wind carries a heavy, unnatural growl from the northern peaks...",
+      "The snow feels warm beneath your boots, vibrating with a heartbeat...",
+      "Golden eyes gaze down at you from the ridgeline, unseen in the dark...",
+      "The 4 diaries have bound your fate to the golden titan. Prepare yourself."
+    ];
+
+    function randomStartXZ(minRadius = 150, maxRadius = PLAYABLE_RADIUS - 120) {
+      const ang = Math.random() * Math.PI * 2;
+      const rad = minRadius + Math.random() * (maxRadius - minRadius);
+      return { x: Math.cos(ang) * rad, z: Math.sin(ang) * rad };
+    }
+    const startXZ = randomStartXZ();
+    const SPAWN_POS = new THREE.Vector3(startXZ.x, 0, startXZ.z);
+
+    let health = 100;
+    let warmth = 100;
+    let hunger = 100;
+    let recentHealthLossRate = 0;
+    let lastHealthDamageTime = performance.now();
+    let healthDamagedThisFrame = false;
+    let ammo = 8;
+    let wood = 0;
+    let stone = 0;
+    let rawMeat = 0;
+    let cookedMeat = 0;
+    let rawOre = 0;
+    let pelts = 0;
+    let shownPeltInfo = false;
+    const groundDrops = [];
+
+    let snowshoeCount = 0;
+    let hasSnowshoesEquipped = false;
+    let snowshoeDurability = 0.0;
+
+    let hasDiscoveredOre = false;
+    let hasDiscoveredWood = false;
+    let hasDiscoveredStone = false;
+    let hasDiscoveredRawMeat = false;
+    let hasDiscoveredCookedMeat = false;
+    let hasDiscoveredPelts = false;
+    let hasDiscoveredSnowshoes = false;
+
+    let shownProgressToast = false;
+    let shownReadyToast = false;
+    let toastTimeout = null;
+
+    let isDead = false;
+    let torchTimer = 0;
+    let shownTorchLitMessage = false;
+
+    let currentTool = 'rifle';
+    let isReloadingRifle = false;
+    let isRecoveringAxe = false;
+    let isRecoveringFlint = false;
+
+    let axeLevel = 1;
+    let axeLevelHits = 0;
+    const axeDurability = { 2: 32, 3: 24, 4: 18, 5: 14 };
+    let hasCookedAtFire = false;
+    let hasForgedBullets = false;
+
+    let cabin = null;
+    let insideCabin = false;
+
+    const colliders = [];
+    const boxColliders = [];
+    const boulderData = [];
+
+    const vTmp1 = new THREE.Vector3();
+    const vTmp2 = new THREE.Vector3();
+    const dirTmp = new THREE.Vector3();
+
+    let audioCtx = null;
+    let windFilter = null;
+    let windGain = null;
+    let lastGrowlTime = 0;
+
+    function initAudio() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      const bufferSize = audioCtx.sampleRate * 2;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const output = buffer.getChannelData(0);
+      let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+        b6 = white * 0.115926;
+      }
+      const windSource = audioCtx.createBufferSource();
+      windSource.buffer = buffer;
+      windSource.loop = true;
+
+      windFilter = audioCtx.createBiquadFilter();
+      windFilter.type = 'bandpass';
+      windFilter.frequency.setValueAtTime(260, audioCtx.currentTime);
+      windFilter.Q.setValueAtTime(3.0, audioCtx.currentTime);
+
+      windGain = audioCtx.createGain();
+      windGain.gain.setValueAtTime(0.56, audioCtx.currentTime);
+      windSource.connect(windFilter);
+      windFilter.connect(windGain);
+      windGain.connect(audioCtx.destination);
+      windSource.start();
+
+      startCreepyAtmosphere();
+    }
+
+    function startCreepyAtmosphere() {
+      const droneA = audioCtx.createOscillator();
+      const droneB = audioCtx.createOscillator();
+      droneA.type = 'sawtooth';
+      droneB.type = 'triangle';
+      droneA.frequency.setValueAtTime(38.89, audioCtx.currentTime);
+      droneB.frequency.setValueAtTime(39.35, audioCtx.currentTime);
+
+      const droneFilt = audioCtx.createBiquadFilter();
+      droneFilt.type = 'lowpass';
+      droneFilt.frequency.setValueAtTime(140, audioCtx.currentTime);
+
+      const droneGain = audioCtx.createGain();
+      droneGain.gain.setValueAtTime(0.825, audioCtx.currentTime);
+
+      droneA.connect(droneFilt);
+      droneB.connect(droneFilt);
+      droneFilt.connect(droneGain);
+      droneGain.connect(audioCtx.destination);
+      droneA.start();
+      droneB.start();
+
+      const ominousClusters = [
+        [58.27, 61.74, 87.31],
+        [49.00, 69.30, 73.42],
+        [55.00, 77.78, 82.41]
+      ];
+
+      function scheduleCreepyChord() {
+        if (!audioCtx) return;
+        const chord = ominousClusters[Math.floor(Math.random() * ominousClusters.length)];
+        const chordGain = audioCtx.createGain();
+        chordGain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+        chordGain.gain.exponentialRampToValueAtTime(0.375, audioCtx.currentTime + 2.0);
+        chordGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 7.5);
+
+        chord.forEach(freq => {
+          const o = audioCtx.createOscillator();
+          o.type = 'sawtooth';
+          o.frequency.setValueAtTime(freq * 1.5, audioCtx.currentTime);
+          
+          const f = audioCtx.createBiquadFilter();
+          f.type = 'bandpass';
+          f.frequency.setValueAtTime(freq * 3, audioCtx.currentTime);
+          f.Q.setValueAtTime(3.5, audioCtx.currentTime);
+
+          o.connect(f);
+          f.connect(chordGain);
+          o.start();
+          o.stop(audioCtx.currentTime + 8.0);
+        });
+
+        chordGain.connect(audioCtx.destination);
+        setTimeout(scheduleCreepyChord, 3500 + Math.random() * 3500);
+      }
+      setTimeout(scheduleCreepyChord, 800);
+    }
+
+    function playTone(freq, dur, decay, type='triangle') {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + decay);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + dur);
+    }
+
+    function playGunshot() {
+      if (!audioCtx) return;
+      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.6, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.1));
+      const source = audioCtx.createBufferSource(); source.buffer = buffer;
+      const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.setValueAtTime(800, audioCtx.currentTime);
+      const gain = audioCtx.createGain(); gain.gain.setValueAtTime(1.6, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.55);
+      source.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination); source.start();
+    }
+
+    function playSpark() {
+      if (!audioCtx) return;
+      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.12, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.02));
+      const source = audioCtx.createBufferSource(); source.buffer = buffer;
+      const filter = audioCtx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.setValueAtTime(1800, audioCtx.currentTime);
+      const gain = audioCtx.createGain(); gain.gain.setValueAtTime(0.7, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+      source.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination); source.start();
+    }
+
+    let bearShakeTimer = null;
+    function triggerBearHitShake() {
+      document.body.classList.remove('bear-hit-shake');
+      void document.body.offsetWidth;
+      document.body.classList.add('bear-hit-shake');
+      if (bearShakeTimer) clearTimeout(bearShakeTimer);
+      bearShakeTimer = setTimeout(() => document.body.classList.remove('bear-hit-shake'), 520);
+    }
+
+    function applyHealthDamage(amount) {
+      if (amount <= 0 || isDead || godModeActive) return;
+      const now = performance.now();
+      const elapsed = Math.max(0.016, (now - lastHealthDamageTime) / 1000);
+      recentHealthLossRate = Math.max(amount / elapsed, recentHealthLossRate * 0.72);
+      healthDamagedThisFrame = true;
+      lastHealthDamageTime = now;
+      health = Math.max(0, health - amount);
+    }
+
+    function playBearGrowl() {
+      if (!audioCtx) return;
+      const now = performance.now();
+      if (now - lastGrowlTime < 2200) return;
+      lastGrowlTime = now;
+
+      const osc = audioCtx.createOscillator();
+      const growlGain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(82, audioCtx.currentTime);
+      osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.7);
+      osc.frequency.linearRampToValueAtTime(42, audioCtx.currentTime + 1.5);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(310, audioCtx.currentTime);
+
+      growlGain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+      growlGain.gain.linearRampToValueAtTime(0.85, audioCtx.currentTime + 0.25);
+      growlGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.6);
+
+      osc.connect(filter);
+      filter.connect(growlGain);
+      growlGain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 1.65);
+    }
+
+    const scene = new THREE.Scene();
+    const twilightSkyColor = new THREE.Color(0x060912);
+    scene.background = twilightSkyColor;
+    scene.fog = new THREE.FogExp2(0x0a101d, 0.0028);
+
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2800);
+    const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0x222e42, 0.85));
+
+    const MOON_POS = new THREE.Vector3(380, 520, -320);
+
+    const moonSun = new THREE.DirectionalLight(0xd6e5f8, 1.25);
+    moonSun.position.copy(MOON_POS);
+    moonSun.castShadow = true;
+    moonSun.shadow.mapSize.width = 512; 
+    moonSun.shadow.mapSize.height = 512;
+    const sc = 320;
+    moonSun.shadow.camera.left = -sc; moonSun.shadow.camera.right = sc;
+    moonSun.shadow.camera.top = sc; moonSun.shadow.camera.bottom = -sc;
+    moonSun.shadow.camera.near = 50;
+    moonSun.shadow.camera.far = 1100;
+    scene.add(moonSun);
+
+    const moonGeo = new THREE.SphereGeometry(32, 16, 16);
+    const moonMat = new THREE.MeshBasicMaterial({ color: 0xf5f8ff, fog: false });
+    const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+    moonMesh.position.copy(MOON_POS);
+    scene.add(moonMesh);
+
+    const moonHaloGeo = new THREE.SphereGeometry(44, 12, 12);
+    const moonHaloMat = new THREE.MeshBasicMaterial({
+      color: 0x9bc2e8, transparent: true, opacity: 0.28, side: THREE.BackSide, fog: false
+    });
+    const moonHalo = new THREE.Mesh(moonHaloGeo, moonHaloMat);
+    moonHalo.position.copy(MOON_POS);
+    scene.add(moonHalo);
+
+    const moonGlowLight = new THREE.PointLight(0xb5d4f5, 1.8, 2200, 0.8);
+    moonGlowLight.position.copy(MOON_POS);
+    scene.add(moonGlowLight);
+
+    const starCount = 1400;
+    const starGeo = new THREE.BufferGeometry();
+    const starPositions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      const u = Math.random();
+      const v = Math.random();
+      const theta = u * 2.0 * Math.PI;
+      const phi = Math.acos(2.0 * v - 1.0);
+      const r = 1600;
+      starPositions[i * 3 + 0] = r * Math.sin(phi) * Math.cos(theta);
+      starPositions[i * 3 + 1] = Math.max(120, r * Math.cos(phi));
+      starPositions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 1.8, transparent: true, opacity: 0.85, fog: false })));
+
+    function isOnIce(x, z) { return (x * x + z * z) < (LAKE_RADIUS * LAKE_RADIUS); }
+
+    let heightGrid = null;
+    let heightGridN = 0;
+    let heightGridCell = 0;
+
+    function getTerrainHeight(x, z) {
+      if (heightGrid) {
+        const fx = (x + TOTAL_RADIUS) / heightGridCell;
+        const fz = (z + TOTAL_RADIUS) / heightGridCell;
+        const ix = Math.floor(fx), iz = Math.floor(fz);
+        if (ix >= 0 && iz >= 0 && ix < heightGridN && iz < heightGridN) {
+          const u = fx - ix, v = fz - iz;
+          const N1 = heightGridN + 1;
+          const ha = heightGrid[iz * N1 + ix];
+          const hb = heightGrid[(iz + 1) * N1 + ix];
+          const hc = heightGrid[(iz + 1) * N1 + ix + 1];
+          const hd = heightGrid[iz * N1 + ix + 1];
+          return (u + v <= 1) ? ha + u * (hd - ha) + v * (hb - ha) : hc + (1 - u) * (hb - hc) + (1 - v) * (hd - hc);
+        }
+      }
+      return getRawTerrainHeight(x, z);
+    }
+
+    function getRawTerrainHeight(x, z) {
+      const dist = Math.hypot(x, z);
+      if (isOnIce(x, z)) return -2.5;
+
+      const centralWaves = (Math.sin(x * 0.009) * Math.cos(z * 0.009) * 14.5) + 
+                           (Math.sin(x * 0.022 + z * 0.018) * 6.2);
+
+      if (dist > PLAYABLE_RADIUS) {
+        const wallFactor = Math.min(2.5, (dist - PLAYABLE_RADIUS) / 90.0);
+        const craggyWall = Math.pow(wallFactor, 2.2) * 280.0;
+        const outerRidges = (Math.sin(x * 0.04) * Math.cos(z * 0.04) + 1.0) * 28.0;
+        return Math.max(centralWaves + 6.0, 0) + craggyWall + outerRidges;
+      }
+
+      const basinFactor = THREE.MathUtils.smoothstep(dist, 50, PLAYABLE_RADIUS);
+      const outerCrags = Math.sin(x * 0.025) * Math.cos(z * 0.025) * 32.5 +
+                         Math.sin(x * 0.07) * Math.cos(z * 0.06) * 10.0;
+
+      return centralWaves + outerCrags * basinFactor;
+    }
+
+    const groundSegments = 96;
+    const groundGeo = new THREE.PlaneGeometry(TOTAL_RADIUS * 2, TOTAL_RADIUS * 2, groundSegments, groundSegments);
+    groundGeo.rotateX(-Math.PI / 2);
+    const posAttr = groundGeo.attributes.position;
+    const colors = [];
+    const colSnow = new THREE.Color(0xcbd4dc);
+    const colIce = new THREE.Color(0x759cbe);
+    const colGranite = new THREE.Color(0x383e49);
+
+    for (let i = 0; i < posAttr.count; i++) {
+      const x = posAttr.getX(i);
+      const z = posAttr.getZ(i);
+      const h = getRawTerrainHeight(x, z);
+      posAttr.setY(i, h);
+
+      const c = new THREE.Color();
+      if (isOnIce(x, z)) c.copy(colIce);
+      else c.lerpColors(colGranite, colSnow, Math.min(1, Math.max(0, h + 4) / 36));
+      colors.push(c.r, c.g, c.b);
+    }
+    groundGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    groundGeo.computeVertexNormals();
+
+    heightGridN = groundSegments;
+    heightGridCell = (TOTAL_RADIUS * 2) / groundSegments;
+    heightGrid = new Float32Array((groundSegments + 1) * (groundSegments + 1));
+    for (let i = 0; i < posAttr.count; i++) {
+      const ix = Math.round((posAttr.getX(i) + TOTAL_RADIUS) / heightGridCell);
+      const iz = Math.round((posAttr.getZ(i) + TOTAL_RADIUS) / heightGridCell);
+      heightGrid[iz * (groundSegments + 1) + ix] = posAttr.getY(i);
+    }
+
+    const groundMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const iceSurface = new THREE.Mesh(
+      new THREE.CircleGeometry(LAKE_RADIUS, 48),
+      new THREE.MeshPhysicalMaterial({
+        color: 0x9fd9f5, metalness: 0.25, roughness: 0.035, transmission: 0.12,
+        transparent: true, opacity: 0.72, clearcoat: 1.0, clearcoatRoughness: 0.02,
+        side: THREE.DoubleSide
+      })
+    );
+    iceSurface.rotation.x = -Math.PI / 2;
+    iceSurface.position.y = -2.28;
+    iceSurface.receiveShadow = true;
+    scene.add(iceSurface);
+
+    let pageBeamsOn = false;
+    function spawnLoreLandmark(type, x, z, author, date, text) {
+      const group = new THREE.Group();
+      const th = getTerrainHeight(x, z);
+
+      if (type === 'tepee') {
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0x3d2314, roughness: 0.9 });
+        const hideMat = new THREE.MeshStandardMaterial({ color: 0xc8b49b, roughness: 0.85, side: THREE.DoubleSide, flatShading: true });
+        for (let i = 0; i < 7; i++) {
+          const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 6.0, 4), poleMat);
+          pole.rotation.z = (i - 3) * 0.12;
+          pole.rotation.x = (i % 2 === 0 ? 0.08 : -0.08);
+          pole.position.y = 3.0;
+          group.add(pole);
+        }
+        const hide = new THREE.Mesh(new THREE.ConeGeometry(2.4, 4.8, 7, 1, true), hideMat);
+        hide.position.y = 2.4;
+        group.add(hide);
+      } else if (type === 'wagon') {
+        const woodMat = new THREE.MeshStandardMaterial({ color: 0x2b1b12, roughness: 0.95 });
+        const ironMat = new THREE.MeshStandardMaterial({ color: 0x22252a, metalness: 0.8 });
+        const bed = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.1, 4.2), woodMat);
+        bed.position.y = 1.2;
+        group.add(bed);
+        const wheelGeo = new THREE.TorusGeometry(1.1, 0.12, 4, 8);
+        [-1.2, 1.2].forEach(wx => {
+          [-1.4, 1.4].forEach(wz => {
+            const wheel = new THREE.Mesh(wheelGeo, ironMat);
+            wheel.rotation.y = Math.PI / 2;
+            wheel.position.set(wx, 1.1, wz);
+            group.add(wheel);
+          });
+        });
+      } else if (type === 'firering') {
+        const stoneMat = new THREE.MeshStandardMaterial({ color: 0x33383f, roughness: 0.95 });
+        for (let i = 0; i < 10; i++) {
+          const st = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3), stoneMat);
+          st.position.set(Math.cos(i * 0.628) * 1.2, 0.25, Math.sin(i * 0.628) * 1.2);
+          group.add(st);
+        }
+        const ash = new THREE.Mesh(new THREE.CircleGeometry(1.1, 8), new THREE.MeshBasicMaterial({ color: 0x111215 }));
+        ash.rotation.x = -Math.PI / 2; ash.position.y = 0.05;
+        group.add(ash);
+      } else if (type === 'tent') {
+        // Abandoned canvas A-frame tent: sagging, weathered, one end open, a little debris around it.
+        const canvasMat = new THREE.MeshStandardMaterial({ color: 0xb9ad92, roughness: 0.95, side: THREE.DoubleSide, flatShading: true });
+        const darkCanvasMat = new THREE.MeshStandardMaterial({ color: 0x4a4436, roughness: 1.0, side: THREE.DoubleSide, flatShading: true });
+        const woodMat = new THREE.MeshStandardMaterial({ color: 0x3d2a1a, roughness: 0.9 });
+        const snowMat = new THREE.MeshStandardMaterial({ color: 0xeef3f7, roughness: 0.95, flatShading: true });
+
+        // Triangular prism tent body (apex up, axis along z), open at both ends.
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 4.6, 3, 1, true), canvasMat);
+        body.rotation.x = -Math.PI / 2; body.position.y = 1.0;
+        body.castShadow = true; body.receiveShadow = true; group.add(body);
+
+        // Back wall (closed) and a dark patch inside the front so it reads as an open doorway.
+        const wallShape = new THREE.Shape();
+        wallShape.moveTo(-1.73, 0); wallShape.lineTo(1.73, 0); wallShape.lineTo(0, 3.0); wallShape.closePath();
+        const backWall = new THREE.Mesh(new THREE.ShapeGeometry(wallShape), darkCanvasMat);
+        backWall.position.set(0, 0.02, -2.28); group.add(backWall);
+        const inner = new THREE.Mesh(new THREE.ShapeGeometry(wallShape), new THREE.MeshBasicMaterial({ color: 0x0a0a0a, side: THREE.DoubleSide }));
+        inner.scale.set(0.8, 0.8, 1); inner.position.set(0, 0.03, -0.9); group.add(inner);
+
+        // Torn, drooping front flap hanging off the doorway.
+        const flap = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2.2, 1, 1), canvasMat);
+        flap.position.set(-0.9, 1.2, 2.3); flap.rotation.set(0.15, 0.3, 0.35); group.add(flap);
+
+        // Crossed support poles at the front and a snapped ridge pole sticking out the back.
+        [[-1, 1], [1, -1]].forEach(([dir]) => {
+          const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 3.4, 5), woodMat);
+          pole.position.set(0, 1.6, 2.4); pole.rotation.z = dir * 0.42; group.add(pole);
+        });
+        const ridge = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.6, 5), woodMat);
+        ridge.rotation.x = Math.PI / 2; ridge.position.set(0, 2.9, -2.9); group.add(ridge);
+
+        // Snow drifted against the sides and a bit on the roof, plus abandoned gear.
+        [[-2.4, 0.3, 0.2, 1.2, 0.5, 2.6], [2.5, 0.3, -0.4, 1.1, 0.45, 2.4], [0, 2.8, -0.6, 0.5, 0.2, 2.2],
+         [0.3, 0.15, 3.3, 1.4, 0.3, 0.9]].forEach((p, i) => {
+          const m = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 1), snowMat);
+          m.position.set(p[0], p[1], p[2]); m.scale.set(p[3], p[4], p[5]); m.rotation.y = i; group.add(m);
+        });
+        const crate = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.7), woodMat);
+        crate.position.set(1.9, 0.3, 3.1); crate.rotation.y = 0.5; crate.castShadow = true; group.add(crate);
+        const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.9, 8), woodMat);
+        barrel.position.set(-2.1, 0.3, 2.8); barrel.rotation.z = Math.PI / 2; barrel.rotation.y = 0.8; barrel.castShadow = true; group.add(barrel);
+      }
+
+      // Torn, readable page placed outside the landmark, never inside it.
+      const pageShape = new THREE.Shape();
+      pageShape.moveTo(-0.38, -0.48); pageShape.lineTo(-0.18, -0.43); pageShape.lineTo(0.03, -0.50);
+      pageShape.lineTo(0.23, -0.42); pageShape.lineTo(0.40, -0.49); pageShape.lineTo(0.34, 0.18);
+      pageShape.lineTo(0.41, 0.46); pageShape.lineTo(0.08, 0.42); pageShape.lineTo(-0.14, 0.50);
+      pageShape.lineTo(-0.39, 0.40); pageShape.lineTo(-0.33, -0.02); pageShape.closePath();
+      const pageGeo = new THREE.ShapeGeometry(pageShape);
+      const pageMat = new THREE.MeshBasicMaterial({ color: 0xffffe8, side: THREE.DoubleSide });
+      const pageMesh = new THREE.Mesh(pageGeo, pageMat);
+      pageMesh.rotation.x = -Math.PI / 2;
+      const pageIndex = lorePages.length;
+      const offsetX = type === 'tent' ? 3.6 : (type === 'tepee' ? 3.2 : 1.4);
+      const offsetZ = type === 'tent' ? 1.4 : (type === 'tepee' ? 0.8 : 1.6);
+      // Keep every page clearly above the snow surface. The extra height also makes the torn edge
+      // readable at a distance instead of letting terrain/snow particles swallow it.
+      const tentYaw = 0.5;
+      let pageY = 0.72;
+      if (type === 'tent') {
+        // Take the page height from the real terrain at its spot so the snow can't bury it.
+        const gy = getTerrainHeight(x + offsetX * Math.cos(tentYaw) + offsetZ * Math.sin(tentYaw), z - offsetX * Math.sin(tentYaw) + offsetZ * Math.cos(tentYaw));
+        pageY = Math.max(0.72, (gy - th) + 0.9);
+      }
+      pageMesh.position.set(offsetX, pageY, offsetZ);
+      pageMesh.rotation.z = Math.random() * 0.4 - 0.2; group.add(pageMesh);
+
+      // A broad warm beacon makes the pages discoverable from much farther away.
+      const pageLight = new THREE.PointLight(0xffddaa, 6.5, 36);
+      pageLight.position.set(offsetX, pageY + 0.55, offsetZ); group.add(pageLight);
+
+      // Soft halo hovering above the page so its location is obvious against the snow and trees.
+      const haloCanvas = document.createElement('canvas');
+      haloCanvas.width = haloCanvas.height = 64;
+      const haloCtx = haloCanvas.getContext('2d');
+      const haloGrad = haloCtx.createRadialGradient(32, 32, 2, 32, 32, 31);
+      haloGrad.addColorStop(0, 'rgba(255,245,180,0.92)');
+      haloGrad.addColorStop(0.28, 'rgba(255,220,110,0.48)');
+      haloGrad.addColorStop(1, 'rgba(255,190,50,0)');
+      haloCtx.fillStyle = haloGrad; haloCtx.fillRect(0, 0, 64, 64);
+      const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: new THREE.CanvasTexture(haloCanvas), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+      }));
+      halo.scale.set(5.2, 5.2, 1);
+      halo.position.set(offsetX, pageY + 0.8, offsetZ);
+      group.add(halo);
+
+      // Secret toggle (press B): tall light pillar over each page. Off by default.
+      const beam = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.35, 0.9, 60, 8, 1, true),
+        new THREE.MeshBasicMaterial({ color: 0xffe9a0, transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false })
+      );
+      beam.position.set(offsetX, pageY + 30, offsetZ);
+      beam.visible = pageBeamsOn;
+      group.add(beam);
+
+      group.position.set(x, th, z);
+      if (type === 'tent') { group.rotation.y = tentYaw; group.position.y = th - 0.1; }
+      scene.add(group);
+
+      const localPagePos = new THREE.Vector3(offsetX, pageY, offsetZ).applyQuaternion(group.quaternion);
+      const landmarkObj = { 
+        group, 
+        x, 
+        z, 
+        author, 
+        date, 
+        text, 
+        read: false, 
+        foundOrder: 0,
+        light: pageLight, 
+        pageMesh,
+        worldPagePos: new THREE.Vector3(x + localPagePos.x, group.position.y + localPagePos.y, z + localPagePos.z),
+        beam
+      };
+      lorePages.push(landmarkObj);
+      colliders.push({ x, z, radius: type === 'tent' ? 2.4 : 2.0 });
+    }
+
+    // 4 Distinct POVs, Names, and Dates recounting the harrowing golden bear
+    spawnLoreLandmark('tepee', -240, 180, 
+      "Ephraim Vance, Fur Trapper", 
+      "October 14th, 1795", 
+      "\"The frost freezeth the very breath within our lungs. Two sunsets past, young Samuel wandered off toward the treeline for pitch-wood and came not back. Last night, through the hide flap, I beheld what stalked him. It walked upright upon the drifts—a monstrous grizzly clad in heavy pelt of brilliant, burnished gold. The ball from my flintlock glanced from its skull as if struck upon stone. It smelled of sulphur and dead pines. God preserve us, for the mountain belongs to that golden demon.\""
+    );
+
+    spawnLoreLandmark('wagon', 280, -210, 
+      "Margaret Holloway, Emigrant", 
+      "November 3rd, 1799", 
+      "\"Our wagon axle split upon the eastern spur and the snow is already waist-deep. Thomas went out to scout the creek bed with his hounds. Within the hour, the baying ceased. When he dragged himself back to our fire, his arm was tore to ribbons. He wept like an infant, babbling of a beast twice the height of our draft horse, its coat shimmering yellow and gold against the pines. He swears it toyed with him, watching with yellow eyes that know neither hunger nor mercy. We leave our goods and flee south on foot.\""
+    );
+
+    spawnLoreLandmark('firering', -160, -290, 
+      "Private Silas Thorne, Expedition Scout", 
+      "November 28th, 1801", 
+      "\"Lost from the main detachment four days now. Camped here beside the boulder outcrop to melt snow. At dusk, the whole ridge seemed to ignite in yellow radiance. It was no sunset. A gigantic golden bear stepped from the timber, towering eight cubits tall. When it bellowed, the very stones beneath my boots shook with tremor. I scattered my embers and cast myself into the ravine to hide. The beast did not pursue; it merely stood atop the crag, bathed in golden fire, as if daring the living to challenge its dominion.\""
+    );
+
+    spawnLoreLandmark('tent', 500, 108, 
+      "Father Jean-Baptiste Cloutier, Jesuit Missionary", 
+      "December 19th, 1804", 
+      "\"My ink freezes upon the parchment inside this tattered tent. The indigenous folk whispered warnings of the 'Golden Slumberer of the North Ridge,' and in my foolish pride I thought it heathen superstition. Now I know the truth. It lurks in the highest crags, a colossal titan of golden fleece that slumbereth until all who violate these high passes are documented and weighed. Its claw marks upon the trees about this camp are three handspans wide. My strength faileth. If you read this journal, abandon all hope of flight—the golden beast already scenteth your marrow.\""
+    );
+
+    const snowCount = 900;
+    const snowGeo = new THREE.BufferGeometry();
+    const snowPos = new Float32Array(snowCount * 3);
+    const snowVel = [];
+    const snowBoxSize = 95;
+
+    for (let i = 0; i < snowCount; i++) {
+      snowPos[i * 3 + 0] = (Math.random() - 0.5) * snowBoxSize;
+      snowPos[i * 3 + 1] = Math.random() * snowBoxSize - (snowBoxSize / 2);
+      snowPos[i * 3 + 2] = (Math.random() - 0.5) * snowBoxSize;
+      snowVel.push({
+        x: (Math.random() - 0.5) * 0.6,
+        y: -3.2 - Math.random() * 2.2,
+        z: (Math.random() - 0.5) * 0.6
+      });
+    }
+    snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
+    const snowSystem = new THREE.Points(snowGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.30, transparent: true, opacity: 0.8 }));
+    scene.add(snowSystem);
+
+    const boulderCount = 90;
+    const boulderBaseGeo = new THREE.DodecahedronGeometry(1, 1);
+    const boulderMat = new THREE.MeshStandardMaterial({ color: 0x3d434d, roughness: 0.96, flatShading: true });
+    const boulderInstancedMesh = new THREE.InstancedMesh(boulderBaseGeo, boulderMat, boulderCount);
+    boulderInstancedMesh.castShadow = true;
+    boulderInstancedMesh.receiveShadow = true;
+
+    const dummyMatrix = new THREE.Matrix4();
+    const dummyPos = new THREE.Vector3();
+    const dummyRot = new THREE.Euler();
+    const dummyQuat = new THREE.Quaternion();
+    const dummyScale = new THREE.Vector3();
+
+    for (let i = 0; i < boulderCount; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const rad = 40 + Math.random() * (PLAYABLE_RADIUS - 80);
+      const bx = Math.cos(ang) * rad;
+      const bz = Math.sin(ang) * rad;
+      if (isOnIce(bx, bz)) { i--; continue; }
+      const radius = 3.5 + Math.random() * 4.5;
+      const th = getTerrainHeight(bx, bz);
+
+      dummyPos.set(bx, th + radius * 0.15, bz);
+      dummyRot.set(Math.random() * 0.4, Math.random() * Math.PI, Math.random() * 0.4);
+      dummyQuat.setFromEuler(dummyRot);
+      dummyScale.set(radius * 1.1, radius * 0.75, radius * 1.0);
+      dummyMatrix.compose(dummyPos, dummyQuat, dummyScale);
+
+      boulderInstancedMesh.setMatrixAt(i, dummyMatrix);
+      colliders.push({ x: bx, z: bz, radius: radius * 0.85 });
+      boulderData.push({ x: bx, z: bz, radius, hits: 0 });
+    }
+    boulderInstancedMesh.instanceMatrix.needsUpdate = true;
+    scene.add(boulderInstancedMesh);
+
+    const oreNodes = [];
+    const oreMat = new THREE.MeshPhysicalMaterial({
+      color: 0xdff0ff, metalness: 0.92, roughness: 0.08, clearcoat: 1.0, clearcoatRoughness: 0.05, reflectivity: 1.0, flatShading: true
+    });
+    function createOreVein(x, z) {
+      const group = new THREE.Group();
+      const th = getTerrainHeight(x, z);
+      for (let i = 0; i < 4; i++) {
+        const m = new THREE.Mesh(new THREE.DodecahedronGeometry(0.95 + Math.random() * 0.5), oreMat);
+        m.castShadow = true; m.receiveShadow = true;
+        m.position.set((Math.random() - 0.5) * 1.4, Math.random() * 0.6, (Math.random() - 0.5) * 1.4);
+        group.add(m);
+      }
+      group.position.set(x, th + 0.15, z);
+      scene.add(group);
+      oreNodes.push({ mesh: group, x, z, active: true, health: 0, oreRemaining: 3 });
+      colliders.push({ x, z, radius: 1.6 });
+    }
+
+    for (let i = 0; i < 28; i++) {
+      let ox, oz;
+      do {
+        const ang = Math.random() * Math.PI * 2;
+        const rad = 80 + Math.random() * (PLAYABLE_RADIUS - 140);
+        ox = Math.cos(ang) * rad; oz = Math.sin(ang) * rad;
+      } while (isOnIce(ox, oz));
+      createOreVein(ox, oz);
+    }
+
+    const TOTAL_TREES = 650;
+    const treeTrunkGeo = new THREE.CylinderGeometry(0.22, 0.45, 3.5, 4);
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x22150d, flatShading: true });
+    const trunkInstanced = new THREE.InstancedMesh(treeTrunkGeo, trunkMat, TOTAL_TREES);
+    trunkInstanced.castShadow = true;
+
+    const coneGeo0 = new THREE.ConeGeometry(2.6, 3.0, 4);
+    const coneGeo1 = new THREE.ConeGeometry(1.9, 3.0, 4);
+    const coneGeo2 = new THREE.ConeGeometry(1.2, 3.0, 4);
+    const needleMat = new THREE.MeshStandardMaterial({ color: 0x0f2014, flatShading: true });
+    const coneInstanced0 = new THREE.InstancedMesh(coneGeo0, needleMat, TOTAL_TREES);
+    const coneInstanced1 = new THREE.InstancedMesh(coneGeo1, needleMat, TOTAL_TREES);
+    const coneInstanced2 = new THREE.InstancedMesh(coneGeo2, needleMat, TOTAL_TREES);
+    coneInstanced0.castShadow = true;
+    coneInstanced1.castShadow = true;
+    coneInstanced2.castShadow = true;
+
+    scene.add(trunkInstanced);
+    scene.add(coneInstanced0);
+    scene.add(coneInstanced1);
+    scene.add(coneInstanced2);
+
+    const trees = [];
+    const snowshoePickups = [];
+
+    function populateTrees() {
+      let idx = 0;
+      const forestCenters = [
+        new THREE.Vector2(-180, 140),
+        new THREE.Vector2(190, -160),
+        new THREE.Vector2(-240, -180),
+        new THREE.Vector2(220, 200),
+        new THREE.Vector2(0, -250)
+      ];
+
+      for (let fc of forestCenters) {
+        for (let i = 0; i < 45 && idx < TOTAL_TREES; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const dist = Math.random() * 85;
+          const tx = fc.x + Math.cos(ang) * dist;
+          const tz = fc.y + Math.sin(ang) * dist;
+          if (!isOnIce(tx, tz)) setupTree(idx++, tx, tz);
+        }
+      }
+
+      while (idx < TOTAL_TREES) {
+        const ang = Math.random() * Math.PI * 2;
+        const rad = 25 + Math.random() * (PLAYABLE_RADIUS - 40);
+        const tx = Math.cos(ang) * rad;
+        const tz = Math.sin(ang) * rad;
+        if (!isOnIce(tx, tz)) setupTree(idx++, tx, tz);
+      }
+
+      trunkInstanced.instanceMatrix.needsUpdate = true;
+      coneInstanced0.instanceMatrix.needsUpdate = true;
+      coneInstanced1.instanceMatrix.needsUpdate = true;
+      coneInstanced2.instanceMatrix.needsUpdate = true;
+    }
+
+    function setupTree(instanceIndex, x, z) {
+      const scale = 0.55 + Math.random() * 0.95;
+      const th = getTerrainHeight(x, z);
+      const rotY = Math.random() * Math.PI * 2;
+
+      dummyRot.set(0, rotY, 0);
+      dummyQuat.setFromEuler(dummyRot);
+      dummyScale.set(scale, scale, scale);
+
+      dummyPos.set(x, th + 1.75 * scale, z);
+      dummyMatrix.compose(dummyPos, dummyQuat, dummyScale);
+      trunkInstanced.setMatrixAt(instanceIndex, dummyMatrix);
+
+      dummyPos.set(x, th + 2.8 * scale, z);
+      dummyMatrix.compose(dummyPos, dummyQuat, dummyScale);
+      coneInstanced0.setMatrixAt(instanceIndex, dummyMatrix);
+
+      dummyPos.set(x, th + 4.7 * scale, z);
+      dummyMatrix.compose(dummyPos, dummyQuat, dummyScale);
+      coneInstanced1.setMatrixAt(instanceIndex, dummyMatrix);
+
+      dummyPos.set(x, th + 6.6 * scale, z);
+      dummyMatrix.compose(dummyPos, dummyQuat, dummyScale);
+      coneInstanced2.setMatrixAt(instanceIndex, dummyMatrix);
+
+      let requiredHits = scale > 1.1 ? 3 : (scale > 0.8 ? 2 : 1);
+      let maxLogs = scale > 1.1 ? 5 : (scale > 0.8 ? 3 : 2);
+
+      const treeObj = {
+        index: instanceIndex,
+        x, z,
+        baseY: th,
+        scale,
+        rotY,
+        requiredHits,
+        maxLogs,
+        chopHits: 0,
+        isFelled: false,
+        fallAngle: 0,
+        fallDir: new THREE.Vector3(Math.random()-0.5, 0, Math.random()-0.5).normalize(),
+        logsHarvested: 0,
+        logChopHits: 0,
+        active: true,
+        felledGroup: null
+      };
+
+      trees.push(treeObj);
+      colliders.push({ x, z, radius: 0.9 * scale, ref: treeObj });
+    }
+
+    populateTrees();
+
+    function updatePeltUI() {
+      if (hasDiscoveredPelts || godModeActive) {
+        peltUI.style.display = 'block';
+        peltsVal.innerText = godModeActive ? '8 (MAX)' : `${pelts}`;
+      }
+    }
+
+    function layDeadAnimal(mesh) {
+      // Lay the whole carcass onto the actual terrain instead of guessing from the
+      // unrotated geometry bounds. This prevents both buried corpses and floating ones.
+      mesh.rotation.z = Math.PI / 2;
+      mesh.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(mesh);
+      const groundY = getTerrainHeight(mesh.position.x, mesh.position.z);
+      mesh.position.y += (groundY + 0.035) - box.min.y;
+      mesh.updateMatrixWorld(true);
+    }
+
+    function spawnGroundDrop(type, x, z) {
+      const group = new THREE.Group();
+      const footprint = 0.9;
+      let th = getTerrainHeight(x, z);
+      for (let a = 0; a < 8; a++) {
+        const ang = a * Math.PI / 4;
+        th = Math.max(th, getTerrainHeight(x + Math.cos(ang) * footprint, z + Math.sin(ang) * footprint));
+      }
+      if (type === 'meat') {
+        const mat = new THREE.MeshStandardMaterial({ color: 0x8f3d2e, roughness: 0.7 });
+        for (let i = 0; i < 2; i++) {
+          const chunk = new THREE.Mesh(new THREE.DodecahedronGeometry(0.18, 0), mat);
+          chunk.position.set((Math.random() - 0.5) * 0.5, 0.22 + Math.random() * 0.08, (Math.random() - 0.5) * 0.5);
+          chunk.scale.set(1.4, 0.75, 1.0);
+          group.add(chunk);
+        }
+      } else if (type === 'victory_orb') {
+        const mat = new THREE.MeshBasicMaterial({ color: 0xffdd44, wireframe: false });
+        const orb = new THREE.Mesh(new THREE.SphereGeometry(1.2, 16, 16), mat);
+        group.add(orb);
+        const glow = new THREE.PointLight(0xffcc00, 5.0, 25);
+        group.add(glow);
+      } else {
+        const mat = new THREE.MeshStandardMaterial({ color: 0x9a6b43, roughness: 0.9, side: THREE.DoubleSide });
+        const pelt = new THREE.Mesh(new THREE.CircleGeometry(0.62, 8), mat);
+        pelt.rotation.x = -Math.PI / 2; pelt.position.y = 0.10; pelt.scale.set(1.0, 1.25, 1.0);
+        group.add(pelt);
+      }
+      group.position.set(x, th + 0.18, z);
+      scene.add(group);
+      groundDrops.push({ type, mesh: group, x, z, active: true });
+    }
+
+    function pickUpGroundDrops() {
+      const pPos = controls.getObject().position;
+      shootRaycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+      for (let i = groundDrops.length - 1; i >= 0; i--) {
+        const d = groundDrops[i];
+        if (!d.active || Math.hypot(pPos.x - d.x, pPos.z - d.z) > 5.0) continue;
+        const hit = shootRaycaster.intersectObject(d.mesh, true);
+        if (hit.length === 0 || hit[0].distance > 5.0) continue;
+        
+        if (d.type === 'victory_orb') {
+          d.active = false; scene.remove(d.mesh); groundDrops.splice(i, 1);
+          triggerWinScreen();
+          return true;
+        }
+
+        d.active = false; scene.remove(d.mesh); groundDrops.splice(i, 1);
+        if (d.type === 'meat') {
+          rawMeat += 1; meatVal.innerText = rawMeat; hasDiscoveredRawMeat = true;
+        } else if (pelts < 8) {
+          pelts += 1;
+          runStats.peltsCollected += 1;
+          hasDiscoveredPelts = true;
+          if (!shownPeltInfo) {
+            shownPeltInfo = true;
+            showToast('PELTS: Up to -90% freezing, -24% speed at 8 pelts. Decays 1 per minute.', 5000);
+          }
+        }
+        syncInventoryVisibility();
+        playTone(d.type === 'pelt' ? 340 : 260, 0.2, 0.1);
+        return true;
+      }
+      return false;
+    }
+
+    function spawnNaturalSnowshoe(x, z) {
+      const group = new THREE.Group();
+      const shoeMat = new THREE.MeshStandardMaterial({ color: 0xb58a63, roughness: 0.85, flatShading: true });
+      const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.05, 4, 6), shoeMat);
+      hoop.rotation.x = Math.PI / 2;
+      group.add(hoop);
+
+      const cross = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, 0.04), shoeMat);
+      group.add(cross);
+
+      const th = getTerrainHeight(x, z);
+      group.position.set(x, th + 0.12, z);
+      scene.add(group);
+      snowshoePickups.push({ mesh: group, x, z, active: true });
+    }
+
+    const campfires = [];
+    function layFirewood(x, z, isCabinFire = false) {
+      const group = new THREE.Group();
+      const y = getTerrainHeight(x, z);
+
+      const stoneMat = new THREE.MeshStandardMaterial({ color: 0x252525, flatShading: true });
+      for (let i = 0; i < 8; i++) {
+        const stone = new THREE.Mesh(new THREE.DodecahedronGeometry(0.25), stoneMat);
+        stone.position.set(Math.cos((i / 8) * Math.PI * 2) * 0.8, 0.27, Math.sin((i / 8) * Math.PI * 2) * 0.8);
+        group.add(stone);
+      }
+
+      const logMat = new THREE.MeshStandardMaterial({ color: 0x2a170b, flatShading: true });
+      const logGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 4);
+      const l1 = new THREE.Mesh(logGeo, logMat); l1.rotation.z = Math.PI / 2; l1.rotation.y = 0.4; l1.position.y = 0.34; group.add(l1);
+      const l2 = new THREE.Mesh(logGeo, logMat); l2.rotation.z = Math.PI / 2; l2.rotation.y = -0.4; l2.position.y = 0.34; group.add(l2);
+
+      const pLight = new THREE.PointLight(0xff9933, 0, 80, 1.2);
+      pLight.position.y = 1.0;
+      group.add(pLight);
+
+      const core = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.8, 4), new THREE.MeshBasicMaterial({ color: 0xff5500 }));
+      core.position.y = 0.65; core.visible = false; group.add(core);
+
+      group.position.set(x, y, z);
+      scene.add(group);
+
+      const campfireObj = {
+        mesh: group,
+        light: pLight,
+        core,
+        x, z,
+        isLit: false,
+        timeLeft: isCabinFire ? 300 : 15,
+        isCabinFire,
+        logsFed: 0
+      };
+
+      campfires.push(campfireObj);
+      if (!isCabinFire) colliders.push({ x, z, radius: 1.1 });
+      return campfireObj;
+    }
+
+    function buildCabin(x, z) {
+      const cabinGroup = new THREE.Group();
+      const baseY = getTerrainHeight(x, z);
+
+      const stoneBaseMat = new THREE.MeshStandardMaterial({ color: 0x484e55, roughness: 0.95, flatShading: true });
+      const woodLogMat = new THREE.MeshStandardMaterial({ color: 0x3d2516, roughness: 0.88, flatShading: true });
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0x2e1b10, roughness: 0.95 });
+      const roofMat = new THREE.MeshStandardMaterial({ color: 0x1f140d, roughness: 0.95 });
+      const chimneyMat = new THREE.MeshStandardMaterial({ color: 0x30353c, roughness: 0.92 });
+      const bedMat = new THREE.MeshStandardMaterial({ color: 0x1f3b26, roughness: 0.85 });
+
+      const stoneBase = new THREE.Mesh(new THREE.BoxGeometry(8.8, 0.8, 8.8), stoneBaseMat);
+      stoneBase.position.set(0, 0.4, 0);
+      cabinGroup.add(stoneBase);
+
+      const floor = new THREE.Mesh(new THREE.BoxGeometry(8.0, 0.1, 8.0), floorMat);
+      floor.position.set(0, 0.85, 0);
+      cabinGroup.add(floor);
+
+      const backWall = new THREE.Mesh(new THREE.BoxGeometry(8.0, 3.2, 0.5), woodLogMat);
+      backWall.position.set(0, 2.4, -3.75);
+      cabinGroup.add(backWall);
+
+      const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.5, 3.2, 8.0), woodLogMat);
+      leftWall.position.set(-3.75, 2.4, 0);
+      cabinGroup.add(leftWall);
+
+      const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.5, 3.2, 8.0), woodLogMat);
+      rightWall.position.set(3.75, 2.4, 0);
+      cabinGroup.add(rightWall);
+
+      const frontLeft = new THREE.Mesh(new THREE.BoxGeometry(3.1, 3.2, 0.5), woodLogMat);
+      frontLeft.position.set(-2.45, 2.4, 3.75);
+      cabinGroup.add(frontLeft);
+
+      const frontRight = new THREE.Mesh(new THREE.BoxGeometry(3.1, 3.2, 0.5), woodLogMat);
+      frontRight.position.set(2.45, 2.4, 3.75);
+      cabinGroup.add(frontRight);
+
+      const doorwayLintel = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.8, 0.5), woodLogMat);
+      doorwayLintel.position.set(0, 3.6, 3.75);
+      cabinGroup.add(doorwayLintel);
+
+      const gableBack = new THREE.Mesh(new THREE.BoxGeometry(6.4, 1.5, 0.4), woodLogMat);
+      gableBack.position.set(0, 4.5, -3.75);
+      cabinGroup.add(gableBack);
+
+      const gableFrontWall = new THREE.Mesh(new THREE.BoxGeometry(6.4, 1.5, 0.4), woodLogMat);
+      gableFrontWall.position.set(0, 4.5, 3.75);
+      cabinGroup.add(gableFrontWall);
+
+      const roofL = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.35, 9.2), roofMat);
+      roofL.position.set(-2.2, 4.8, 0);
+      roofL.rotation.z = 0.42;
+      cabinGroup.add(roofL);
+
+      const roofR = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.35, 9.2), roofMat);
+      roofR.position.set(2.2, 4.8, 0);
+      roofR.rotation.z = -0.42;
+      cabinGroup.add(roofR);
+
+      const fireplaceBox = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.2, 1.6), chimneyMat);
+      fireplaceBox.position.set(2.4, 1.8, -2.4);
+      cabinGroup.add(fireplaceBox);
+
+      const chimneyStack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 5.6, 1.2), chimneyMat);
+      chimneyStack.position.set(2.4, 3.8, -3.8);
+      cabinGroup.add(chimneyStack);
+
+      const bed = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.5, 3.2), bedMat);
+      bed.position.set(-2.2, 1.1, -1.8);
+      cabinGroup.add(bed);
+
+      cabinGroup.position.set(x, baseY, z);
+      scene.add(cabinGroup);
+
+      const hearthFire = layFirewood(x + 2.4, z - 1.8, true);
+
+      boxColliders.push({ minX: x - 4.1, maxX: x - 3.4, minZ: z - 4.1, maxZ: z + 4.1 });
+      boxColliders.push({ minX: x + 3.4, maxX: x + 4.1, minZ: z - 4.1, maxZ: z + 4.1 });
+      boxColliders.push({ minX: x - 4.1, maxX: x + 4.1, minZ: z - 4.1, maxZ: z - 3.4 });
+      boxColliders.push({ minX: x - 4.1, maxX: x - 0.9, minZ: z + 3.4, maxZ: z + 4.1 });
+      boxColliders.push({ minX: x + 0.9, maxX: x + 4.1, minZ: z + 3.4, maxZ: z + 4.1 });
+
+      cabin = {
+        pos: new THREE.Vector3(x, baseY, z),
+        fireplace: hearthFire,
+        bedPos: new THREE.Vector3(x - 2.2, baseY, z - 1.8)
+      };
+
+      runStats.cabinBuilt = true;
+      playTone(180, 0.8, 0.4, 'square');
+    }
+
+    const controls = new PointerLockControls(camera, document.body);
+    const weaponGroup = new THREE.Group();
+    camera.add(weaponGroup);
+    scene.add(controls.getObject());
+
+    const metalToolMat = new THREE.MeshPhysicalMaterial({
+      color: 0xeaf6ff, metalness: 1.0, roughness: 0.018, clearcoat: 1.0, clearcoatRoughness: 0.008, reflectivity: 1.0, flatShading: true
+    });
+    const woodHandleMat = new THREE.MeshStandardMaterial({ color: 0x482c18, flatShading: true });
+    const cuttingEdgeMat = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff, metalness: 1.0, roughness: 0.012, clearcoat: 1.0, clearcoatRoughness: 0.006, reflectivity: 1.0, flatShading: true
+    });
+
+    const rifle = new THREE.Group();
+    rifle.add(new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.8), woodHandleMat));
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.2, 5), metalToolMat);
+    barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.06, -0.6); rifle.add(barrel);
+
+    const muzzleLight = new THREE.PointLight(0xffbe44, 0, 16);
+    muzzleLight.position.set(0, 0.06, -1.25);
+    rifle.add(muzzleLight);
+
+    const flashMat = new THREE.MeshBasicMaterial({ color: 0xffe680, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
+    const flashMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.35), flashMat);
+    flashMesh.position.set(0, 0.06, -1.26);
+    flashMesh.visible = false;
+    rifle.add(flashMesh);
+
+    rifle.position.set(0.28, -0.25, -0.6);
+    weaponGroup.add(rifle);
+
+    const comboAxe = new THREE.Group();
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.04, 0.95, 5), woodHandleMat);
+    handle.rotation.x = 0.25; handle.position.set(0, 0.1, 0); comboAxe.add(handle);
+    const eyeCollar = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.14, 0.22), metalToolMat);
+    eyeCollar.position.set(0, 0.48, -0.1); comboAxe.add(eyeCollar);
+    const fAxe = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.32, 0.26), cuttingEdgeMat);
+    fAxe.position.set(0, 0.5, -0.25); fAxe.rotation.x = -0.1; comboAxe.add(fAxe);
+    const rPick = new THREE.Mesh(new THREE.ConeGeometry(0.065, 0.38, 4), cuttingEdgeMat);
+    rPick.rotation.x = Math.PI / 2 + 0.35; rPick.position.set(0, 0.52, 0.12); comboAxe.add(rPick);
+    comboAxe.position.set(0.25, -0.32, -0.52); comboAxe.rotation.set(0.2, -0.3, 0); comboAxe.visible = false;
+    weaponGroup.add(comboAxe);
+
+    const flintGroup = new THREE.Group();
+    const flintStone = new THREE.Mesh(new THREE.DodecahedronGeometry(0.09, 0), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 }));
+    flintStone.position.set(-0.08, 0, 0); flintGroup.add(flintStone);
+    const steelStriker = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.025, 4, 6, Math.PI * 1.5), metalToolMat);
+    steelStriker.position.set(0.08, 0, 0); steelStriker.rotation.z = Math.PI / 4; flintGroup.add(steelStriker);
+    flintGroup.position.set(0.25, -0.22, -0.45); flintGroup.visible = false;
+    weaponGroup.add(flintGroup);
+
+    const flintSparkGroup = new THREE.Group();
+    const sparkParticles = [];
+    const sparkMat = new THREE.MeshBasicMaterial({ color: 0xffd36a, transparent: true, opacity: 1, blending: THREE.AdditiveBlending });
+    for (let i = 0; i < 10; i++) {
+      const spark = new THREE.Mesh(new THREE.SphereGeometry(0.012, 3, 3), sparkMat.clone());
+      spark.visible = false;
+      flintSparkGroup.add(spark);
+      sparkParticles.push({ mesh: spark, velocity: new THREE.Vector3(), life: 0 });
+    }
+    flintGroup.add(flintSparkGroup);
+    function triggerFlintSparks() {
+      sparkParticles.forEach((p, i) => {
+        p.mesh.visible = true; p.mesh.material.opacity = 1; p.life = 0.18 + Math.random() * 0.16;
+        p.mesh.position.set(0.03 + (Math.random() - 0.5) * 0.08, (Math.random() - 0.5) * 0.05, -0.08 + (Math.random() - 0.5) * 0.04);
+        p.velocity.set((Math.random() - 0.5) * 1.8, (Math.random() - 0.15) * 1.7, -0.4 - Math.random() * 1.2);
+      });
+    }
+
+    const torchGroup = new THREE.Group();
+    const torchWood = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.026, 0.55, 4), woodHandleMat);
+    torchWood.position.set(0, 0, 0);
+    torchGroup.add(torchWood);
+    const torchFlame = new THREE.Mesh(new THREE.ConeGeometry(0.065, 0.18, 4), new THREE.MeshBasicMaterial({ color: 0xffaa22 }));
+    torchFlame.position.set(0, 0.32, 0);
+    torchGroup.add(torchFlame);
+    
+    const torchViewLight = new THREE.PointLight(0xff9933, 4.0, 30);
+    torchViewLight.position.set(0, 0.36, 0);
+    torchGroup.add(torchViewLight);
+
+    torchGroup.position.set(-0.52, -0.34, -0.50);
+    torchGroup.rotation.set(0.25, 0.35, -0.35);
+    torchGroup.visible = false;
+    weaponGroup.add(torchGroup);
+
+    const playerWorldTorchLight = new THREE.PointLight(0xff8c20, 0, 180, 1.2);
+    scene.add(playerWorldTorchLight);
+
+    function selectTool(toolKey) {
+      currentTool = toolKey;
+      rifle.visible = (toolKey === 'rifle');
+      comboAxe.visible = (toolKey === 'axe');
+      flintGroup.visible = (toolKey === 'flint');
+
+      document.getElementById('slot-1').className = 'hotbar-slot' + (toolKey === 'rifle' ? ' active' : '');
+      document.getElementById('slot-2').className = 'hotbar-slot' + (toolKey === 'axe' ? ' active' : '');
+      document.getElementById('slot-3').className = 'hotbar-slot' + (toolKey === 'flint' ? ' active' : '');
+    }
+
+    const bears = []; const bearHitboxes = [];
+    function randomAnimalXZ(minRadius = 160, maxRadius = PLAYABLE_RADIUS - 80, minPlayerDistance = 85) {
+      for (let attempt = 0; attempt < 100; attempt++) {
+        const ang = Math.random() * Math.PI * 2;
+        const rad = minRadius + Math.random() * (maxRadius - minRadius);
+        const x = Math.cos(ang) * rad;
+        const z = Math.sin(ang) * rad;
+        if (Math.hypot(x - SPAWN_POS.x, z - SPAWN_POS.z) >= minPlayerDistance && !isOnIce(x, z)) {
+          return { x, z };
+        }
+      }
+      return { x: SPAWN_POS.x + 100, z: SPAWN_POS.z };
+    }
+
+    let nextBearId = 0;
+    function spawnBear() {
+      const pos = randomAnimalXZ(175, PLAYABLE_RADIUS - 90, 100);
+      const isTank = (nextBearId % 4 === 0);
+      bears.push(createBear(nextBearId++, pos.x, pos.z, isTank));
+    }
+    for (let i = 0; i < INITIAL_BEARS; i++) spawnBear();
+    let bearSpawnTimer = 0.0;
+
+    function playGoldenBearRoar() {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const master = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+      master.gain.setValueAtTime(0.001, now);
+      master.gain.exponentialRampToValueAtTime(0.58, now + 0.08);
+      master.gain.exponentialRampToValueAtTime(0.001, now + 2.4);
+      filter.type = 'lowpass'; filter.frequency.setValueAtTime(260, now);
+      master.connect(filter); filter.connect(audioCtx.destination);
+      [46, 58, 74].forEach((f, i) => {
+        const o = audioCtx.createOscillator(); o.type = i === 2 ? 'square' : 'sawtooth';
+        o.frequency.setValueAtTime(f, now);
+        o.frequency.exponentialRampToValueAtTime(f * 0.52, now + 2.1);
+        o.connect(master); o.start(now); o.stop(now + 2.4);
+      });
+    }
+
+    let lastGoldenAttackRoar = -Infinity;
+    function playGoldenBearAttackRoar() {
+      if (!audioCtx) return;
+      const nowMs = performance.now();
+      if (nowMs - lastGoldenAttackRoar < 1100) return;
+      lastGoldenAttackRoar = nowMs;
+      const now = audioCtx.currentTime;
+      const master = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(520, now);
+      filter.Q.setValueAtTime(1.4, now);
+      master.gain.setValueAtTime(0.001, now);
+      master.gain.exponentialRampToValueAtTime(1.25, now + 0.045);
+      master.gain.exponentialRampToValueAtTime(0.55, now + 0.28);
+      master.gain.exponentialRampToValueAtTime(0.001, now + 1.15);
+      master.connect(filter); filter.connect(audioCtx.destination);
+      [38, 47, 61, 83].forEach((f, i) => {
+        const o = audioCtx.createOscillator();
+        o.type = i === 3 ? 'square' : 'sawtooth';
+        o.frequency.setValueAtTime(f, now);
+        o.frequency.exponentialRampToValueAtTime(f * 0.42, now + 0.9);
+        o.detune.setValueAtTime((i - 1.5) * 7, now);
+        o.connect(master); o.start(now); o.stop(now + 1.2);
+      });
+      const buffer = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * 0.55), audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const t = i / data.length;
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 2.2);
+      }
+      const noise = audioCtx.createBufferSource(); noise.buffer = buffer;
+      const noiseFilter = audioCtx.createBiquadFilter();
+      noiseFilter.type = 'bandpass'; noiseFilter.frequency.setValueAtTime(180, now); noiseFilter.Q.setValueAtTime(0.7, now);
+      const noiseGain = audioCtx.createGain();
+      noiseGain.gain.setValueAtTime(0.001, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.65, now + 0.035);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.52);
+      noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(audioCtx.destination); noise.start(now);
+    }
+
+    function spawnGoldenBear() {
+      if (goldenBearSpawned) return;
+      goldenBearSpawned = true;
+      goldenBearActive = true;
+      bears.forEach(b => { if (!b.isGolden) { b.isCharging = false; b.isAlertPatrol = false; b.recoilTimer = 0; } });
+
+      // Spawn close enough to matter, but not directly on top of the player.
+      const playerPos = controls.getObject().position;
+      const ang = Math.random() * Math.PI * 2;
+      const dist = 160 + Math.random() * 80; // 160–240 units: always within 250
+      let gx = playerPos.x + Math.cos(ang) * dist;
+      let gz = playerPos.z + Math.sin(ang) * dist;
+      const radial = Math.hypot(gx, gz);
+      if (radial > PLAYABLE_RADIUS - 35) {
+        const scale = (PLAYABLE_RADIUS - 35) / radial; gx *= scale; gz *= scale;
+      }
+
+      goldenBear = createBear(nextBearId++, gx, gz, false, true);
+      goldenBear.isHungry = true;
+      goldenBear.isAlertPatrol = true;
+      goldenBear.isCharging = false;
+      goldenBear.wanderTarget.set(playerPos.x, 0, playerPos.z);
+      bears.push(goldenBear);
+      playGoldenBearRoar();
+    }
+
+    function createBear(id, x, z, isTank, isGolden) {
+      const group = new THREE.Group();
+      const golden = !!isGolden;
+      const bodyColor = golden ? 0xffcc00 : (isTank ? 0x221308 : 0x2c1d13);
+      const humpColor = golden ? 0xff9900 : (isTank ? 0x2d1a0d : 0x3d281a);
+      const muzzleColor = golden ? 0xffea88 : 0x6e5138;
+      const noseColor = 0x111111;
+
+      const scaleMult = golden ? 2.8 : (isTank ? 1.15 : 1.0);
+
+      const staticParts = [];
+      const rearTorsoGeo = new THREE.BoxGeometry(2.1 * scaleMult, 2.3 * scaleMult, 2.2 * scaleMult);
+      rearTorsoGeo.translate(0, 1.6 * scaleMult, -0.9 * scaleMult);
+      staticParts.push([rearTorsoGeo, bodyColor]);
+
+      const frontTorsoGeo = new THREE.BoxGeometry(2.4 * scaleMult, 2.5 * scaleMult, 2.0 * scaleMult);
+      frontTorsoGeo.translate(0, 1.75 * scaleMult, 0.8 * scaleMult);
+      staticParts.push([frontTorsoGeo, bodyColor]);
+
+      const humpGeo = new THREE.DodecahedronGeometry(1.2 * scaleMult, 0);
+      humpGeo.scale(0.9, 1.1, 1.1);
+      humpGeo.translate(0, 2.6 * scaleMult, 0.7 * scaleMult);
+      staticParts.push([humpGeo, humpColor]);
+
+      const headY = 2.2 * scaleMult, headZ = 2.0 * scaleMult;
+      const skullGeo = new THREE.BoxGeometry(1.3 * scaleMult, 1.25 * scaleMult, 1.4 * scaleMult);
+      skullGeo.translate(0, headY, headZ);
+      staticParts.push([skullGeo, bodyColor]);
+
+      const snoutGeo = new THREE.BoxGeometry(0.85 * scaleMult, 0.75 * scaleMult, 1.1 * scaleMult);
+      snoutGeo.translate(0, headY - 0.2 * scaleMult, headZ + 1.0 * scaleMult);
+      staticParts.push([snoutGeo, muzzleColor]);
+
+      const noseGeo = new THREE.BoxGeometry(0.35, 0.25, 0.2);
+      noseGeo.translate(0, headY + 0.1 * scaleMult, headZ + 1.55 * scaleMult);
+      staticParts.push([noseGeo, noseColor]);
+
+      const earBaseGeo = new THREE.DodecahedronGeometry(0.25 * scaleMult, 0);
+      const earLGeo = earBaseGeo.clone(); earLGeo.translate(0.6 * scaleMult, headY + 0.65 * scaleMult, headZ - 0.2);
+      staticParts.push([earLGeo, bodyColor]);
+      const earRGeo = earBaseGeo.clone(); earRGeo.translate(-0.6 * scaleMult, headY + 0.65 * scaleMult, headZ - 0.2);
+      staticParts.push([earRGeo, bodyColor]);
+
+      const legGeoBase = new THREE.BoxGeometry(0.7 * scaleMult, 1.6 * scaleMult, 0.7 * scaleMult);
+      const rearLegOffsets = [
+        [-0.8 * scaleMult, 0.8 * scaleMult, -1.3 * scaleMult],
+        [0.8 * scaleMult, 0.8 * scaleMult, -1.3 * scaleMult]
+      ];
+      rearLegOffsets.forEach(p => {
+        const g = legGeoBase.clone(); g.translate(p[0], p[1], p[2]); staticParts.push([g, bodyColor]);
+      });
+
+      const mergedGeo = mergeGeometries(staticParts.map(([geo, color]) => paintGeometry(geo, color)), false);
+      const bodyMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.93, flatShading: true });
+      const bodyMesh = new THREE.Mesh(mergedGeo, bodyMat);
+      bodyMesh.castShadow = true;
+      if (golden) {
+        bodyMat.emissive = new THREE.Color(0x6b3f00);
+        bodyMat.emissiveIntensity = 1.8;
+      }
+      group.add(bodyMesh);
+
+      const frontLegMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.95, flatShading: true });
+      const frontLegOffsets = [
+        [-0.85 * scaleMult, 0.8 * scaleMult, 1.1 * scaleMult],
+        [0.85 * scaleMult, 0.8 * scaleMult, 1.1 * scaleMult]
+      ];
+      const legMeshes = [];
+      frontLegOffsets.forEach(p => {
+        const leg = new THREE.Mesh(legGeoBase, frontLegMat); leg.position.set(p[0], p[1], p[2]); group.add(leg);
+        legMeshes.push(leg);
+      });
+
+      if (golden) {
+        const glow = new THREE.PointLight(0xffb300, 18.0, 72, 1.25);
+        glow.position.set(0, 2.6 * scaleMult, 0.5 * scaleMult);
+        group.add(glow);
+      }
+
+      const hitBox = new THREE.Mesh(new THREE.BoxGeometry(2.8 * scaleMult, 3.2 * scaleMult, 4.6 * scaleMult), new THREE.MeshBasicMaterial({ visible: false }));
+      hitBox.position.y = 1.6 * scaleMult; group.add(hitBox); hitBox.userData = { parentId: id, type: 'bear' }; bearHitboxes.push(hitBox);
+      group.position.set(x, getTerrainHeight(x, z), z); scene.add(group);
+      
+      return { 
+        id, 
+        mesh: group, 
+        bodyMat, 
+        health: golden ? 750 : (isTank ? 180 : 100),
+        axeHits: 0,
+        isDead: false, 
+        harvestedHits: 0,
+        harvested: false, 
+        isCharging: false, 
+        isAlertPatrol: false,
+        lastWanderTime: 0, 
+        recoilTimer: 0, 
+        rearTimer: 0.0,
+        rearProgress: 0.0,
+        frontLegs: [legMeshes[0], legMeshes[1]],
+        wanderTarget: new THREE.Vector3(x, 0, z),
+        isGolden: golden,
+        isHungry: false,
+        lastTrackTime: 0
+      };
+    }
+
+    function elkCanTraverseTo(x, z, maxSlope = 0.42) {
+      if (Math.hypot(x, z) > PLAYABLE_RADIUS - 5 || isOnIce(x, z)) return false;
+      const s = 4.5;
+      const hx1 = getTerrainHeight(x + s, z), hx0 = getTerrainHeight(x - s, z);
+      const hz1 = getTerrainHeight(x, z + s), hz0 = getTerrainHeight(x, z - s);
+      const gx = (hx1 - hx0) / (2 * s);
+      const gz = (hz1 - hz0) / (2 * s);
+      return Math.hypot(gx, gz) <= maxSlope;
+    }
+
+    function elkSlopeAt(x, z) {
+      const s = 4.5;
+      const gx = (getTerrainHeight(x + s, z) - getTerrainHeight(x - s, z)) / (2 * s);
+      const gz = (getTerrainHeight(x, z + s) - getTerrainHeight(x, z - s)) / (2 * s);
+      return Math.hypot(gx, gz);
+    }
+
+    // Allow a step if it is legal, or if it is no steeper than where the elk already stands
+    // (so an elk standing on a steep patch can still walk or run out of it instead of freezing).
+    function elkCanStepTo(ex, ez, nx, nz, maxSlope) {
+      if (Math.hypot(nx, nz) > PLAYABLE_RADIUS - 5 || isOnIce(nx, nz)) return false;
+      const here = elkSlopeAt(ex, ez);
+      return elkSlopeAt(nx, nz) <= Math.max(maxSlope, here);
+    }
+
+    function chooseElkFleeDirection(ePos, threatX, threatZ) {
+      const away = new THREE.Vector3(ePos.x - threatX, 0, ePos.z - threatZ);
+      if (away.lengthSq() < 0.01) away.set(Math.random() - 0.5, 0, Math.random() - 0.5);
+      away.normalize();
+
+      let best = null;
+      let bestScore = -Infinity;
+      // Prefer directions away from the player, but only if the elk can actually
+      // travel there. This keeps fleeing elk from charging straight up mountain walls.
+      for (let i = 0; i < 24; i++) {
+        const a = (i / 24) * Math.PI * 2;
+        const candidate = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
+        const test1 = new THREE.Vector3(ePos.x + candidate.x * 18, 0, ePos.z + candidate.z * 18);
+        const test2 = new THREE.Vector3(ePos.x + candidate.x * 42, 0, ePos.z + candidate.z * 42);
+        if (!elkCanTraverseTo(test1.x, test1.z) || !elkCanTraverseTo(test2.x, test2.z)) continue;
+        const awayScore = candidate.dot(away);
+        const slopePenalty = Math.abs(getTerrainHeight(test2.x, test2.z) - getTerrainHeight(ePos.x, ePos.z)) / 42;
+        const score = awayScore * 3.0 - slopePenalty * 2.0 + Math.random() * 0.18;
+        if (score > bestScore) { bestScore = score; best = candidate; }
+      }
+      if (best) return best;
+
+      // Last resort: find any legal direction rather than freezing the elk in place.
+      for (let i = 0; i < 24; i++) {
+        const a = (i / 24) * Math.PI * 2;
+        const candidate = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
+        if (elkCanTraverseTo(ePos.x + candidate.x * 12, ePos.z + candidate.z * 12)) return candidate;
+      }
+      // Still nothing: head in whichever direction is gentlest and not into the lake or map edge.
+      let gentlest = null, gentlestScore = Infinity;
+      for (let i = 0; i < 24; i++) {
+        const a = (i / 24) * Math.PI * 2;
+        const candidate = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
+        const tx = ePos.x + candidate.x * 8, tz = ePos.z + candidate.z * 8;
+        if (Math.hypot(tx, tz) > PLAYABLE_RADIUS - 5 || isOnIce(tx, tz)) continue;
+        const score = elkSlopeAt(tx, tz) - candidate.dot(away) * 0.15;
+        if (score < gentlestScore) { gentlestScore = score; gentlest = candidate; }
+      }
+      return gentlest || away;
+    }
+
+    const elks = []; const elkHitboxes = [];
+    let nextElkId = 0;
+
+    for (let i = 0; i < TOTAL_ELK; i++) {
+      const theta = (i * 2.39996) % (Math.PI * 2);
+      const radius = 135 + ((i % 11) / 10.0) * (PLAYABLE_RADIUS - 210);
+      let ex = Math.cos(theta) * radius + (Math.random() - 0.5) * 20;
+      let ez = Math.sin(theta) * radius + (Math.random() - 0.5) * 20;
+      if (isOnIce(ex, ez)) { ex += 130; }
+      // Nudge the spawn outward in rings until it sits on ground the elk can actually walk on.
+      for (let tries = 0; tries < 40 && !elkCanTraverseTo(ex, ez, 0.30); tries++) {
+        const ang = Math.random() * Math.PI * 2, r = 10 + tries * 3;
+        const nx = ex + Math.cos(ang) * r, nz = ez + Math.sin(ang) * r;
+        if (elkCanTraverseTo(nx, nz, 0.30)) { ex = nx; ez = nz; break; }
+      }
+      elks.push(createElk(nextElkId++, ex, ez));
+    }
+
+    function createElk(id, x, z) {
+      const group = new THREE.Group();
+      const coatColor = 0x825b38;
+      const antlerColor = 0xc8ba9e;
+      const parts = [];
+
+      const bodyGeo = new THREE.BoxGeometry(1.3, 1.6, 2.7);
+      bodyGeo.translate(0, 1.7, 0);
+      parts.push([bodyGeo, coatColor]);
+
+      const neckGeo = new THREE.BoxGeometry(0.7, 1.4, 0.8);
+      neckGeo.rotateX(-0.4); neckGeo.translate(0, 2.4, 1.2);
+      parts.push([neckGeo, coatColor]);
+
+      const headGeo = new THREE.BoxGeometry(0.75, 0.7, 1.2);
+      headGeo.translate(0, 3.1, 1.7);
+      parts.push([headGeo, coatColor]);
+
+      const beamLGeo = new THREE.CylinderGeometry(0.04, 0.07, 1.5, 3);
+      beamLGeo.rotateX(-0.3); beamLGeo.rotateZ(0.35); beamLGeo.translate(0.4, 3.8, 1.4);
+      parts.push([beamLGeo, antlerColor]);
+      const beamRGeo = new THREE.CylinderGeometry(0.04, 0.07, 1.5, 3);
+      beamRGeo.rotateX(-0.3); beamRGeo.rotateZ(-0.35); beamRGeo.translate(-0.4, 3.8, 1.4);
+      parts.push([beamRGeo, antlerColor]);
+
+      const legGeoBase = new THREE.BoxGeometry(0.35, 1.8, 0.35);
+      const lOffsets = [[-0.45, 0.9, 1.0], [0.45, 0.9, 1.0], [-0.45, 0.9, -1.0], [0.45, 0.9, -1.0]];
+      lOffsets.forEach(p => {
+        const g = legGeoBase.clone(); g.translate(p[0], p[1], p[2]); parts.push([g, coatColor]);
+      });
+
+      const mergedGeo = mergeGeometries(parts.map(([geo, color]) => paintGeometry(geo, color)), false);
+      const coatMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, flatShading: true });
+      const bodyMesh = new THREE.Mesh(mergedGeo, coatMat);
+      bodyMesh.castShadow = true;
+      group.add(bodyMesh);
+
+      const hitBox = new THREE.Mesh(new THREE.BoxGeometry(2.0, 3.0, 3.4), new THREE.MeshBasicMaterial({ visible: false }));
+      hitBox.position.y = 1.8; group.add(hitBox); hitBox.userData = { parentId: id, type: 'elk' }; elkHitboxes.push(hitBox);
+
+      group.position.set(x, getTerrainHeight(x, z), z); scene.add(group);
+
+      return {
+        id,
+        mesh: group,
+        coatMat,
+        health: 1,
+        axeHits: 0,
+        isDead: false,
+        harvestedHits: 0,
+        harvested: false,
+        lastWanderTime: 0,
+        lastTrackTime: 0,
+        isFleeing: false,
+        fleeTimer: 0,
+        fleeDirection: new THREE.Vector3(0, 0, 1),
+        fleeTarget: new THREE.Vector3(x, 0, z),
+        fleeTurnTimer: 0,
+        fleeSpeed: 0,
+        wanderTarget: new THREE.Vector3(x, 0, z)
+      };
+    }
+
+    const tracks = [];
+    const trackGeo = new THREE.PlaneGeometry(0.24, 0.38);
+    trackGeo.rotateX(-Math.PI / 2);
+    const trackMat = new THREE.MeshBasicMaterial({ color: 0x3a485a, transparent: true, opacity: 0.65 });
+
+    function dropAnimalTrack(x, z, yaw, sizeMult = 1) {
+      if (tracks.length > 50) {
+        const old = tracks.shift();
+        scene.remove(old.mesh);
+      }
+      const mesh = new THREE.Mesh(trackGeo, trackMat);
+      mesh.position.set(x, getTerrainHeight(x, z) + 0.03, z);
+      mesh.rotation.y = yaw;
+      mesh.scale.set(sizeMult, 1, sizeMult);
+      scene.add(mesh);
+      tracks.push({ mesh, life: 26.0 });
+    }
+
+    const GRID_SIZE = 80;
+    const grid = new Map();
+
+    function getGridKey(x, z) {
+      return `${Math.floor(x / GRID_SIZE)}_${Math.floor(z / GRID_SIZE)}`;
+    }
+
+    colliders.forEach(col => {
+      const key = getGridKey(col.x, col.z);
+      if (!grid.has(key)) grid.set(key, []);
+      grid.get(key).push(col);
+    });
+
+    function resolveCollisions(pos, entityRadius) {
+      for (let b of boxColliders) {
+        if (pos.x > b.minX - entityRadius && pos.x < b.maxX + entityRadius &&
+            pos.z > b.minZ - entityRadius && pos.z < b.maxZ + entityRadius) {
+          const dLeft = Math.abs(pos.x - (b.minX - entityRadius));
+          const dRight = Math.abs(pos.x - (b.maxX + entityRadius));
+          const dTop = Math.abs(pos.z - (b.minZ - entityRadius));
+          const dBottom = Math.abs(pos.z - (b.maxZ + entityRadius));
+
+          const minD = Math.min(dLeft, dRight, dTop, dBottom);
+          if (minD === dLeft) pos.x = b.minX - entityRadius;
+          else if (minD === dRight) pos.x = b.maxX + entityRadius;
+          else if (minD === dTop) pos.z = b.minZ - entityRadius;
+          else pos.z = b.maxZ + entityRadius;
+        }
+      }
+
+      const gx = Math.floor(pos.x / GRID_SIZE);
+      const gz = Math.floor(pos.z / GRID_SIZE);
+
+      for (let ox = -1; ox <= 1; ox++) {
+        for (let oz = -1; oz <= 1; oz++) {
+          const cellColliders = grid.get(`${gx + ox}_${gz + oz}`);
+          if (!cellColliders) continue;
+
+          for (let i = 0; i < cellColliders.length; i++) {
+            const col = cellColliders[i];
+            const dx = pos.x - col.x;
+            const dz = pos.z - col.z;
+            const distSq = dx * dx + dz * dz;
+            const minDist = col.radius + entityRadius;
+            if (distSq < minDist * minDist && distSq > 0.0001) {
+              const dist = Math.sqrt(distSq);
+              pos.x = col.x + (dx / dist) * minDist;
+              pos.z = col.z + (dz / dist) * minDist;
+            }
+          }
+        }
+      }
+    }
+
+    const startBlocker = document.getElementById('start-blocker');
+    const blocker = document.getElementById('blocker');
+    const deathScreen = document.getElementById('death-screen');
+    const winScreen = document.getElementById('win-screen');
+    const healthBar = document.getElementById('health-bar');
+    const warmthBar = document.getElementById('warmth-bar');
+    const hungerBar = document.getElementById('hunger-bar');
+    const tempVal = document.getElementById('temp-val');
+    const ammoVal = document.getElementById('ammo-val');
+    const oreVal = document.getElementById('ore-val');
+    const woodVal = document.getElementById('wood-val');
+    const stoneVal = document.getElementById('stone-val');
+    const meatVal = document.getElementById('meat-val');
+    updateAxeUI();
+    const cookedVal = document.getElementById('cooked-val');
+    const peltsVal = document.getElementById('pelts-val');
+    const snowshoeVal = document.getElementById('snowshoe-val');
+    const torchUI = document.getElementById('torch-ui');
+    const torchVal = document.getElementById('torch-val');
+    const cabinStatusUI = document.getElementById('cabin-status-ui');
+    const reloadC = document.getElementById('reload-container');
+    const reloadFill = document.getElementById('reload-fill');
+    const vignetteOverlay = document.getElementById('vignette-overlay');
+    const criticalBloodOverlay = document.getElementById('critical-blood-overlay');
+    const conditionWarning = document.getElementById('condition-warning');
+    let conditionWarningShown = false;
+    const notificationToast = document.getElementById('notification-toast');
+    const dayVal = document.getElementById('day-val');
+
+    const oreUI = document.getElementById('ore-ui');
+    const woodUI = document.getElementById('wood-ui');
+    const stoneUI = document.getElementById('stone-ui');
+    const meatUI = document.getElementById('meat-ui');
+    const rawMeatSpan = document.getElementById('raw-meat-span');
+    const cookedMeatSpan = document.getElementById('cooked-meat-span');
+    const peltUI = document.getElementById('pelt-ui');
+    const snowshoeUI = document.getElementById('snowshoe-ui');
+
+    function showToast(message, duration = 5000) {
+      if (toastTimeout) clearTimeout(toastTimeout);
+      notificationToast.innerText = message;
+      notificationToast.style.opacity = '1';
+      toastTimeout = setTimeout(() => {
+        notificationToast.style.opacity = '0';
+      }, duration);
+    }
+
+    function checkCabinMilestones() {
+      if (wood >= 15 && wood < 25 && !shownProgressToast) {
+        shownProgressToast = true;
+        const stoneNeeded = Math.max(0, 10 - stone);
+        showToast(`10 logs and ${stoneNeeded} stone away from home sweet home!`);
+      }
+      if (wood >= 25 && stone >= 10 && !shownReadyToast && !cabin) {
+        shownReadyToast = true;
+        showToast('Click B to build cabin!', 5000);
+      }
+    }
+
+    function updateAxeUI() {
+      const axeLevelEl = document.getElementById('axe-level');
+      if (axeLevelEl) {
+        axeLevelEl.innerText = godModeActive ? 'GOD LVL 5' : (axeLevel >= 5 ? 'LVL 5' : `LVL ${axeLevel}`);
+        if (axeLevel > 1 && !godModeActive) axeLevelEl.title = `${axeLevelHits}/${axeDurability[axeLevel]} hits toward dulling`;
+      }
+    }
+
+    function registerAxeHit() {
+      if (godModeActive || axeLevel <= 1) return;
+      axeLevelHits += 1;
+      if (axeLevelHits >= axeDurability[axeLevel]) {
+        axeLevel -= 1;
+        axeLevelHits = 0;
+        showToast(`The axe edge dulls back to level ${axeLevel}.`, 2200);
+        playTone(150, 0.25, 0.12, 'sawtooth');
+      }
+      updateAxeUI();
+    }
+
+    function getAxeRequiredHits(target, isGolden = false) {
+      if (godModeActive) return 1;
+
+      // Axe upgrades are meant to make harvesting/mining dramatically faster,
+      // but living animals should remain dangerous and tough targets.
+      // Normal bears top out at a 2-hit kill at level 5; the Golden Mega Bear
+      // deliberately stays a many-dozen-hit fight even with a maxed axe.
+      const hitTables = {
+        elk:  [6, 5, 4, 3, 2],
+        bear: [8, 6, 4, 3, 2],
+        goldenBear: [60, 50, 45, 40, 36],
+        log:  [3, 2, 1, 1, 1],
+        stone:[7, 5, 3, 2, 1]
+      };
+
+      if (target === 'bear' && isGolden) return hitTables.goldenBear[axeLevel - 1];
+      return hitTables[target][axeLevel - 1];
+    }
+
+    function syncInventoryVisibility() {
+      if (hasDiscoveredOre) oreUI.style.display = 'inline';
+      if (hasDiscoveredWood) woodUI.style.display = 'block';
+      if (hasDiscoveredStone) stoneUI.style.display = 'block';
+      if (hasDiscoveredRawMeat || hasDiscoveredCookedMeat) meatUI.style.display = 'block';
+      if (hasDiscoveredRawMeat) rawMeatSpan.style.display = 'inline';
+      if (hasDiscoveredCookedMeat) cookedMeatSpan.style.display = 'inline';
+      if (hasDiscoveredPelts || godModeActive) {
+        peltUI.style.display = 'block';
+        peltsVal.innerText = godModeActive ? '8 (MAX)' : `${pelts}`;
+      }
+      if (hasDiscoveredSnowshoes || godModeActive) snowshoeUI.style.display = 'block';
+      checkCabinMilestones();
+    }
+
+    startBlocker.addEventListener('click', () => {
+      initAudio();
+      controls.lock();
+    });
+
+    controls.addEventListener('lock', () => {
+      startBlocker.style.display = 'none';
+      blocker.style.display = 'none';
+      checkCabinMilestones();
+      lastPlayerPos.copy(controls.getObject().position);
+    });
+
+    controls.addEventListener('unlock', () => {
+      if (loreModalOpen) { blocker.style.display = 'none'; return; }
+      if (!isDead && startBlocker.style.display === 'none') { blocker.style.display = 'flex'; }
+    });
+
+    blocker.addEventListener('click', () => {
+      controls.lock();
+    });
+
+    document.getElementById('win-tip').addEventListener('click', () => {
+      winScreen.style.display = 'none';
+      godModeActive = true;
+      pelts = 8;
+      snowshoeCount = 2;
+      hasSnowshoesEquipped = true;
+      snowshoeDurability = 999999;
+      snowshoeVal.innerText = '2 / 2 (Infinite)';
+      axeLevel = 5;
+      updateAxeUI();
+      syncInventoryVisibility();
+      showToast('GOD MODE ACTIVATED: Infinite pelts, snowshoes, unbreakable axe, 2x speeds!', 8000);
+      controls.lock();
+    });
+
+    controls.getObject().position.set(SPAWN_POS.x, getTerrainHeight(SPAWN_POS.x, SPAWN_POS.z) + 2.5, SPAWN_POS.z);
+
+    const keys = { w: false, a: false, s: false, d: false, space: false };
+    window.addEventListener('keydown', (e) => {
+      const k = e.key.toLowerCase();
+      if (keys.hasOwnProperty(k)) keys[k] = true;
+      if (e.code === 'Space') keys.space = true;
+      if (e.code === 'KeyP' && e.ctrlKey && e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        pageBeamsOn = !pageBeamsOn;
+        lorePages.forEach(l => { l.beam.visible = pageBeamsOn; });
+      }
+
+      // Human-player max-everything cheat: Ctrl+Shift+H
+      if (e.code === 'KeyH' && e.ctrlKey && e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        godModeActive = true;
+
+        // Max survival stats.
+        health = 100;
+        warmth = 100;
+        hunger = 100;
+
+        // Max practical inventory / progression.
+        ammo = 999;
+        wood = 999;
+        stone = 999;
+        rawMeat = 999;
+        cookedMeat = 999;
+        rawOre = 999;
+        pelts = 8;
+
+        // Unlock every discovered inventory category in the UI.
+        hasDiscoveredOre = true;
+        hasDiscoveredWood = true;
+        hasDiscoveredStone = true;
+        hasDiscoveredRawMeat = true;
+        hasDiscoveredCookedMeat = true;
+        hasDiscoveredPelts = true;
+        hasDiscoveredSnowshoes = true;
+
+        // Max axe / snowshoes.
+        axeLevel = 5;
+        axeLevelHits = 0;
+        snowshoeCount = 2;
+        hasSnowshoesEquipped = true;
+        snowshoeDurability = 999999;
+
+        // Mark progression requirements complete as well.
+        hasCookedAtFire = true;
+        hasForgedBullets = true;
+
+        // Refresh all visible counters/UI.
+        const maxAmmoEl = document.getElementById('ammo');
+        if (maxAmmoEl) maxAmmoEl.innerText = '999';
+        const woodEl = document.getElementById('wood');
+        if (woodEl) woodEl.innerText = '999';
+        const stoneEl = document.getElementById('stone');
+        if (stoneEl) stoneEl.innerText = '999';
+        const rawMeatEl = document.getElementById('raw-meat');
+        if (rawMeatEl) rawMeatEl.innerText = '999';
+        const cookedMeatEl = document.getElementById('cooked-meat');
+        if (cookedMeatEl) cookedMeatEl.innerText = '999';
+        const oreEl = document.getElementById('ore');
+        if (oreEl) oreEl.innerText = '999';
+        const peltEl = document.getElementById('pelts');
+        if (peltEl) peltEl.innerText = '8 (MAX)';
+        const snowshoeEl = document.getElementById('snowshoes');
+        if (snowshoeEl) snowshoeEl.innerText = '2 / 2 (Infinite)';
+
+        updateAxeUI();
+        syncInventoryVisibility();
+        showToast('MAX EVERYTHING: Human player fully upgraded!', 5000);
+      }
+
+      if (k === '1') selectTool('rifle');
+      if (k === '2') selectTool('axe');
+      if (k === '3') selectTool('flint');
+      
+      if (k === 'c') {
+        const pPos = controls.getObject().position;
+        const nearFire = campfires.find(f => Math.hypot(pPos.x - f.x, pPos.z - f.z) < 4.2);
+        
+        if (nearFire) {
+          if (wood >= 1) {
+            wood -= 1;
+            woodVal.innerText = wood;
+            nearFire.logsFed += 1;
+            const addedTime = nearFire.isCabinFire ? 300 : (10 + nearFire.logsFed * 10);
+            nearFire.timeLeft += addedTime;
+            playTone(280, 0.2, 0.1);
+            if (wood === 0) {
+              showToast('OUT OF FIREWOOD LOGS!', 3500);
+            }
+          } else {
+            showToast('OUT OF FIREWOOD LOGS!', 2500);
+            playTone(130, 0.2, 0.1, 'sawtooth');
+          }
+        } else if (!insideCabin) {
+          if (wood >= 1) {
+            wood -= 1;
+            woodVal.innerText = wood;
+            layFirewood(pPos.x, pPos.z);
+            playTone(240, 0.2, 0.1);
+            if (wood === 0) {
+              showToast('OUT OF FIREWOOD LOGS!', 3500);
+            }
+          } else {
+            showToast('OUT OF FIREWOOD LOGS!', 2500);
+            playTone(130, 0.2, 0.1, 'sawtooth');
+          }
+        }
+      }
+
+      if (k === 'b' && !cabin) {
+        if (wood >= 25 && stone >= 10) {
+          wood -= 25;
+          stone -= 10;
+          woodVal.innerText = wood;
+          stoneVal.innerText = stone;
+          buildCabin(controls.getObject().position.x, controls.getObject().position.z);
+          if (wood === 0) {
+            showToast('OUT OF FIREWOOD LOGS!', 3500);
+          }
+        } else {
+          playTone(140, 0.25, 0.1, 'sawtooth');
+        }
+      }
+      
+      if (k === 'x') {
+        if (cookedMeat > 0) {
+          cookedMeat -= 1;
+          cookedVal.innerText = cookedMeat;
+          hunger = Math.min(100, hunger + 50);
+          playTone(320, 0.2, 0.1);
+          if (cookedMeat === 0) {
+            showToast('OUT OF FOOD! (Cook more meat at a fire)', 4000);
+          }
+        } else {
+          showToast('OUT OF FOOD! (Cook more meat at a fire)', 3000);
+          playTone(140, 0.25, 0.1, 'sawtooth');
+        }
+      }
+
+      if (k === 'f') performCookingAndCrafting();
+    });
+
+    window.addEventListener('keyup', (e) => {
+      const k = e.key.toLowerCase();
+      if (keys.hasOwnProperty(k)) keys[k] = false;
+      if (e.code === 'Space') keys.space = false;
+    });
+
+    function performCookingAndCrafting() {
+      const pPos = controls.getObject().position;
+      const nearLitFire = campfires.some(f => f.isLit && Math.hypot(pPos.x - f.x, pPos.z - f.z) < 5.0 && f.timeLeft > 0);
+      if (!nearLitFire) {
+        showToast('You need to be near a lit fire.', 1800);
+        return;
+      }
+
+      // F always performs the first available action in this order:
+      // 1) cook raw meat, 2) smelt raw ore, 3) sharpen the axe.
+      // Each action is independent; cooking/smelting are NOT prerequisites for sharpening.
+      if (rawMeat > 0) {
+        rawMeat -= 1; meatVal.innerText = rawMeat;
+        cookedMeat += 1; cookedVal.innerText = cookedMeat;
+        hasDiscoveredCookedMeat = true;
+        hasCookedAtFire = true;
+        syncInventoryVisibility();
+        playTone(200, 0.25, 0.15);
+        showToast('Cooked 1 meat.', 1200);
+        return;
+      }
+
+      if (rawOre > 0) {
+        rawOre -= 1; oreVal.innerText = rawOre;
+        ammo += 6;
+        ammoVal.innerText = ammo;
+        hasForgedBullets = true;
+        runStats.oreSmelted += 1;
+        playTone(550, 0.2, 0.05);
+        showToast('Smelted 1 ore into 6 bullets.', 1200);
+        return;
+      }
+
+      if (axeLevel >= 5) {
+        showToast('Your axe is already at max level.', 1800);
+        return;
+      }
+
+      if (stone <= 0 && !godModeActive) {
+        showToast('You need stone to sharpen the axe.', 1800);
+        return;
+      }
+
+      // Sharpening is completely independent of whether the player has cooked
+      // meat or smelted ore. If there is nothing else to process, F sharpens.
+      if (!godModeActive) { stone -= 1; stoneVal.innerText = stone; }
+      axeLevel += 1;
+      axeLevelHits = 0;
+      updateAxeUI();
+      playTone(720, 0.25, 0.08);
+      showToast(`Whetstone used. Axe upgraded to level ${axeLevel}.`, 3000);
+    }
+
+    const shootRaycaster = new THREE.Raycaster();
+    const rifleReloadDuration = 4.0;
+    const axeCooldownDuration = 1.25;
+    function getRecoveryDuration(baseDuration) {
+      if (godModeActive) return baseDuration * 0.5;
+      const peak = health > 70 && hunger > 70;
+      if (!peak && !conditionWarningShown) {
+        conditionWarningShown = true;
+        conditionWarning.classList.remove('flash-once');
+        void conditionWarning.offsetWidth;
+        conditionWarning.classList.add('flash-once');
+        setTimeout(() => conditionWarning.classList.remove('flash-once'), 5000);
+      }
+      if (!peak) return baseDuration;
+      if (Math.abs(baseDuration - 4.0) < 0.01) return 3.0;
+      return 0.75;
+    }
+
+    function triggerDeathScreen(causeTitle, causeSubtitle, tipText) {
+      if (isDead || godModeActive) return;
+      isDead = true; 
+      controls.unlock(); 
+      blocker.style.display = 'none';
+
+      document.getElementById('death-title').innerText = causeTitle;
+      document.getElementById('death-cause').innerText = causeSubtitle;
+
+      const daysElapsed = (totalGameTime / DAY_LENGTH_SECONDS).toFixed(1);
+      const distFeet = Math.floor(runStats.totalDistance * 3.28084);
+
+      const statsHTML = `
+        <strong>FINAL EXPEDITION STATS:</strong><br>
+        • Survival Time: ${daysElapsed} Days<br>
+        • Distance Traveled: ${distFeet} feet<br>
+        • Wildlife Slain: ${runStats.bearsSlain} Bears, ${runStats.elksSlain} Elk<br>
+        • Resources Harvested: ${runStats.logsChopped} Logs, ${runStats.stonesMined} Stones, ${runStats.oreSmelted} Ore, ${runStats.peltsCollected} Pelts<br>
+        • Cabin Established: ${runStats.cabinBuilt ? 'Yes (Home Sweet Home)' : 'No'}
+      `;
+      document.getElementById('death-stats-box').innerHTML = statsHTML;
+      document.getElementById('death-tip').innerText = tipText;
+      deathScreen.style.display = 'flex';
+    }
+
+    function triggerWinScreen() {
+      controls.unlock();
+      blocker.style.display = 'none';
+
+      const daysElapsed = (totalGameTime / DAY_LENGTH_SECONDS).toFixed(1);
+      const distFeet = Math.floor(runStats.totalDistance * 3.28084);
+
+      const statsHTML = `
+        <strong>VICTORY EXPEDITION STATS:</strong><br>
+        • Survival Time: ${daysElapsed} Days<br>
+        • Distance Traveled: ${distFeet} feet<br>
+        • Wildlife Slain: ${runStats.bearsSlain} Bears, ${runStats.elksSlain} Elk<br>
+        • Resources Harvested: ${runStats.logsChopped} Logs, ${runStats.stonesMined} Stones, ${runStats.oreSmelted} Ore, ${runStats.peltsCollected} Pelts<br>
+        • Cabin Established: ${runStats.cabinBuilt ? 'Yes' : 'No'}
+      `;
+      document.getElementById('win-stats-box').innerHTML = statsHTML;
+      winScreen.style.display = 'flex';
+    }
+
+    const loreModal = document.getElementById('lore-modal');
+    const loreSheet = document.getElementById('lore-sheet');
+    const loreAuthor = document.getElementById('lore-author');
+    const loreDate = document.getElementById('lore-date');
+    const loreText = document.getElementById('lore-text');
+    const loreCount = document.getElementById('lore-count');
+
+    function openLorePage(l) {
+      const pageIndex = lorePages.indexOf(l);
+      loreSheet.className = `page-${Math.max(0, pageIndex)}`;
+      loreAuthor.innerText = l.author; loreDate.innerText = l.date; loreText.innerText = l.text;
+      loreCount.innerText = `${l.foundOrder || lorePagesReadCount} / 4`;
+      loreModal.classList.add('open'); loreModalOpen = true;
+      if (controls.isLocked) controls.unlock();
+    }
+
+    function closeLorePage() {
+      if (!loreModalOpen) return;
+      loreModal.classList.remove('open'); loreModalOpen = false;
+      // Fourth page triggers the Golden Bear only after the player dismisses the page.
+      if (pendingGoldenBearSpawn && !goldenBearSpawned) { pendingGoldenBearSpawn = false; spawnGoldenBear(); }
+      clock.getDelta(); controls.lock();
+    }
+
+    loreModal.addEventListener('click', closeLorePage);
+
+    window.addEventListener('mousedown', (e) => {
+      if (!controls.isLocked || loreModalOpen || isDead || e.button !== 0) return;
+      const pPos = controls.getObject().position;
+
+      for (let l of lorePages) {
+        const dToPage = pPos.distanceTo(l.worldPagePos);
+        if (!l.read && dToPage < 4.2) {
+          l.read = true; lorePagesReadCount += 1; l.foundOrder = lorePagesReadCount; l.light.color.setHex(0x55ff55); l.beam.material.color.setHex(0x55ff55);
+          if (lorePagesReadCount >= 4 && !goldenBearSpawned) pendingGoldenBearSpawn = true;
+          openLorePage(l); playTone(520, 0.3, 0.1); return;
+        } else if (l.read && dToPage < 4.2) {
+          openLorePage(l); return;
+        }
+      }
+
+      if (pickUpGroundDrops()) return;
+
+      for (let i = 0; i < snowshoePickups.length; i++) {
+        const s = snowshoePickups[i];
+        if (s.active && Math.hypot(pPos.x - s.x, pPos.z - s.z) < 4.0) {
+          s.active = false;
+          scene.remove(s.mesh);
+          snowshoeCount = Math.min(2, snowshoeCount + 1);
+          hasDiscoveredSnowshoes = true;
+          syncInventoryVisibility();
+
+          if (snowshoeCount === 1) {
+            showToast('You found a natural snowshoe.', 5000);
+          }
+          if (snowshoeCount >= 2) {
+            hasSnowshoesEquipped = true;
+            snowshoeDurability = 150.0;
+            snowshoeVal.innerText = '2 / 2';
+            showToast('Two snowshoes give you a speed boost until they wear out.', 5000);
+          } else {
+            snowshoeVal.innerText = `${snowshoeCount} / 2`;
+          }
+          playTone(400, 0.2, 0.1);
+          return;
+        }
+      }
+
+      shootRaycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+      for (const cf of campfires) {
+        if (cf.isLit && Math.hypot(pPos.x - cf.x, pPos.z - cf.z) < 4.5) {
+          const campfireHits = shootRaycaster.intersectObject(cf.mesh, true);
+          if (campfireHits.length > 0 && campfireHits[0].distance < 4.5) {
+            if (wood >= 1 || godModeActive) {
+              if (!godModeActive) { wood -= 1; woodVal.innerText = wood; }
+              torchTimer = 30;
+              torchGroup.visible = true;
+              torchUI.style.display = 'block';
+              torchVal.innerText = '30s';
+              if (!shownTorchLitMessage) { 
+                shownTorchLitMessage = true; 
+                showToast('A torch scares elk, attracts bears, but helps movement and gathering efficiency.', 10000); 
+              }
+              playSpark();
+              if (wood === 0 && !godModeActive) {
+                showToast('OUT OF FIREWOOD LOGS!', 3500);
+              }
+              return;
+            } else {
+              showToast('OUT OF FIREWOOD LOGS! (Need 1 log to light torch)', 3000);
+              playTone(130, 0.2, 0.1, 'sawtooth');
+              return;
+            }
+          }
+        }
+      }
+
+      if (currentTool === 'rifle') {
+        if (isReloadingRifle) return;
+        if (ammo <= 0 && !godModeActive) {
+          showToast('OUT OF BULLETS! (Smelt ore at a fire)', 3500);
+          playTone(140, 0.1, 0.1, 'square');
+          return;
+        }
+        
+        if (!godModeActive) {
+          ammo -= 1; 
+          ammoVal.innerText = ammo;
+        }
+        isReloadingRifle = true;
+        playGunshot();
+
+        if (ammo === 0 && !godModeActive) {
+          showToast('OUT OF BULLETS! (Smelt ore at a fire)', 4000);
+        }
+
+        muzzleLight.intensity = 4.0;
+        flashMesh.visible = true;
+        flashMesh.rotation.z = Math.random() * Math.PI * 2;
+        setTimeout(() => {
+          muzzleLight.intensity = 0;
+          flashMesh.visible = false;
+        }, 55);
+
+        rifle.position.z += 0.15; rifle.rotation.x += 0.2;
+
+        shootRaycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+        const hits = shootRaycaster.intersectObjects([...bearHitboxes, ...elkHitboxes]);
+        let hitPoint = null;
+
+        if (hits.length > 0) {
+          hitPoint = hits[0].point;
+          const hitData = hits[0].object.userData;
+          if (hitData.type === 'bear') {
+            const b = bears.find(item => item.id === hitData.parentId);
+            if (b && !b.isDead) {
+              b.health -= godModeActive ? 600 : 60;
+              b.bodyMat.color.setHex(0xffffff);
+              if (b.health <= 0) {
+                b.isDead = true;
+                runStats.bearsSlain += 1;
+                layDeadAnimal(b.mesh);
+                b.mesh.rotation.y += 0.3;
+                if (b.isGolden) {
+                  spawnGroundDrop('victory_orb', b.mesh.position.x, b.mesh.position.z);
+                  showToast('THE GOLDEN MEGA BEAR HAS FALLEN — THE ORB OF ASCENSION APPEARS!', 8000);
+                }
+              } else {
+                b.isCharging = true;
+                b.rearTimer = 1.1;
+                if (b.isGolden) playGoldenBearAttackRoar();
+                else playBearGrowl();
+                setTimeout(() => b.bodyMat.color.setHex(b.isGolden ? 0xffcc00 : 0xaa2222), 150);
+              }
+            }
+          } else if (hitData.type === 'elk') {
+            const elk = elks.find(item => item.id === hitData.parentId);
+            if (elk && !elk.isDead) {
+              elk.isDead = true;
+              runStats.elksSlain += 1;
+              layDeadAnimal(elk.mesh);
+              elk.mesh.rotation.y += 0.2;
+            }
+          }
+        }
+
+        bears.forEach(b => {
+          if (!b.isDead) {
+            const dist = controls.getObject().position.distanceTo(b.mesh.position);
+            if (dist < 120) {
+              b.isCharging = true;
+              b.isAlertPatrol = false;
+              b.bodyMat.color.setHex(b.isGolden ? 0xffcc00 : 0xaa2222);
+              playBearGrowl();
+            } else if (dist < 200 && !b.isCharging) {
+              b.isAlertPatrol = true;
+              b.wanderTarget.copy(controls.getObject().position);
+              b.lastWanderTime = clock.getElapsedTime();
+            }
+          }
+        });
+
+        let shotImpactPoint = hitPoint;
+        if (!shotImpactPoint) {
+          const groundHits = shootRaycaster.intersectObject(ground, false);
+          if (groundHits.length > 0) shotImpactPoint = groundHits[0].point;
+        }
+        elks.forEach(elk => {
+          if (elk.isDead) return;
+          const gunPos = controls.getObject().position;
+          const distToGun = gunPos.distanceTo(elk.mesh.position);
+          const distToImpact = shotImpactPoint ? shotImpactPoint.distanceTo(elk.mesh.position) : 9999;
+          if (distToGun < 128 || distToImpact < 102) {
+            const threatOrigin = (shotImpactPoint && distToImpact < distToGun) ? shotImpactPoint : gunPos;
+            elk.isFleeing = true;
+            elk.fleeTimer = 8.0;
+            elk.fleeDirection.copy(chooseElkFleeDirection(elk.mesh.position, threatOrigin.x, threatOrigin.z));
+            elk.fleeTarget.copy(elk.mesh.position).add(elk.fleeDirection.clone().multiplyScalar(150 + Math.random() * 80));
+          }
+        });
+
+        reloadFill.style.width = '0%';
+        reloadC.style.display = 'block';
+        let rTime = 0.0;
+        const activeRifleReloadDuration = getRecoveryDuration(rifleReloadDuration);
+        const rInt = setInterval(() => {
+          rTime += 0.1;
+          reloadFill.style.width = `${(rTime / activeRifleReloadDuration) * 100}%`;
+          if (rTime >= activeRifleReloadDuration) {
+            clearInterval(rInt);
+            isReloadingRifle = false;
+            reloadC.style.display = 'none';
+          }
+        }, 100);
+
+      } else if (currentTool === 'axe') {
+        if (isRecoveringAxe) return;
+
+        isRecoveringAxe = true;
+        comboAxe.rotation.x -= 0.6;
+        setTimeout(() => { comboAxe.rotation.x += 0.6; }, 180);
+
+        reloadFill.style.width = '0%';
+        reloadC.style.display = 'block';
+        let aTime = 0.0;
+        const activeAxeCooldownDuration = getRecoveryDuration(axeCooldownDuration);
+        const aInt = setInterval(() => {
+          aTime += 0.05;
+          reloadFill.style.width = `${(aTime / activeAxeCooldownDuration) * 100}%`;
+          if (aTime >= activeAxeCooldownDuration) {
+            clearInterval(aInt);
+            isRecoveringAxe = false;
+            reloadC.style.display = 'none';
+          }
+        }, 50);
+
+        shootRaycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+        const animalHits = shootRaycaster.intersectObjects([...bearHitboxes, ...elkHitboxes]);
+        if (animalHits.length > 0 && animalHits[0].distance < 4.2) {
+          const hitData = animalHits[0].object.userData;
+          if (hitData.type === 'bear') {
+            const b = bears.find(item => item.id === hitData.parentId);
+            if (b && !b.isDead) {
+              const bearHitRequirement = getAxeRequiredHits('bear', b.isGolden);
+              registerAxeHit();
+              b.axeHits = (b.axeHits || 0) + 1;
+              hunger = Math.max(0, hunger - 4);
+              playTone(180, 0.15, 0.05, 'sawtooth');
+              b.bodyMat.color.setHex(0xffffff);
+              if (b.axeHits >= bearHitRequirement || godModeActive) {
+                b.health = 0;
+                b.isDead = true;
+                runStats.bearsSlain += 1;
+                layDeadAnimal(b.mesh);
+                b.mesh.rotation.y += 0.3;
+                if (b.isGolden) {
+                  spawnGroundDrop('victory_orb', b.mesh.position.x, b.mesh.position.z);
+                  showToast('THE GOLDEN MEGA BEAR HAS FALLEN — THE ORB OF ASCENSION APPEARS!', 8000);
+                }
+              } else {
+                b.isCharging = true;
+                setTimeout(() => b.bodyMat.color.setHex(b.isGolden ? 0xffcc00 : 0xaa2222), 150);
+              }
+              return;
+            }
+          } else if (hitData.type === 'elk') {
+            const elk = elks.find(item => item.id === hitData.parentId);
+            if (elk && !elk.isDead) {
+              const elkHitRequirement = getAxeRequiredHits('elk');
+              registerAxeHit();
+              elk.axeHits = (elk.axeHits || 0) + 1;
+              playTone(200, 0.15, 0.05);
+              if (elk.axeHits >= elkHitRequirement || godModeActive) {
+                elk.isDead = true;
+                runStats.elksSlain += 1;
+                layDeadAnimal(elk.mesh);
+              }
+              return;
+            }
+          }
+        }
+
+        for (const bld of boulderData) {
+          if (Math.hypot(pPos.x - bld.x, pPos.z - bld.z) < bld.radius + 3.2) {
+            const stoneHitRequirement = getAxeRequiredHits('stone');
+            bld.hits += (torchTimer > 0 || godModeActive) ? 2 : 1;
+            registerAxeHit();
+            hunger = Math.max(0, hunger - 2.5);
+            playTone(520, 0.1, 0.02);
+
+            if (bld.hits >= stoneHitRequirement || godModeActive) {
+              bld.hits = 0;
+              stone += 1;
+              stoneVal.innerText = stone;
+              runStats.stonesMined += 1;
+              hasDiscoveredStone = true;
+              syncInventoryVisibility();
+              playTone(720, 0.18, 0.05);
+            }
+            return;
+          }
+        }
+
+        for (const t of trees) {
+          if (t.active && !t.isFelled && Math.hypot(pPos.x - t.x, pPos.z - t.z) < 4.5) {
+            const logHitRequirement = getAxeRequiredHits('log');
+            t.chopHits += (torchTimer > 0 || godModeActive) ? 2 : 1;
+            registerAxeHit();
+            hunger = Math.max(0, hunger - 3);
+            playTone(180 + t.chopHits * 35, 0.15, 0.05);
+
+            if (t.chopHits >= logHitRequirement || godModeActive) {
+              t.isFelled = true;
+              playTone(120, 0.6, 0.4, 'sawtooth');
+              const colIdx = colliders.findIndex(c => c.ref === t);
+              if (colIdx > -1) colliders.splice(colIdx, 1);
+
+              dummyMatrix.makeScale(0, 0, 0);
+              trunkInstanced.setMatrixAt(t.index, dummyMatrix);
+              coneInstanced0.setMatrixAt(t.index, dummyMatrix);
+              coneInstanced1.setMatrixAt(t.index, dummyMatrix);
+              coneInstanced2.setMatrixAt(t.index, dummyMatrix);
+              trunkInstanced.instanceMatrix.needsUpdate = true;
+              coneInstanced0.instanceMatrix.needsUpdate = true;
+              coneInstanced1.instanceMatrix.needsUpdate = true;
+              coneInstanced2.instanceMatrix.needsUpdate = true;
+
+              const felledGroup = new THREE.Group();
+              const trunk = new THREE.Mesh(treeTrunkGeo, trunkMat);
+              trunk.position.y = 1.75 * t.scale;
+              trunk.scale.set(t.scale, t.scale, t.scale);
+              felledGroup.add(trunk);
+
+              const c0 = new THREE.Mesh(coneGeo0, needleMat);
+              c0.position.y = 2.8 * t.scale; c0.scale.set(t.scale, t.scale, t.scale); felledGroup.add(c0);
+              const c1 = new THREE.Mesh(coneGeo1, needleMat);
+              c1.position.y = 4.7 * t.scale; c1.scale.set(t.scale, t.scale, t.scale); felledGroup.add(c1);
+              const c2 = new THREE.Mesh(coneGeo2, needleMat);
+              c2.position.y = 6.6 * t.scale; c2.scale.set(t.scale, t.scale, t.scale); felledGroup.add(c2);
+
+              felledGroup.position.set(t.x, t.baseY, t.z);
+              scene.add(felledGroup);
+              t.felledGroup = felledGroup;
+            }
+            return;
+          }
+        }
+
+        for (const t of trees) {
+          if (t.active && t.isFelled && t.logsHarvested < t.maxLogs && Math.hypot(pPos.x - t.x, pPos.z - t.z) < 5.0) {
+            t.logChopHits += 1;
+            registerAxeHit();
+            hunger = Math.max(0, hunger - 2.5);
+            playTone(220, 0.12, 0.04);
+
+            if (t.logChopHits >= 2 || godModeActive) {
+              t.logChopHits = 0;
+              t.logsHarvested += 1;
+              wood += 1;
+              woodVal.innerText = wood;
+              runStats.logsChopped += 1;
+              hasDiscoveredWood = true;
+              syncInventoryVisibility();
+              playTone(340, 0.2, 0.1);
+
+              if (t.logsHarvested >= t.maxLogs) {
+                t.active = false;
+                if (t.felledGroup) scene.remove(t.felledGroup);
+
+                if (Math.random() < 0.30 || godModeActive) {
+                  spawnNaturalSnowshoe(t.x + (Math.random() - 0.5) * 1.5, t.z + (Math.random() - 0.5) * 1.5);
+                }
+              }
+            }
+            return;
+          }
+        }
+
+        for (const o of oreNodes) {
+          if (o.active && Math.hypot(pPos.x - o.x, pPos.z - o.z) < 4.2) {
+            registerAxeHit();
+            o.health += 1;
+            hunger = Math.max(0, hunger - 3);
+            playTone(620, 0.12, 0.03);
+            if (o.health >= 3 || godModeActive) {
+              o.health = 0;
+              o.oreRemaining -= 1;
+              rawOre += 1;
+              oreVal.innerText = rawOre;
+              hasDiscoveredOre = true;
+              syncInventoryVisibility();
+              playTone(740, 0.2, 0.05);
+              if (o.oreRemaining <= 0) {
+                o.active = false;
+                o.mesh.visible = false;
+              }
+            }
+            return;
+          }
+        }
+
+        for (const b of bears) {
+          if (b.isDead && !b.harvested && pPos.distanceTo(b.mesh.position) < 4.5) {
+            b.harvestedHits += 1;
+            playTone(220, 0.15, 0.08);
+            if (b.harvestedHits >= 2 || godModeActive) {
+              b.harvested = true;
+              b.mesh.visible = false;
+              if (!b.isGolden) {
+                const bearMeatCount = Math.random() < 0.30 ? 3 : 2;
+                for (let m = 0; m < bearMeatCount; m++) {
+                  spawnGroundDrop('meat', b.mesh.position.x + (m - 1) * 0.6, b.mesh.position.z);
+                }
+                spawnGroundDrop('pelt', b.mesh.position.x, b.mesh.position.z + 0.8);
+                spawnGroundDrop('pelt', b.mesh.position.x, b.mesh.position.z - 0.8);
+              }
+              hasDiscoveredRawMeat = true;
+              syncInventoryVisibility();
+              playTone(280, 0.2, 0.1);
+            }
+            return;
+          }
+        }
+
+        for (const elk of elks) {
+          if (elk.isDead && !elk.harvested && pPos.distanceTo(elk.mesh.position) < 4.5) {
+            elk.harvestedHits += 1;
+            elk.harvested = true;
+            elk.mesh.visible = false;
+            const elkMeatCount = Math.random() < 0.30 ? 2 : 1;
+            for (let m = 0; m < elkMeatCount; m++) {
+              spawnGroundDrop('meat', elk.mesh.position.x + (m * 0.4), elk.mesh.position.z + (m * 0.4));
+            }
+            spawnGroundDrop('pelt', elk.mesh.position.x + 0.5, elk.mesh.position.z + 0.5);
+            hasDiscoveredRawMeat = true;
+            syncInventoryVisibility();
+            playTone(260, 0.2, 0.1);
+            return;
+          }
+        }
+
+      } else if (currentTool === 'flint') {
+        if (isRecoveringFlint) return;
+        isRecoveringFlint = true;
+        reloadFill.style.width = '0%';
+        reloadC.style.display = 'block';
+        let fTime = 0.0;
+        const activeFlintDuration = getRecoveryDuration(1.25);
+        const fInt = setInterval(() => {
+          fTime += 0.05;
+          reloadFill.style.width = `${(fTime / activeFlintDuration) * 100}%`;
+          if (fTime >= activeFlintDuration) {
+            clearInterval(fInt);
+            isRecoveringFlint = false;
+            reloadC.style.display = 'none';
+          }
+        }, 50);
+        playSpark();
+        triggerFlintSparks();
+        flintGroup.position.z -= 0.08;
+        setTimeout(() => { flintGroup.position.z += 0.08; }, 180);
+
+        shootRaycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+        const bearFlashHits = shootRaycaster.intersectObjects(bearHitboxes);
+        if (bearFlashHits.length > 0 && bearFlashHits[0].distance < 4.0) {
+          const hitData = bearFlashHits[0].object.userData;
+          const bear = bears.find(item => item.id === hitData.parentId);
+          if (bear && !bear.isDead && bear.isCharging) {
+            bear.recoilTimer = bear.isGolden ? 0.75 : 1.5;
+            bear.rearTimer = 0.0;
+            bear.isAlertPatrol = false;
+            bear.bodyMat.color.setHex(bear.isGolden ? 0xffcc00 : 0xff7a22);
+            playSpark();
+            playTone(900, 0.18, 0.08, 'square');
+            showToast('GRIZZLY FLASH-STIR — THE BEAR STAGGERS!', 1800);
+            setTimeout(() => { if (!bear.isDead) bear.bodyMat.color.setHex(bear.isGolden ? 0xffcc00 : 0xaa2222); }, 300);
+            return;
+          }
+        }
+
+        for (const cf of campfires) {
+          if (!cf.isLit && Math.hypot(pPos.x - cf.x, pPos.z - cf.z) < 4.2) {
+            cf.isLit = true; cf.core.visible = true; cf.light.intensity = 48.0;
+            return;
+          }
+        }
+      }
+    });
+
+    const clock = new THREE.Clock();
+    const posAttributeBuffer = snowGeo.attributes.position.array;
+
+    function animate() {
+      if (isDead) return;
+      requestAnimationFrame(animate);
+
+      const delta = Math.min(clock.getDelta(), 0.08);
+      const time = clock.getElapsedTime();
+
+      // While a journal sheet is open, the world is completely frozen.
+      if (loreModalOpen) { renderer.render(scene, camera); return; }
+
+      const healthAtFrameStart = health;
+      healthDamagedThisFrame = false;
+
+      totalGameTime += delta;
+
+      if (!godModeActive && pelts > 0) {
+        peltDecayTimer -= delta;
+        if (peltDecayTimer <= 0) {
+          pelts = Math.max(0, pelts - 1);
+          peltDecayTimer = 60.0;
+          updatePeltUI();
+          showToast('A worn pelt has decayed and fallen off your shoulders.', 3500);
+        }
+      } else if (pelts === 0) {
+        peltDecayTimer = 60.0;
+      }
+
+      rifle.position.z = THREE.MathUtils.lerp(rifle.position.z, -0.6, delta * 8);
+      rifle.rotation.x = THREE.MathUtils.lerp(rifle.rotation.x, 0, delta * 8);
+
+      trees.forEach(t => {
+        if (t.isFelled && t.felledGroup && t.fallAngle < Math.PI / 2) {
+          t.fallAngle += delta * 2.2;
+          t.felledGroup.rotation.z = t.fallAngle * t.fallDir.x;
+          t.felledGroup.rotation.x = t.fallAngle * t.fallDir.z;
+
+          const treeLength = 3.5 * t.scale;
+          const tipX = t.x + t.fallDir.x * (treeLength * Math.sin(t.fallAngle));
+          const tipZ = t.z + t.fallDir.z * (treeLength * Math.sin(t.fallAngle));
+          const tipGroundH = getTerrainHeight(tipX, tipZ);
+          t.felledGroup.position.y = THREE.MathUtils.lerp(t.felledGroup.position.y, Math.max(t.baseY, tipGroundH + 0.35), delta * 4);
+        }
+      });
+
+      for (let i = tracks.length - 1; i >= 0; i--) {
+        tracks[i].life -= delta;
+        if (tracks[i].life <= 0) {
+          scene.remove(tracks[i].mesh);
+          tracks.splice(i, 1);
+        }
+      }
+
+      if (torchTimer > 0) {
+        const flicker = (Math.sin(time * 24) * 1.5) + (Math.cos(time * 37) * 1.2);
+        torchViewLight.intensity = 4.0 + flicker * 0.4;
+        playerWorldTorchLight.intensity = 48.0 + flicker * 4.0;
+        playerWorldTorchLight.position.set(controls.getObject().position.x - 0.4, controls.getObject().position.y + 0.2, controls.getObject().position.z - 0.4);
+      } else {
+        playerWorldTorchLight.intensity = 0;
+      }
+
+      if (controls.isLocked) {
+        const pObj = controls.getObject();
+        const px = pObj.position.x;
+        const pz = pObj.position.z;
+
+        runStats.totalDistance += pObj.position.distanceTo(lastPlayerPos);
+        lastPlayerPos.copy(pObj.position);
+
+        const onIce = isOnIce(px, pz);
+        
+        let baseSpeed = godModeActive ? 22.0 : 13.0;
+        const conditionFactor = THREE.MathUtils.clamp(0.65 + ((health + hunger) / 200) * 0.45, 0.65, 1.10);
+        baseSpeed *= conditionFactor;
+
+        if (torchTimer > 0) baseSpeed *= 1.30;
+        if (hasSnowshoesEquipped) baseSpeed *= 1.30;
+        baseSpeed *= godModeActive ? 1.5 : (1.0 - (pelts * 0.03));
+
+        const speed = baseSpeed * delta;
+        const moving = keys.w || keys.s || keys.a || keys.d;
+
+        if (onIce) {
+          camera.getWorldDirection(dirTmp);
+          dirTmp.y = 0;
+          dirTmp.normalize();
+          vTmp1.crossVectors(dirTmp, new THREE.Vector3(0, 1, 0)).normalize();
+          vTmp2.set(0, 0, 0);
+          if (keys.w) vTmp2.add(dirTmp);
+          if (keys.s) vTmp2.sub(dirTmp);
+          if (keys.d) vTmp2.add(vTmp1);
+          if (keys.a) vTmp2.sub(vTmp1);
+          if (vTmp2.lengthSq() > 0) vTmp2.normalize().multiplyScalar(baseSpeed * 1.65);
+          iceMomentum.lerp(vTmp2, moving ? Math.min(1, delta * 2.2) : Math.min(1, delta * 0.22));
+          pObj.position.addScaledVector(iceMomentum, delta);
+        } else {
+          iceMomentum.set(0, 0, 0);
+          if (keys.w) controls.moveForward(speed);
+          if (keys.s) controls.moveForward(-speed);
+          if (keys.d) controls.moveRight(speed);
+          if (keys.a) controls.moveRight(-speed);
+        }
+
+        if (hasSnowshoesEquipped && moving && !godModeActive) {
+          snowshoeDurability -= delta;
+          if (snowshoeDurability <= 0) {
+            hasSnowshoesEquipped = false;
+            snowshoeCount = 0;
+            snowshoeVal.innerText = '0 / 2';
+            playTone(180, 0.4, 0.2, 'sawtooth');
+          }
+        }
+
+        resolveCollisions(pObj.position, 0.5);
+
+        const pDist = Math.hypot(pObj.position.x, pObj.position.z);
+        if (pDist > PLAYABLE_RADIUS - 6) {
+          const normX = pObj.position.x / pDist;
+          const normZ = pObj.position.z / pDist;
+          if (pDist > PLAYABLE_RADIUS) {
+            pObj.position.x = normX * PLAYABLE_RADIUS;
+            pObj.position.z = normZ * PLAYABLE_RADIUS;
+          }
+          const dot = iceMomentum.x * normX + iceMomentum.z * normZ;
+          if (dot > 0) {
+            iceMomentum.x -= dot * normX;
+            iceMomentum.z -= dot * normZ;
+          }
+        }
+
+        const groundLevelY = getTerrainHeight(pObj.position.x, pObj.position.z);
+        let playerFloorY = groundLevelY + 2.5;
+
+        insideCabin = false;
+        let restingOnBed = false;
+        if (cabin) {
+          const dx = pObj.position.x - cabin.pos.x;
+          const dz = pObj.position.z - cabin.pos.z;
+          if (Math.abs(dx) < 3.6 && Math.abs(dz) < 3.6) {
+            insideCabin = true;
+            playerFloorY = cabin.pos.y + 3.1;
+            if (pObj.position.distanceTo(cabin.bedPos) < 2.0) restingOnBed = true;
+          }
+        }
+        cabinStatusUI.style.display = insideCabin ? 'block' : 'none';
+
+        if (keys.space && isGrounded) {
+          vVel = JUMP_FORCE;
+          isGrounded = false;
+        }
+
+        vVel -= GRAVITY * delta;
+        pObj.position.y += vVel * delta;
+
+        if (pObj.position.y <= playerFloorY) {
+          if (vVel < -27 && !godModeActive) {
+            applyHealthDamage(vVel * -0.55);
+            if (health <= 0) {
+              triggerDeathScreen('FALL FATALITY', 'The crags claimed you in the drop.', 'SURVIVAL TIP: TREAD MINDFULLY ALONG THE BASIN CLIFFS');
+            }
+          }
+          pObj.position.y = playerFloorY;
+          vVel = 0;
+          isGrounded = true;
+        }
+
+        if (windFilter) {
+          const elevFactor = Math.max(0, (pObj.position.y + 10) / 110);
+          windFilter.frequency.setValueAtTime(260 + elevFactor * 240 + Math.sin(time * 0.8) * 60, audioCtx.currentTime);
+        }
+
+        for (let i = 0; i < snowCount; i++) {
+          const i3 = i * 3;
+          posAttributeBuffer[i3 + 0] += snowVel[i].x * delta * 5;
+          posAttributeBuffer[i3 + 1] += snowVel[i].y * delta;
+          posAttributeBuffer[i3 + 2] += snowVel[i].z * delta * 5;
+
+          const hOffset = snowBoxSize * 0.5;
+          if (posAttributeBuffer[i3 + 0] > hOffset) posAttributeBuffer[i3 + 0] -= snowBoxSize;
+          else if (posAttributeBuffer[i3 + 0] < -hOffset) posAttributeBuffer[i3 + 0] -= snowBoxSize;
+
+          if (posAttributeBuffer[i3 + 1] < -hOffset) posAttributeBuffer[i3 + 1] += snowBoxSize;
+
+          if (posAttributeBuffer[i3 + 2] > hOffset) posAttributeBuffer[i3 + 2] -= snowBoxSize;
+          else if (posAttributeBuffer[i3 + 2] < -hOffset) posAttributeBuffer[i3 + 2] -= snowBoxSize;
+        }
+        snowGeo.attributes.position.needsUpdate = true;
+        snowSystem.position.set(pObj.position.x, pObj.position.y, pObj.position.z);
+
+        let hasActiveTorch = false;
+        if (torchTimer > 0) {
+          torchTimer -= delta;
+          hasActiveTorch = true;
+          torchVal.innerText = `${Math.ceil(torchTimer)}s`;
+          if (torchTimer <= 0) {
+            torchGroup.visible = false;
+            torchUI.style.display = 'none';
+          }
+        }
+
+        let nearLitFire = false;
+        for (let i = campfires.length - 1; i >= 0; i--) {
+          const cf = campfires[i];
+          if (cf.isLit) {
+            cf.timeLeft -= delta;
+            if (cf.timeLeft <= 0) {
+              cf.mesh.visible = false; campfires.splice(i, 1); continue;
+            }
+            if (Math.hypot(pObj.position.x - cf.x, pObj.position.z - cf.z) < 6.5) nearLitFire = true;
+          }
+        }
+
+        if (restingOnBed || godModeActive) {
+          hunger = Math.min(100, hunger + 18.0 * delta);
+          if (godModeActive) health = 100;
+        } else {
+          hunger = Math.max(0, hunger - (moving ? 0.35 : 0.15) * delta);
+        }
+
+        if (nearLitFire || hasActiveTorch || godModeActive) {
+          warmth = Math.min(100, warmth + 18 * delta);
+        } else if (insideCabin) {
+          if (pelts < 3) warmth = Math.max(0, warmth - 0.12 * delta);
+        } else {
+          const baseFreezeRate = 1.85;
+          const freezeRate = baseFreezeRate * (1.0 - (pelts / 8) * 0.90);
+          warmth = Math.max(0, warmth - freezeRate * delta);
+        }
+
+        const combinedVitals = hunger + warmth;
+
+        if (!godModeActive) {
+          if (warmth <= 0 || hunger <= 0) {
+            let drain = 0;
+            if (warmth <= 0) drain += 7.5;
+            if (hunger <= 0) drain += 5.5;
+            applyHealthDamage(drain * delta);
+          } else if (combinedVitals < 100) {
+            const deficit = (100 - combinedVitals) / 100;
+            applyHealthDamage(Math.pow(deficit, 1.5) * 8.5 * delta);
+          } else if (combinedVitals > 100) {
+            const surplus = (combinedVitals - 100) / 100;
+            health = Math.min(100, health + (0.4 + surplus * 2.6) * delta);
+          }
+
+          if (health <= 0) {
+            triggerDeathScreen(
+              warmth <= 0 ? 'HYPOTHERMIA' : 'STARVED',
+              warmth <= 0 ? 'The Bitterroot freeze overtook your body.' : 'You collapsed in the drifts from starvation.',
+              warmth <= 0 ? 'SURVIVAL TIP: WARMTH, SHELTER, AND REGULAR FIRES BUY YOU CRITICAL TIME' : 'SURVIVAL TIP: COOK MEAT BEFORE YOUR RESERVES RUN DRY'
+            );
+          }
+        }
+
+        recentHealthLossRate *= Math.exp(-3.5 * delta);
+        if (healthDamagedThisFrame && health < healthAtFrameStart - 0.001) {
+          criticalBloodOverlay.classList.add('flashing-blood');
+        } else {
+          criticalBloodOverlay.classList.remove('flashing-blood');
+          criticalBloodOverlay.style.opacity = '0';
+        }
+
+        const healthDeficit = (100 - health) / 100;
+        const warmthDeficit = (100 - warmth) / 100;
+        const criticalTighten = Math.max(healthDeficit, warmthDeficit);
+        vignetteOverlay.style.boxShadow = `inset 0 0 ${Math.floor(criticalTighten * 140)}px rgba(70,0,0,${(criticalTighten * 0.8).toFixed(2)})`;
+
+        healthBar.style.width = `${health}%`;
+        warmthBar.style.width = `${warmth}%`;
+        hungerBar.style.width = `${hunger}%`;
+        tempVal.innerText = `${(50 + warmth * 0.486).toFixed(1)}°F`;
+        dayVal.innerText = (1 + (totalGameTime / DAY_LENGTH_SECONDS)).toFixed(1);
+
+        bearSpawnTimer += delta;
+        if (bearSpawnTimer >= 60.0) {
+          bearSpawnTimer -= 60.0;
+          if (bears.length < MAX_BEARS) spawnBear();
+        }
+
+        bears.forEach(b => {
+          const bPos = b.mesh.position;
+          if (b.isDead) return;
+
+          const dist = pObj.position.distanceTo(bPos);
+          const aggroRange = hasActiveTorch ? 100 : 55;
+
+          if (b.rearTimer > 0) {
+            b.rearTimer -= delta;
+            b.rearProgress = THREE.MathUtils.lerp(b.rearProgress, 1.0, delta * 8.0);
+            b.mesh.lookAt(pObj.position.x, bPos.y, pObj.position.z);
+            b.mesh.rotation.x = -0.75 * b.rearProgress;
+            if (b.frontLegs && b.frontLegs.length === 2) {
+              b.frontLegs[0].rotation.x = 0.85 * b.rearProgress;
+              b.frontLegs[1].rotation.x = 0.85 * b.rearProgress;
+            }
+            bPos.y = getTerrainHeight(bPos.x, bPos.z) + (0.95 * b.rearProgress) + (isOnIce(bPos.x, bPos.z) ? 0.5 : 0);
+            return;
+          } else if (b.rearProgress > 0.01) {
+            b.rearProgress = THREE.MathUtils.lerp(b.rearProgress, 0.0, delta * 7.0);
+            b.mesh.rotation.x = -0.75 * b.rearProgress;
+            if (b.frontLegs && b.frontLegs.length === 2) {
+              b.frontLegs[0].rotation.x = 0.85 * b.rearProgress;
+              b.frontLegs[1].rotation.x = 0.85 * b.rearProgress;
+            }
+          }
+
+          if (goldenBearActive && !b.isGolden) {
+            b.isCharging = false;
+            b.isAlertPatrol = false;
+          } else if (insideCabin) {
+            b.isCharging = false;
+            b.isAlertPatrol = false;
+            b.bodyMat.color.setHex(b.isGolden ? 0xffcc00 : 0xffffff);
+          } else if (!b.isCharging && dist < aggroRange) {
+            b.isCharging = true;
+            b.isAlertPatrol = false;
+            b.bodyMat.color.setHex(b.isGolden ? 0xffcc00 : 0xaa2222);
+            if (b.isGolden) playGoldenBearAttackRoar();
+            else playBearGrowl();
+          }
+
+          if (b.isCharging && !insideCabin) {
+            dirTmp.copy(pObj.position).sub(bPos);
+            dirTmp.y = 0; dirTmp.normalize();
+
+            if (b.recoilTimer > 0) {
+              b.recoilTimer -= delta;
+              bPos.addScaledVector(dirTmp, -4.5 * delta);
+            } else {
+              bPos.addScaledVector(dirTmp, (b.isGolden ? 38.0 : 20.0) * delta);
+              if (dist < 3.2 && !godModeActive) {
+                applyHealthDamage(b.isGolden ? 80 : 50);
+                if (b.isGolden) playGoldenBearAttackRoar();
+                triggerBearHitShake();
+                b.recoilTimer = 3.0;
+                if (health <= 0) {
+                  triggerDeathScreen('MAULED', 'A silvertip grizzly brought you down in the dark.', 'SURVIVAL TIP: PERHAPS THERE IS A WAY TO SHOCK OR SCARE THE BEAST BEFORE IT STRIKES');
+                }
+              }
+            }
+            b.mesh.lookAt(pObj.position.x, bPos.y, pObj.position.z);
+          } else if (b.isAlertPatrol && !insideCabin) {
+            dirTmp.copy(b.wanderTarget).sub(bPos);
+            dirTmp.y = 0;
+            if (dirTmp.lengthSq() > 4) {
+              dirTmp.normalize();
+              bPos.addScaledVector(dirTmp, 6.5 * delta);
+              b.mesh.lookAt(b.wanderTarget.x, bPos.y, b.wanderTarget.z);
+            } else {
+              if (time - b.lastWanderTime > 3) {
+                b.wanderTarget.set(bPos.x + (Math.random() - 0.5) * 50, 0, bPos.z + (Math.random() - 0.5) * 50);
+                b.lastWanderTime = time;
+              }
+            }
+          } else {
+            if (time - b.lastWanderTime > 6) {
+              b.wanderTarget.set(bPos.x + (Math.random() - 0.5) * 35, 0, bPos.z + (Math.random() - 0.5) * 35);
+              b.lastWanderTime = time;
+            }
+            dirTmp.copy(b.wanderTarget).sub(bPos);
+            dirTmp.y = 0;
+            if (dirTmp.lengthSq() > 1) {
+              dirTmp.normalize();
+              bPos.addScaledVector(dirTmp, 3.0 * delta);
+              b.mesh.lookAt(b.wanderTarget.x, bPos.y, b.wanderTarget.z);
+            }
+          }
+
+          resolveCollisions(bPos, 1.4);
+          bPos.y = getTerrainHeight(bPos.x, bPos.z) + (isOnIce(bPos.x, bPos.z) ? 0.5 : 0);
+        });
+
+        const spookDistance = hasActiveTorch ? 150 : 120;
+        const spookDistSq = spookDistance * spookDistance;
+
+        elks.forEach(elk => {
+          if (elk.isDead) return;
+          const ePos = elk.mesh.position;
+          const dx = pObj.position.x - ePos.x;
+          const dz = pObj.position.z - ePos.z;
+          const distSq = dx * dx + dz * dz;
+          const isThreatening = distSq < spookDistSq;
+
+          // Commit to an escape route instead of randomly changing direction every frame.
+          if (isThreatening && !elk.isFleeing) {
+            const newDir = chooseElkFleeDirection(ePos, pObj.position.x, pObj.position.z);
+            if (!Number.isFinite(newDir.x) || !Number.isFinite(newDir.z) || newDir.lengthSq() < 0.01) {
+              newDir.set(ePos.x - pObj.position.x, 0, ePos.z - pObj.position.z).normalize();
+            }
+            elk.fleeDirection.copy(newDir);
+            elk.isFleeing = true;
+            elk.fleeTimer = hasActiveTorch ? 10.0 : 8.0;
+            elk.fleeTurnTimer = 0.55;
+            elk.fleeSpeed = 8;
+            elk.fleeTarget.copy(ePos).addScaledVector(elk.fleeDirection, hasActiveTorch ? 130 : 110);
+          }
+
+          if (elk.isFleeing) {
+            // Keep fleeing while the player remains close instead of allowing
+            // the timer to expire underneath a nearby player.
+            if (isThreatening) elk.fleeTimer = Math.max(elk.fleeTimer, hasActiveTorch ? 10.0 : 8.0);
+            elk.fleeTimer -= delta;
+            elk.fleeTurnTimer -= delta;
+
+            // Gently bend the route every so often if the player is still close.
+            if (elk.fleeTurnTimer <= 0 && isThreatening) {
+              const desired = chooseElkFleeDirection(ePos, pObj.position.x, pObj.position.z);
+              elk.fleeDirection.lerp(desired, 0.30).normalize();
+              elk.fleeTarget.copy(ePos).addScaledVector(elk.fleeDirection, 75 + Math.random() * 25);
+              elk.fleeTurnTimer = 0.65 + Math.random() * 0.35;
+            }
+
+            dirTmp.copy(elk.fleeTarget).sub(ePos);
+            dirTmp.y = 0;
+            if (dirTmp.lengthSq() < 16 || elk.fleeTimer <= 0) {
+              if (isThreatening) {
+                const newDir = chooseElkFleeDirection(ePos, pObj.position.x, pObj.position.z);
+                elk.fleeDirection.copy(newDir);
+                elk.fleeTarget.copy(ePos).addScaledVector(newDir, 80);
+                elk.fleeTimer = 2.0;
+              } else {
+                elk.isFleeing = false;
+                elk.fleeSpeed = 0;
+              }
+            } else {
+              dirTmp.normalize();
+              // Smooth acceleration makes the elk look like it is actually running.
+              elk.fleeSpeed = Math.min(24, elk.fleeSpeed + 42 * delta);
+              const step = elk.fleeSpeed * delta;
+              const nextX = ePos.x + dirTmp.x * step;
+              const nextZ = ePos.z + dirTmp.z * step;
+
+              if (elkCanStepTo(ePos.x, ePos.z, nextX, nextZ, 0.34)) {
+                ePos.x = nextX;
+                ePos.z = nextZ;
+                resolveCollisions(ePos, 0.65);
+
+                // Smoothly rotate toward travel direction instead of snapping.
+                const desiredYaw = Math.atan2(dirTmp.x, dirTmp.z);
+                let yawDelta = desiredYaw - elk.mesh.rotation.y;
+                while (yawDelta > Math.PI) yawDelta -= Math.PI * 2;
+                while (yawDelta < -Math.PI) yawDelta += Math.PI * 2;
+                elk.mesh.rotation.y += yawDelta * Math.min(1, delta * 7);
+              } else {
+                // Pick another legal route when terrain blocks the current one.
+                const newDir = chooseElkFleeDirection(ePos, pObj.position.x, pObj.position.z);
+                elk.fleeDirection.copy(newDir);
+                elk.fleeTarget.copy(ePos).addScaledVector(newDir, 80);
+                elk.fleeTurnTimer = 0.15;
+              }
+            }
+          } else if (distSq < 40000) {
+            if (time - elk.lastWanderTime > 7) {
+              elk.wanderTarget.set(ePos.x + (Math.random() - 0.5) * 45, 0, ePos.z + (Math.random() - 0.5) * 45);
+              elk.lastWanderTime = time;
+            }
+            dirTmp.copy(elk.wanderTarget).sub(ePos);
+            dirTmp.y = 0;
+            if (dirTmp.lengthSq() > 1) {
+              dirTmp.normalize();
+              const nextX = ePos.x + dirTmp.x * 2.2 * delta;
+              const nextZ = ePos.z + dirTmp.z * 2.2 * delta;
+              if (elkCanStepTo(ePos.x, ePos.z, nextX, nextZ, 0.42)) {
+                ePos.x = nextX; ePos.z = nextZ;
+                const desiredYaw = Math.atan2(dirTmp.x, dirTmp.z);
+                let yawDelta = desiredYaw - elk.mesh.rotation.y;
+                while (yawDelta > Math.PI) yawDelta -= Math.PI * 2;
+                while (yawDelta < -Math.PI) yawDelta += Math.PI * 2;
+                elk.mesh.rotation.y += yawDelta * Math.min(1, delta * 3);
+              } else {
+                elk.lastWanderTime = time;
+                elk.wanderTarget.set(ePos.x + (Math.random() - 0.5) * 20, 0, ePos.z + (Math.random() - 0.5) * 20);
+              }
+            }
+          }
+          ePos.y = getTerrainHeight(ePos.x, ePos.z);
+        });
+      }
+
+      for (let i = 0; i < sparkParticles.length; i++) {
+        const p = sparkParticles[i];
+        if (!p.mesh.visible) continue;
+        p.life -= delta;
+        p.mesh.position.addScaledVector(p.velocity, delta);
+        p.velocity.y -= 5.5 * delta;
+        p.mesh.material.opacity = Math.max(0, p.life / 0.34);
+        if (p.life <= 0) p.mesh.visible = false;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // Hidden developer backdoor: Ctrl+Shift+G instantly summons the Golden Bear
+    // for encounter testing without completing the four-page quest. It is intentionally
+    // undocumented in the visible UI.
+    window.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.shiftKey && e.code === 'KeyG') {
+        e.preventDefault();
+        if (!goldenBearSpawned && !isDead) {
+          spawnGoldenBear();
+        }
+      }
+    });
+
+    animate();
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

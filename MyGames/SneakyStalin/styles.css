@@ -1,0 +1,882 @@
+:root{
+  --bg:#0e1117;--panel:#171a23;--panel-hover:#202432;--border:#282d3d;--border-light:#3b4257;
+  --r:#dc2626;--dr:#991b1b;--g:#f59e0b;--lg:#eab308;
+  --whi-slate:#d6d2c4;--whi-light:#eae6d9;--whi-accent:#f5f0e1;--comm-red:#ef4444;--comm-dark:#b91c1c;
+  --t:#f3f4f6;--td:#9ca3af;--tdd:#6b7280;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--t);font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;overflow-x:hidden;min-height:100vh;touch-action:manipulation;line-height:1.5}
+.screen{display:none;min-height:100vh;width:100%;max-width:640px;margin:0 auto;padding:16px 14px;flex-direction:column;align-items:center;position:relative}
+.screen.active{display:flex}
+
+/* Title Screen */
+#screen-title{justify-content:center;text-align:center;background:radial-gradient(circle at 50% 30%, #2a1114 0%, var(--bg) 75%)}
+.soviet-emblem{font-size:3.5rem;margin-bottom:12px;color:var(--g);filter:drop-shadow(0 0 20px rgba(245,158,11,0.3));animation:float 3.5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.game-title{font-size:2.8rem;font-weight:900;text-transform:uppercase;letter-spacing:3px;color:var(--g);line-height:1.1;margin-bottom:6px;text-shadow:0 2px 10px rgba(0,0,0,0.5)}
+.game-subtitle{font-size:.85rem;color:var(--td);margin-bottom:20px;text-transform:uppercase;letter-spacing:2px;font-weight:600}
+
+.mode-select{margin:6px 0 14px;width:100%;max-width:360px}
+.mode-option{background:var(--panel);border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;margin:8px 0;cursor:pointer;text-align:left;transition:all .2s ease}
+.mode-option:hover,.mode-option.selected{border-color:var(--g);background:var(--panel-hover);box-shadow:0 0 16px rgba(245,158,11,0.15)}
+.mode-option h3{color:var(--g);font-size:1rem;font-weight:700;margin-bottom:2px}
+.mode-option p{color:var(--td);font-size:.8rem}
+
+/* Settings Panel */
+.settings-panel{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px;margin:6px 0 14px;text-align:left}
+.setting-group{margin-bottom:10px}
+.setting-group:last-child{margin-bottom:0}
+.setting-label{display:block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--td);margin-bottom:6px}
+.pill-select{display:flex;gap:6px;width:100%}
+.pill-btn{flex:1;background:#11141d;border:1.5px solid var(--border);border-radius:6px;color:var(--td);font-size:.75rem;font-weight:700;padding:6px 4px;cursor:pointer;transition:all .15s;text-align:center}
+.pill-btn:hover{color:var(--t);border-color:var(--border-light)}
+.pill-btn.selected{background:var(--r);border-color:var(--r);color:#fff}
+
+.player-count{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:6px 0 18px}
+.count-btn{width:44px;height:44px;border-radius:8px;border:1.5px solid var(--border);background:var(--panel);color:var(--t);font-size:1.05rem;font-weight:700;cursor:pointer;transition:all .15s}
+.count-btn:hover,.count-btn.selected{border-color:var(--g);background:var(--r);color:#fff;box-shadow:0 2px 10px rgba(220,38,38,0.4)}
+
+.btn{background:var(--r);color:#fff;border:none;border-radius:8px;padding:13px 24px;font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;cursor:pointer;width:100%;max-width:360px;transition:all .2s ease;box-shadow:0 4px 14px rgba(220,38,38,0.3);margin:6px 0}
+.btn:hover:not(:disabled){background:#b91c1c;transform:translateY(-1px);box-shadow:0 6px 20px rgba(220,38,38,0.45)}
+.btn.secondary{background:var(--panel);color:var(--t);border:1.5px solid var(--border);box-shadow:none}
+.btn.secondary:hover:not(:disabled){border-color:var(--g);color:var(--g);background:var(--panel-hover)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* Top Stats & Identity Bar */
+.game-header{width:100%;margin-bottom:8px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.game-branding{display:flex;align-items:center;gap:8px}
+.game-branding h2{font-size:1.1rem;font-weight:900;color:var(--g);letter-spacing:1px}
+.phase-pill{background:#232938;border:1px solid var(--border-light);color:var(--g);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 10px;border-radius:20px}
+.deck-pill{font-size:.75rem;color:var(--td);font-weight:600}
+
+.identity-bar{width:100%;background:rgba(23,26,35,0.85);border:1px solid var(--border);border-radius:8px;padding:6px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;font-size:.8rem}
+.identity-tag{font-weight:800;text-transform:uppercase;padding:2px 8px;border-radius:4px}
+
+/* In-Game Victory Overlay */
+.victory-overlay{background:radial-gradient(circle at 50% 30%, #2a1114 0%, var(--panel) 85%);border:2px solid var(--g);border-radius:12px;padding:16px;margin-bottom:12px;text-align:center;box-shadow:0 0 30px rgba(245,158,11,0.25);animation:shake .45s ease-in-out}
+.victory-emblem{font-size:2.8rem;margin-bottom:4px}
+.victory-title{font-size:1.8rem;font-weight:900;text-transform:uppercase;letter-spacing:3px;margin-bottom:4px}
+.victory-reason{font-size:.85rem;color:var(--td);margin-bottom:12px}
+
+/* Board Tracks */
+.board-container{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px}
+.track{margin-bottom:10px}
+.track:last-child{margin-bottom:0}
+.track-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.track-title{font-size:.76rem;text-transform:uppercase;letter-spacing:1px;font-weight:800}
+.track-title.whi{color:var(--whi-light)}
+.track-title.comm{color:var(--comm-red)}
+.track-count{font-size:.85rem;font-weight:800}
+.track-slots{display:grid;gap:6px}
+.track-slots.whi-slots{grid-template-columns:repeat(5,1fr)}
+.track-slots.comm-slots{grid-template-columns:repeat(6,1fr)}
+.track-slot{height:50px;border-radius:6px;border:1.5px solid var(--border);background:#11141d;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;transition:all .3s}
+.track-slot.filled-white,
+.track-slot.filled-whi {
+  background: linear-gradient(135deg, #ffffff 0%, #ede8dc 100%) !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.75), inset 0 0 4px rgba(0, 0, 0, 0.15) !important;
+  color: #111111 !important;
+  font-size: 1.6rem !important;
+  font-weight: 900 !important;
+}
+.track-slot.filled-communist{background:var(--comm-dark);border-color:var(--comm-red);box-shadow:0 0 12px rgba(239,68,68,0.4);color:#fff;font-size:1.3rem}
+.track-slot.has-power{border-color:var(--border-light)}
+.power-tag{font-size:.5rem;text-transform:uppercase;color:var(--g);font-weight:700;position:absolute;bottom:2px;letter-spacing:.5px}
+
+/* Tracker Bar & Deck Audit Bar */
+.election-tracker-bar{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:.74rem;color:var(--td)}
+.tracker-dots{display:flex;gap:6px}
+.tracker-dot{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--border-light);background:#11141d}
+.tracker-dot.active{background:var(--r);border-color:#ff6b6b;box-shadow:0 0 8px rgba(220,38,38,0.6)}
+
+.deck-audit-bar{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:8px;padding:6px 10px;background:#11141d;border:1px solid var(--border);border-radius:6px;font-size:.72rem;color:var(--td)}
+.audit-label{color:var(--whi-light);font-weight:800;text-transform:uppercase}
+.audit-value{color:var(--t);font-weight:700}
+.audit-sep{color:var(--tdd)}
+
+/* Players Grid */
+.players-grid-header{width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:0 2px}
+.sus-counter-badge{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:12px;background:rgba(239,68,68,0.15);color:#fca5a5;border:1px solid rgba(239,68,68,0.3)}
+.trust-counter-badge{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:12px;background:rgba(16,185,129,0.15);color:#86efac;border:1px solid rgba(16,185,129,0.3)}
+
+.players-grid{width:100%;display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:12px}
+.players-row{display:flex;justify-content:center;gap:8px;width:100%}
+.players-row .player-card{flex:0 0 calc((100% - (var(--cols) - 1) * 8px) / var(--cols));min-width:0;max-width:190px}
+.players-grid.dense .player-card{padding:6px 2px}
+.players-grid.dense .dossier-btn,.players-grid.dense .trust-btn,.players-grid.dense .sus-btn{font-size:.5rem;padding:2px 0}
+.player-card{background:var(--panel);border:1.5px solid var(--border);border-radius:10px;padding:8px 6px;text-align:center;position:relative;transition:all .2s;min-height:96px;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.player-card.active-turn{border-color:var(--g);box-shadow:0 0 14px rgba(245,158,11,0.2)}
+.player-card.president{border-color:var(--g);background:linear-gradient(180deg,var(--panel) 0%,rgba(245,158,11,0.1) 100%)}
+.player-card.chancellor{border-color:var(--whi-light);background:linear-gradient(180deg,var(--panel) 0%,rgba(96,165,250,0.1) 100%)}
+.player-card.dead{opacity:.35;border-color:#20232e}
+.player-card.feud-target{border-color:var(--comm-red);box-shadow:0 0 10px rgba(239,68,68,0.3)}
+.player-card.is-suspect{border-color:var(--comm-red)!important;box-shadow:0 0 12px rgba(239,68,68,0.45)!important;background:rgba(239,68,68,0.08)!important}
+.player-card.is-trusted{border-color:#10b981!important;box-shadow:0 0 12px rgba(16,185,129,0.35)!important;background:rgba(16,185,129,0.07)!important}
+
+.badge-suspect{background:rgba(239,68,68,0.25);color:#fca5a5;border:1px solid var(--comm-red)}
+.badge-trusted{background:rgba(16,185,129,0.25);color:#86efac;border:1px solid #10b981}
+
+.player-card-actions{display:flex;gap:3px;margin-top:4px;width:100%;justify-content:center}
+.dossier-btn{background:#11141d;border:1px solid var(--border-light);color:var(--td);font-size:.58rem;font-weight:700;padding:2px 4px;border-radius:4px;cursor:pointer;transition:all .15s;flex:1}
+.dossier-btn:hover{background:var(--panel-hover);color:var(--g);border-color:var(--g)}
+
+.trust-btn{background:#11141d;border:1px solid var(--border-light);color:var(--td);font-size:.58rem;font-weight:800;padding:2px 4px;border-radius:4px;cursor:pointer;transition:all .15s;flex:1}
+.trust-btn:hover{background:rgba(16,185,129,0.18);color:#34d399;border-color:#10b981}
+.trust-btn.active{background:#059669;color:#fff;border-color:#34d399;box-shadow:0 0 8px rgba(16,185,129,0.5)}
+
+.sus-btn{background:#11141d;border:1px solid var(--border-light);color:var(--td);font-size:.58rem;font-weight:800;padding:2px 4px;border-radius:4px;cursor:pointer;transition:all .15s;flex:1}
+.sus-btn:hover{background:rgba(239,68,68,0.18);color:#ef4444;border-color:#ef4444}
+.sus-btn.active{background:var(--r);color:#fff;border-color:#ef4444;box-shadow:0 0 8px rgba(239,68,68,0.5)}
+
+/* Action Area */
+.action-area{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 14px;margin-bottom:12px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.25)}
+.action-title{font-size:1.05rem;color:var(--g);text-transform:uppercase;letter-spacing:1.5px;font-weight:800;margin-bottom:4px}
+.action-desc{font-size:.84rem;color:var(--td);margin-bottom:12px}
+.vote-buttons{display:flex;gap:14px;justify-content:center;margin:10px 0}
+.vote-btn{width:115px;height:100px;border-radius:12px;border:2px solid;background:#11141d;font-size:1.5rem;font-weight:900;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.vote-btn:hover{transform:scale(1.04)}
+.vote-btn.ja{border-color:#22c55e;color:#86efac}
+.vote-btn.ja:hover{background:rgba(34,197,94,0.15)}
+.vote-btn.nein{border-color:#ef4444;color:#fca5a5}
+.vote-btn.nein:hover{background:rgba(239,68,68,0.15)}
+
+.policy-cards{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:12px 0}
+.policy-card{width:95px;height:135px;border-radius:10px;border:2px solid;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;background:#11141d}
+.policy-card:hover{transform:translateY(-4px)}
+.policy-card.white,
+.policy-card.whi {
+  border: 2px solid #ffffff !important;
+  color: var(--whi-light) !important;
+  background: #12100d !important;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2) !important;
+}
+.policy-card.white:hover,
+.policy-card.whi:hover {
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.45) !important;
+  transform: translateY(-4px);
+}
+.policy-card.white .card-icon,
+.policy-card.whi .card-icon { color: var(--whi-light) !important; }
+.policy-card.white .card-label,
+.policy-card.whi .card-label { color: var(--whi-light) !important; font-weight: 900 !important; }
+.policy-card.communist{border-color:var(--comm-red);color:var(--comm-red)}
+.policy-card .card-icon{font-size:2.2rem;margin-bottom:4px}
+.policy-card .card-label{font-size:.75rem;text-transform:uppercase;font-weight:800;letter-spacing:1px}
+
+/* Debrief & Persuasion Speech */
+.speech-card{background:#11141d;border:1.5px solid var(--border-light);border-radius:8px;padding:10px 14px;margin:8px 0;text-align:left}
+.speech-card.pres{border-left:4px solid var(--g)}
+.speech-card.chanc{border-left:4px solid var(--whi-light)}
+.speech-card.player-speech{border-left:4px solid #38bdf8;background:rgba(56,189,248,0.08)}
+.speech-card.outrage{border:2px solid var(--comm-red);background:rgba(239,68,68,0.14);animation:shake .45s ease-in-out}
+.speech-name{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.speech-text{font-size:.88rem;font-weight:500;color:var(--t);line-height:1.4}
+.dispute-box{background:rgba(220,38,38,0.18);border:1.5px solid var(--comm-red);border-radius:8px;padding:10px;margin:10px 0;text-align:center}
+.dispute-title{color:#fca5a5;font-size:.84rem;font-weight:900;text-transform:uppercase;letter-spacing:1px}
+.dispute-desc{color:var(--t);font-size:.82rem;margin-top:2px}
+
+/* Persuasion Dialogue List */
+.persuasion-list{display:flex;flex-direction:column;gap:8px;margin:12px 0;max-height:280px;overflow-y:auto;padding-right:4px}
+.persuasion-item{background:#11141d;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;text-align:left;cursor:pointer;transition:all .15s}
+.persuasion-item:hover{border-color:var(--g);background:var(--panel-hover)}
+.persuasion-tag{font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:1px 5px;border-radius:3px;margin-bottom:4px;display:inline-block}
+.tag-ja{background:#164e23;color:#86efac}
+.tag-nein{background:#541c1c;color:#fca5a5}
+.persuasion-quote{font-size:.84rem;color:var(--t);font-weight:500;line-height:1.35}
+
+/* Spectator AI Dashboard */
+.spectator-dashboard{width:100%;background:#0b0e14;border:1.5px solid var(--g);border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 0 20px rgba(245,158,11,.12)}
+.spectator-title{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--g);font-size:.86rem;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.spectator-sub{color:var(--td);font-size:.7rem;font-weight:600;text-transform:none;letter-spacing:0}
+.spectator-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.spectator-stat{background:#11141d;border:1px solid var(--border);border-radius:7px;padding:7px;text-align:center}
+.spectator-stat b{display:block;color:var(--t);font-size:.85rem}
+.spectator-stat span{display:block;color:var(--td);font-size:.62rem;text-transform:uppercase}
+
+/* Simulator Bar */
+.sim-controls{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#11141d;border:1.5px solid var(--border-light);border-radius:8px;padding:8px 12px;margin-bottom:12px}
+.sim-controls-left{display:flex;align-items:center;gap:8px}
+.sim-input{width:65px;background:#0b0e14;border:1px solid var(--border);border-radius:5px;padding:5px 8px;color:#fff;font-weight:700;font-size:.82rem;text-align:center}
+.sim-btn{background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;font-weight:800;border:none;border-radius:6px;padding:6px 14px;font-size:.75rem;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.sim-btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+
+.spectator-bot{background:#11141d;border:1px solid var(--border);border-radius:8px;padding:10px;margin:8px 0}
+.spectator-bot-head{display:flex;justify-content:space-between;gap:6px;align-items:center;font-weight:800;font-size:.78rem}
+.spectator-bot-title{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.spectator-consensus-pill{font-size:.68rem;font-weight:700;color:var(--td);background:#0b0e14;padding:2px 7px;border-radius:4px;border:1px solid #272d3b}
+.spectator-role{font-size:.6rem;text-transform:uppercase;padding:2px 5px;border-radius:4px;border:1px solid var(--border-light);color:var(--td)}
+.spectator-role.white{color:var(--whi-light);border-color:var(--whi-light)}
+.spectator-role.communist,.spectator-role.stalin{color:#fca5a5;border-color:var(--comm-red)}
+.spectator-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-top:8px}
+
+/* Mini Cards & Outlines */
+.spectator-mini{background:#0b0e14;border-radius:6px;padding:6px;text-align:center;border:1.5px solid #252a36;position:relative;transition:all .2s}
+.spectator-mini.outline-stalin{border:2px solid #f97316 !important;box-shadow:0 0 10px rgba(249,115,22,0.5) !important}
+.spectator-mini.outline-comm{border:2px solid #ef4444 !important;box-shadow:0 0 10px rgba(239,68,68,0.5) !important}
+.spectator-mini b{display:block;font-size:.74rem}
+.spectator-mini .true-id{font-size:.65rem;color:var(--td);font-weight:500;margin-bottom:2px}
+.spectator-mini .odds-line{font-size:.62rem;color:#cbd5e1;line-height:1.2}
+
+.game-log{width:100%;max-height:160px;overflow-y:auto;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;font-size:.8rem}
+.log-entry{margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.05);line-height:1.4}
+.log-entry:last-child{border-bottom:none;margin-bottom:0}
+.log-time{color:var(--tdd);font-size:.68rem;font-weight:600}
+.log-speech{background:#11141d;border-left:3px solid var(--g);padding:6px 10px;border-radius:0 6px 6px 0;margin:4px 0}
+.log-speech.conflict{border-left-color:var(--comm-red);background:rgba(220,38,38,0.15)}
+.log-speaker{font-weight:800;color:var(--g);font-size:.78rem;text-transform:uppercase}
+
+.player-select-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0}
+.select-player-btn{background:#11141d;border:1.5px solid var(--border);border-radius:8px;color:var(--t);padding:12px;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s}
+.select-player-btn:hover:not(:disabled){border-color:var(--g);color:var(--g);background:var(--panel-hover)}
+.select-player-btn:disabled{opacity:.35;cursor:not-allowed}
+
+.privacy-gate{background:#11141d;border:1.5px dashed var(--g);border-radius:10px;padding:22px 14px;margin:14px 0;text-align:center}
+.privacy-gate-icon{font-size:2.5rem;margin-bottom:6px}
+.privacy-gate-title{color:var(--g);font-size:1.05rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}
+.privacy-gate-desc{color:var(--td);font-size:.82rem}
+
+.peek-cards{display:flex;gap:10px;justify-content:center;margin:14px 0}
+.peek-card{width:70px;height:100px;border-radius:8px;border:2px solid var(--border);background:#11141d;display:flex;align-items:center;justify-content:center;font-size:1.8rem}
+.peek-card.white,
+.peek-card.whi {
+  border: 2px solid #ffffff !important;
+  background: #12100d !important;
+  color: var(--whi-light) !important;
+  font-weight: 900 !important;
+}
+.peek-card.communist{border-color:var(--comm-red);color:var(--comm-red)}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:999;justify-content:center;align-items:center;padding:16px}
+.modal-overlay.active{display:flex}
+.modal-content{background:var(--panel);border:1.5px solid var(--border-light);border-radius:14px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:20px;box-shadow:0 10px 35px rgba(0,0,0,0.6);text-align:left}
+.modal-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:14px}
+.modal-header h3{color:var(--g);font-size:1.15rem;font-weight:900;text-transform:uppercase;letter-spacing:1px}
+.modal-close{background:none;border:none;color:var(--td);font-size:1.4rem;cursor:pointer;font-weight:700}
+.modal-close:hover{color:#fff}
+.dossier-section{margin-bottom:14px}
+.dossier-section-title{font-size:.76rem;text-transform:uppercase;color:var(--td);font-weight:800;letter-spacing:1px;margin-bottom:6px}
+.dossier-item{background:#11141d;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:.8rem;margin-bottom:6px}
+
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.shake{animation:shake .45s ease-in-out}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:4px}
+
+/* Viewport Switcher */
+#viewToggleBtn {
+  position: fixed;
+  top: 10px;
+  right: 12px;
+  z-index: 9999;
+  background: linear-gradient(135deg, #1f2937, #111827);
+  color: #f59e0b;
+  border: 1.5px solid #f59e0b;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), 0 0 10px rgba(245, 158, 11, 0.25);
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+#viewToggleBtn:hover {
+  background: linear-gradient(135deg, #374151, #1f2937);
+  color: #ffffff;
+  border-color: #fbbf24;
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.4);
+  transform: translateY(-1px);
+}
+
+body.force-desktop { max-width: 1240px; width: 96%; margin: 0 auto; padding: 20px 24px 80px; }
+body.force-desktop .screen { max-width: 1200px; width: 100%; }
+body.force-desktop .game-header,
+body.force-desktop .identity-bar,
+body.force-desktop .board-container,
+body.force-desktop .action-area,
+body.force-desktop .game-log { max-width: 1200px; }
+
+body.force-mobile { max-width: 450px; margin: 0 auto; padding: 12px 10px 60px; box-shadow: 0 0 50px rgba(0, 0, 0, 0.85); border-left: 1px solid var(--border); border-right: 1px solid var(--border); min-height: 100vh; }
+body.force-mobile .screen { max-width: 440px; padding: 10px 8px; }
+
+/* Badges */
+.player-card.is-self { box-shadow: 0 0 14px rgba(255, 255, 255, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.25) !important; border-color: #cbd5e1 !important; }
+.player-card.is-stalin-teammate { border: 2.5px solid #f59e0b !important; background: linear-gradient(180deg, var(--panel) 0%, rgba(245, 158, 11, 0.18) 100%) !important; box-shadow: 0 0 16px rgba(245, 158, 11, 0.45) !important; }
+.player-card.is-comm-teammate { border: 2.5px solid #ef4444 !important; background: linear-gradient(180deg, var(--panel) 0%, rgba(239, 68, 68, 0.18) 100%) !important; box-shadow: 0 0 16px rgba(239, 68, 68, 0.45) !important; }
+.player-card.president { border: 2.5px solid #f59e0b !important; background: linear-gradient(180deg, var(--panel) 0%, rgba(245, 158, 11, 0.18) 100%) !important; box-shadow: 0 0 16px rgba(245, 158, 11, 0.5) !important; }
+.player-card.active-turn { border: 2.5px solid #38bdf8 !important; background: linear-gradient(180deg, var(--panel) 0%, rgba(56, 189, 248, 0.18) 100%) !important; box-shadow: 0 0 16px rgba(56, 189, 248, 0.5) !important; }
+.player-card.chancellor { border: 2.5px solid #3b82f6 !important; background: linear-gradient(180deg, var(--panel) 0%, rgba(59, 130, 246, 0.18) 100%) !important; box-shadow: 0 0 16px rgba(59, 130, 246, 0.5) !important; }
+
+.player-gov-badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 0.74rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.gov-pres { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; border: 1.5px solid #fde047; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.6); }
+.gov-nom { background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; border: 1.5px solid #38bdf8; box-shadow: 0 2px 8px rgba(56, 189, 248, 0.6); }
+.gov-chanc { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: 1.5px solid #60a5fa; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.6); }
+
+.player-role-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.6px; margin: 2px 0; }
+.badge-self-whi { background: #2e2922; color: #fff; border: 2px solid #eae6d9; }
+.badge-self-comm { background: #7f1d1d; color: #fef08a; border: 2px solid #ef4444; }
+.badge-self-stalin { background: #78350f; color: #fef08a; border: 2px solid #f59e0b; }
+.badge-teammate-stalin { background: #78350f; color: #fef08a; border: 2px solid #fbbf24; }
+.badge-teammate-comm { background: #7f1d1d; color: #fca5a5; border: 2px solid #f87171; }
+.badge-cns { background: #065f46; color: #a7f3d0; border: 1.5px solid #34d399; font-weight: 900; }
+.vote-badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 0.82rem; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin-top: 5px; }
+.vote-badge.vote-ja { background: linear-gradient(135deg, #15803d, #166534); color: #fff; border: 2px solid #4ade80; }
+.vote-badge.vote-nein { background: linear-gradient(135deg, #b91c1c, #991b1b); color: #fff; border: 2px solid #f87171; }
+.badge-white{background:#2e2922;color:#f5f0e1;border:1.5px solid #eae6d9}
+.badge-communist{background:#7f1d1d;color:#fca5a5;border:1.5px solid #ef4444}
+.badge-stalin{background:#78350f;color:#fef08a;border:1.5px solid #f59e0b}
+.badge-bloc{background:rgba(245,158,11,.2);color:#fde68a;border:1px solid #f59e0b}
+/* Supabase multiplayer lobby; intentionally scoped to avoid offline UI changes. */
+.online-wrap{width:min(95%,640px);margin:20px auto 60px;padding:24px;background:rgba(18,19,22,.92);border:1px solid rgba(255,255,255,.16);border-radius:14px;color:#f4f0e9}
+.online-wrap h2{text-align:center;letter-spacing:1px;margin:0 0 14px;color:#e4be6d}
+.online-wrap h3{margin:16px 0;color:#e4be6d}
+.online-wrap input{min-width:0;width:100%;padding:12px;border-radius:8px;border:1px solid #555;background:#211f21;color:#fff;font-size:1rem;box-sizing:border-box}
+.online-wrap .setting-label{display:block;margin:15px 0 7px}
+.online-wrap .online-actions{display:flex;gap:10px;align-items:center;margin:12px 0;flex-wrap:wrap}
+.online-wrap .online-actions>.btn{flex:1;min-width:150px;margin:0}
+.online-wrap .online-actions>input{flex:2;min-width:120px}
+.online-wrap .pill-btn{margin:8px 0}
+#online-status{line-height:1.5;color:#d3d3d3;text-align:center;font-size:.92rem}
+#online-status.online-error{color:#ff9c9c}
+.online-seats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:18px 0}
+.online-seat{padding:10px 12px;background:#2a292b;border:1px solid #494849;border-radius:8px;font-size:.85rem;overflow-wrap:anywhere}
+.online-seat.is-bot{opacity:.8}
+.online-seat span{color:#d4b36d;margin-right:5px}
+#screen-online [hidden]{display:none!important}
+@media(max-width:500px){.online-wrap{padding:16px}.online-seats{grid-template-columns:1fr}}
+/* Dedicated online match surface; offline board and logic remain untouched. */
+#online-match[hidden]{display:none!important}
+.online-game-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}
+.online-kicker{font-size:.66rem;letter-spacing:2px;color:#c6b18a;font-weight:800}
+.online-game-top h3{margin:3px 0 10px;font-size:1.25rem}
+.online-clock{font-size:1.65rem;font-weight:900;font-variant-numeric:tabular-nums;padding:9px 14px;border-radius:9px;background:#272528;color:#e6bf6f;border:1px solid #65502f}
+.online-clock.urgent{background:#491b1b;color:#fecaca;border-color:#bc4444}
+.online-identity{color:#e6c781;padding:10px;border:1px solid #8f7846;background:#29251b;border-radius:8px;font-weight:800}
+.online-tracks{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.online-tracks>div{display:flex;flex-direction:column;gap:7px;padding:14px;background:#292729;border-radius:9px;border:1px solid #514b49}
+.online-tracks>div:first-child strong{color:#f0e5c3}
+.online-tracks>div:last-child strong{color:#f87171}
+.online-tracks span{font-size:1.5rem;font-weight:900}
+.online-election{font-size:.78rem;color:#c6b9a2}
+.online-election.election-rejected strong{color:#ff7777;font-weight:950;letter-spacing:.035em}
+.online-election.election-approved strong{color:#80e4a6;font-weight:950;letter-spacing:.035em}
+.online-election.election-voting strong{color:#a5c7ff;font-weight:950}
+.online-election.election-counting strong{color:#facc65;font-weight:950}
+.council-event-line.election-failed{color:#ffc3c3;background:rgba(157,35,35,.2);border-left:3px solid #f36a6a;padding:4px 7px;font-weight:750}
+.council-event-line.election-passed{color:#b5efc5;border-left:3px solid #67c98e;padding:4px 7px}
+.online-players{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.online-player{display:flex;flex-direction:column;gap:4px;padding:10px;border:1px solid #484348;border-radius:8px;background:#292729;font-size:.8rem;overflow-wrap:anywhere}
+.online-player.self{border-color:#d5b061;background:#322c20}
+.online-player.dead{opacity:.48;text-decoration:line-through}
+.online-player small{font-size:.67rem;color:#b0a69a;letter-spacing:.5px}
+.online-action-panel,.online-chat-panel{background:#211f22;border:1px solid #4c4340;border-radius:11px;padding:15px;margin-top:18px}
+.online-action-panel h3,.online-chat-panel h3{margin:0 0 10px;color:#e4be6d}
+#online-prompt{font-size:.85rem;color:#ddd2c0;line-height:1.5}
+#online-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.online-choice{flex:1 1 120px;padding:13px 12px;border:1px solid #74614a;border-radius:8px;background:#37302b;color:#f2e3c9;cursor:pointer;font-weight:800;min-width:0}
+.online-choice:hover{background:#59442c}
+.online-choice.white{background:#e6dec8;color:#272221}
+.online-choice.communist,.online-choice.no{background:#632525;color:#ffdbdb;border-color:#ae4b4b}
+.online-choice.yes{background:#285c48;color:#dcffed;border-color:#448e70}
+.online-action-panel textarea{width:100%;box-sizing:border-box;resize:vertical;background:#292729;color:#fff;border:1px solid #655d58;border-radius:8px;padding:10px}
+.online-chat-messages{height:200px;overflow:auto;background:#171719;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.online-chat-messages p{font-size:.79rem;line-height:1.5;margin:0;overflow-wrap:anywhere}
+.online-chat-messages strong{color:#dfbb78}
+.online-chat-form{display:flex;gap:8px;margin-top:10px}
+.online-chat-form input{flex:1;min-width:0}
+.online-chat-form button{margin:0;min-width:75px;width:auto}
+.online-event-log{margin-top:16px;font-size:.78rem;color:#cbbfad}
+.online-event-log summary{cursor:pointer;color:#e4be6d}
+.online-event-log p{border-bottom:1px solid #4a4340;padding:6px 0;margin:0}
+.online-win{text-align:center;font-size:1.4rem;color:#e8c17b;font-weight:900;padding:20px}
+@media(max-width:480px){.online-players{grid-template-columns:1fr}.online-wrap{padding:14px}.online-game-top{align-items:flex-start}}
+
+/* Online match reuses the original offline game board and its component rules.
+   Lobby selectors above are deliberately unchanged. */
+#screen-online:has(#online-match:not([hidden])){max-width:680px;padding:12px 14px 60px}
+#screen-online:has(#online-match:not([hidden])) .online-wrap{width:100%;max-width:none;background:transparent;border:0;padding:0;margin:0}
+#screen-online:has(#online-match:not([hidden])) .online-wrap>h2,
+#screen-online:has(#online-match:not([hidden])) #online-status{display:none}
+#online-match{width:100%}
+#online-match .game-header{margin-top:0;gap:7px}
+#online-match .game-branding h2{font-size:1.02rem}
+#online-match .phase-pill{font-size:.65rem;text-align:center}
+#online-match .online-clock{border:1px solid var(--border-light);background:#11141d;border-radius:9px;color:var(--g);padding:5px 9px;font-size:1.12rem;white-space:nowrap;min-width:62px;text-align:center}
+#online-match .online-clock.urgent{color:#fca5a5;border-color:var(--comm-red);box-shadow:0 0 12px rgba(220,38,38,.35)}
+#online-match .identity-bar{margin-bottom:10px}
+#online-match .identity-bar>span:first-child{font-size:.76rem;color:var(--td)}
+#online-match .identity-tag{color:var(--whi-light);background:#2a2e38}
+#online-match .identity-tag.communist,#online-match .identity-tag.stalin{background:rgba(220,38,38,.2);color:#fca5a5}
+#online-match .track-count{font-size:.85rem}
+#online-match #online-white{color:var(--whi-light)}
+#online-match #online-communist{color:var(--comm-red)}
+#online-match .online-election{margin:9px 0 0;padding-top:7px;border-top:1px solid var(--border);color:var(--td);font-size:.72rem}
+#online-match .players-grid-header>span:first-child{font-size:.78rem;font-weight:800;letter-spacing:.8px;color:var(--td)}
+#online-match .online-council-hint{color:var(--tdd);font-size:.7rem}
+#online-match .online-players{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+#online-match .online-player{min-width:0;min-height:126px;padding:8px 5px;justify-content:center;align-items:center;gap:2px;font-size:.73rem;overflow-wrap:anywhere}
+#online-match .online-player .online-avatar{font-size:1.5rem;line-height:1.2}
+#online-match .online-player .online-name{font-size:.73rem;line-height:1.15;font-weight:800;text-align:center;overflow-wrap:anywhere}
+#online-match .online-player .online-role{color:var(--td);font-size:.58rem;font-weight:700;text-align:center;letter-spacing:.1px}
+#online-match .online-player .player-gov-badge{font-size:.5rem;padding:1px 4px;margin:0}
+#online-match .online-player .player-card-actions{gap:2px}
+#online-match .online-player .player-card-actions button{font-size:.49rem;padding:3px 1px;min-width:0}
+#online-match .online-mark-counters{display:flex;gap:5px}
+#online-match .online-mark-counters span{font-size:.62rem}
+#online-match .online-player.self{border-color:#cbd5e1;background:var(--panel);box-shadow:0 0 12px rgba(255,255,255,.18)}
+#online-match .online-player.dead{opacity:.4;text-decoration:none}
+#online-match .online-player.president{border-color:var(--g)}
+#online-match .online-player.chancellor{border-color:#3b82f6}
+#online-match .online-player.acting{box-shadow:0 0 14px rgba(56,189,248,.33)}
+#online-match .online-action-panel{width:100%;margin:0 0 12px;padding:16px 14px;background:var(--panel);text-align:center}
+#online-match #online-prompt{font-size:.84rem;color:var(--td);margin-bottom:10px}
+#online-match #online-actions{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+#online-match .online-choice{flex:0 1 auto;min-width:110px;background:#11141d;color:var(--t);border:1.5px solid var(--border-light);border-radius:8px;padding:11px 13px;font-size:.81rem;font-weight:800}
+#online-match .online-choice:hover{border-color:var(--g);color:var(--g);background:var(--panel-hover)}
+#online-match .online-choice.yes,#online-match .online-choice.no{height:90px;width:115px;font-size:1.16rem}
+#online-match .online-choice.yes{border-color:#22c55e;color:#86efac}
+#online-match .online-choice.no{border-color:#ef4444;color:#fca5a5}
+#online-match .online-choice.policy-card{width:95px;height:135px;padding:5px;min-width:95px;flex:0 0 95px}
+#online-match .online-choice.policy-card .card-icon{font-size:2.2rem}
+#online-match .online-choice.policy-card .card-label{font-size:.7rem}
+#online-match .online-win{color:var(--g)}
+#online-match .online-chat-panel{width:100%;margin:0 0 12px;background:var(--panel);padding:12px;max-height:none}
+#online-match .online-chat-header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:5px;margin-bottom:9px}
+#online-match .online-chat-header strong{color:var(--g);font-size:.82rem;letter-spacing:.9px}
+#online-match .online-chat-header span{color:var(--tdd);font-size:.68rem}
+#online-match .online-chat-messages{height:250px;background:#11141d;border:1px solid var(--border);padding:9px;gap:8px}
+#online-match .online-chat-messages p{background:#1a1e29;border-left:3px solid var(--border-light);border-radius:0 7px 7px 0;padding:7px 9px;color:var(--t);font-size:.78rem}
+#online-match .online-chat-messages p.bot-statement{border-left-color:var(--g);background:rgba(245,158,11,.07)}
+#online-match .online-chat-messages p.public-event{border-left-color:#38bdf8;background:rgba(56,189,248,.07)}
+#online-match .online-chat-messages strong{color:var(--g)}
+#online-match .online-chat-form{margin-top:9px}
+#online-match .online-chat-form input{background:#11141d;border:1px solid var(--border-light)}
+#online-match .online-chat-form .btn{max-width:95px;width:auto;margin:0;font-size:.75rem;letter-spacing:.5px;padding:10px}
+#online-match .online-event-log{width:100%;margin:0;background:var(--panel);color:var(--td);padding:11px}
+#online-match .online-event-log summary{color:var(--g)}
+@media(max-width:480px){#online-match .online-player{min-height:115px;padding:5px 2px}#online-match .online-player .online-name{font-size:.65rem}#online-match .online-player .online-role{font-size:.53rem}#online-match .game-branding h2{font-size:.8rem}#screen-online:has(#online-match:not([hidden])){padding:10px 8px 60px}}
+
+/* Multiplayer liveliness and strong, legible faction cues. These styles are
+   scoped: the existing Play vs Bots board remains pixel-for-pixel unchanged. */
+#online-match .online-choice{min-height:46px;touch-action:manipulation;transition:background .12s,border-color .12s,box-shadow .12s,transform .12s}
+#online-match .online-choice:active,#online-match .online-choice.chosen{transform:scale(.95);box-shadow:0 0 0 3px rgba(245,158,11,.36)}
+#online-match .online-choice:focus-visible{outline:3px solid #fbbf24;outline-offset:3px}
+#online-match .online-choice.policy-card.white{background:linear-gradient(150deg,#f8f5e9,#d7d0bd);border:3px solid #f8e6ac;color:#22232b;box-shadow:0 5px 15px rgba(234,230,217,.17)}
+#online-match .online-choice.policy-card.white .card-icon,#online-match .online-choice.policy-card.white .card-label{color:#35312b}
+#online-match .online-choice.policy-card.communist{background:linear-gradient(150deg,#9e2424,#51171e);border:3px solid #f87171;color:#fff1f1;box-shadow:0 5px 15px rgba(239,68,68,.19)}
+#online-match .online-choice.policy-card.communist .card-icon,#online-match .online-choice.policy-card.communist .card-label{color:#fff1f1}
+#online-match .online-choice.policy-card:hover{transform:translateY(-5px) scale(1.035)}
+#online-match .online-choice.policy-card:active{transform:translateY(1px) scale(.96)}
+#online-match .online-choice.policy-card.chosen{transform:scale(.93);box-shadow:0 0 0 4px #fbbf24}
+/* Online council record: human speech is visibly separate from neutral history. */
+#online-match .online-chat-messages .human-chat-line{background:rgba(251,191,36,.17);border-left:3px solid #fbbf24;padding:9px 10px;border-radius:5px;color:#ffefbd;margin:6px 0}
+#online-match .online-chat-messages .human-chat-line strong{color:#fcd34d}
+#online-match .online-chat-messages .council-event-line{background:rgba(255,255,255,.045);border-left:2px solid rgba(255,255,255,.24);padding:6px 10px;margin:3px 0;color:#cbd5e1;font-size:.9rem}
+#online-match .online-policy-report{position:relative;margin:10px auto 12px;padding:14px 42px 13px 16px;max-width:780px;border:2px solid #d1b66d;border-radius:9px;background:#24282d;color:#f5f1e6;box-shadow:0 6px 28px #0008;animation:online-policy-pop .32s ease-out}
+#online-match .online-policy-report[hidden]{display:none}
+#online-match .online-policy-report.white{border-color:#e1d9bd;background:linear-gradient(120deg,#383a37,#202529)}
+#online-match .online-policy-report.red{border-color:#ef4444;background:linear-gradient(120deg,#552025,#242126)}
+#online-match .online-policy-report>strong{font-size:1.18rem;display:block;letter-spacing:.045em}
+#online-match .online-policy-report.red>strong{color:#fda4af}
+#online-match .online-policy-report.white>strong{color:#fff1b9}
+#online-match .online-policy-report p{margin:6px 0;font-size:.9rem;line-height:1.4}
+#online-match .online-policy-report small{display:block;opacity:.72;margin-top:6px}
+#online-match .online-policy-report .report-round{font-size:.76rem;color:#cbd5e1}
+#online-match .online-policy-report .policy-report-close{position:absolute;top:6px;right:9px;background:transparent;color:#e2e8f0;border:0;font-size:1.5rem;cursor:pointer;min-width:35px;min-height:35px}
+@keyframes online-policy-pop{from{opacity:0;transform:translateY(-13px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+#online-match .online-player.known-communist,#online-match .online-player.known-stalin{border-color:#ef4444;background:linear-gradient(160deg,#301620,#1d1922)}
+#online-match .online-player.known-communist .online-name,#online-match .online-player.known-stalin .online-name{color:#fca5a5;text-shadow:0 0 8px rgba(239,68,68,.36)}
+#online-match .online-player.known-white .online-name{color:#f0e7d1}
+#online-match .online-player.known-white{box-shadow:inset 0 0 0 1px rgba(248,245,233,.24)}
+#online-match .online-chat-messages strong.speaker-communist,#online-match .online-chat-messages strong.speaker-stalin{color:#fca5a5}
+#online-match .online-chat-messages strong.speaker-white{color:#f4e6bc}
+#online-match .online-click-confirmation{display:flex;justify-content:center;align-items:center;gap:10px;margin:9px auto;padding:13px 17px;background:rgba(34,197,94,.13);border:2px solid #22c55e;border-radius:9px;color:#bbf7d0;font-size:.9rem;font-weight:800;animation:online-confirm .24s ease-out}
+#online-match .online-click-confirmation span{font-size:1.25rem}
+@keyframes online-confirm{from{opacity:.2;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+#online-match .online-vote-reveal{display:none;margin:9px 0;padding:10px;border:1px solid var(--border-light);border-radius:9px;background:#11141d}
+#online-match .online-vote-reveal.is-visible{display:block}
+#online-match .vote-reveal-title{color:var(--g);font-weight:900;font-size:.75rem;text-align:center;letter-spacing:.45px;margin-bottom:8px}
+#online-match .vote-reveal-grid{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+#online-match .vote-reveal-chip{padding:4px 7px;border-radius:5px;border:1px solid transparent;font-size:.72rem;font-weight:900}
+#online-match .vote-reveal-chip.fresh{animation:online-vote-pop .2s cubic-bezier(.22,1.5,.5,1) both}
+#online-match .vote-reveal-chip.yes{color:#bbf7d0;background:#14532d;border-color:#4ade80}
+#online-match .vote-reveal-chip.no{color:#fecaca;background:#7f1d1d;border-color:#f87171}
+@keyframes online-vote-pop{from{opacity:0;transform:translateY(-14px) scale(.5)}to{opacity:1;transform:translateY(0) scale(1)}}
+#online-match .online-dispute{display:none}
+#online-match .online-dispute.active{display:block;margin:8px 0;padding:12px;background:rgba(185,28,28,.29);border:2px solid #ef4444;border-radius:8px;color:#fecaca;font-size:.84rem;font-weight:900;text-align:center;box-shadow:0 0 16px rgba(220,38,38,.22)}
+#online-match .online-dispute.shake{animation:shake .45s ease-in-out}
+#online-match .online-chat-messages p.chat-outbox{border-left-color:#fbbf24;opacity:.86}
+#online-match .online-chat-messages p.chat-outbox span{font-size:.68rem;color:#fbbf24}
+#online-match .online-chat-messages p.chat-outbox.chat-failed{border-left-color:#ef4444;background:rgba(127,29,29,.25);opacity:1}
+#online-match .online-chat-messages p.chat-outbox.chat-failed span{color:#fca5a5}
+#online-match .online-chat-messages .chat-outbox button{padding:3px 8px;border:1px solid #f87171;border-radius:5px;background:#452123;color:#fecaca;cursor:pointer;font-weight:800}
+#online-match .online-chat-status{font-size:.73rem;min-height:1.1rem;color:#86efac;margin:6px 1px 0}
+#online-match .online-chat-status.online-error{color:#fca5a5}
+@media(prefers-reduced-motion:reduce){#online-match .vote-reveal-chip,#online-match .online-click-confirmation,#online-match .online-dispute.shake{animation:none}}
+
+/* Integrated vote reveals and click-to-open council dossiers. */
+#online-match .online-seat-vote{min-height:25px;display:flex;align-items:center;justify-content:center;margin:1px auto}
+#online-match .online-seat-vote .vote-reveal-chip{font-size:.66rem;min-width:46px;text-align:center;padding:3px 6px}
+#online-match .online-cleared{color:#a7f3d0;background:#14532d;border:1px solid #34d399;border-radius:5px;padding:3px 5px;font-weight:900;font-size:.55rem;letter-spacing:.2px;text-align:center}
+#online-match .online-player .online-dossier-open{background:#222938;color:#e2e8f0;border:1px solid #79849a;border-radius:5px;padding:5px 6px;font-size:.58rem;font-weight:900;cursor:pointer;min-height:28px;max-width:100%}
+#online-match .online-seat-controls{width:100%;display:flex;align-items:stretch;justify-content:center;gap:3px;min-height:26px;flex-shrink:0}
+#online-match .online-seat-controls .online-dossier-open{flex:1 1 37%;min-width:0;padding:4px 2px;min-height:26px;font-size:clamp(.45rem,.64vw,.59rem)}
+#online-match .online-seat-controls .player-card-actions{flex:1 1 63%;display:flex;align-items:stretch;gap:3px;margin:0;min-width:0;width:auto}
+#online-match .online-seat-controls .player-card-actions button{flex:1 1 50%;min-width:0;padding:3px 1px;font-size:clamp(.43rem,.6vw,.58rem);line-height:1.05;cursor:pointer}
+#online-match .online-player{justify-content:flex-start;overflow:hidden}
+#online-match .online-player .player-gov-badge{position:static;display:block;max-width:100%;width:auto;align-self:center;flex-shrink:0;line-height:1.2;padding:3px 5px;font-size:clamp(.48rem,.7vw,.64rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#online-match .online-player .online-seat-controls{margin-top:auto;max-width:100%;min-height:25px;position:relative;z-index:1}
+#online-match .online-player .online-seat-controls button{max-height:27px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#online-match .online-action-panel[data-phase="voting"]{border-color:#658dc4;background:linear-gradient(110deg,#1a2535,var(--panel))}
+#online-match .online-action-panel[data-phase="executive_power-execution"]{border-color:#d15757;background:linear-gradient(110deg,#301c26,var(--panel))}
+#online-match .online-action-panel[data-phase^="legislative_"]{border-color:#ba923d;background:linear-gradient(110deg,#2b2519,var(--panel))}
+#online-match .online-action-panel[data-phase="nomination"]{border-color:#c49b43}
+#online-match .online-wait-card{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 9px;width:100%;padding:7px;border:1px solid #4c6078;background:#162338;border-radius:9px;color:#d7e8ff;font-size:.73rem}
+#online-match .online-wait-card small{color:#aebfd3;font-size:.65rem}
+#online-match .online-wait-spinner{color:#f9c45c;font-size:1.1rem;animation:online-wait-pulse 1.6s ease-in-out infinite}
+@keyframes online-wait-pulse{0%,100%{opacity:.4}50%{opacity:1}}
+.game-build-version{position:fixed;left:8px;bottom:6px;z-index:900;color:#a3a3a3;background:rgba(10,13,20,.75);border:1px solid #515765;border-radius:4px;padding:3px 6px;font:700 11px system-ui,sans-serif;letter-spacing:.06em;pointer-events:none}
+.online-round-badge{flex:0 0 auto;padding:5px 10px;border:1px solid #b99545;background:#302718;color:#ffe7a7;border-radius:6px;font-weight:950;font-size:.78rem;letter-spacing:.06em;white-space:nowrap}
+#online-match .online-investigation-banner[hidden]{display:none!important}
+#online-match .online-investigation-banner{position:fixed;z-index:1700;top:24%;left:50%;transform:translateX(-50%);width:min(610px,87vw);padding:25px 26px;display:flex;align-items:center;flex-direction:column;gap:11px;text-align:center;border:3px solid;border-radius:14px;box-shadow:0 20px 85px #000d;pointer-events:none;animation:online-investigate-arrive .45s ease-out both}
+#online-match .online-investigation-banner.declared-white{color:#d9efff;border-color:#93c5fd;background:linear-gradient(145deg,#213954,#0d1828)}
+#online-match .online-investigation-banner.declared-communist{color:#ffdddd;border-color:#f87171;background:linear-gradient(145deg,#58202a,#21131b)}
+#online-match .online-investigation-banner .investigation-kicker{font-size:.73rem;letter-spacing:.12em;font-weight:900;opacity:.85}
+#online-match .online-investigation-banner strong{font-size:clamp(1.05rem,2vw,1.55rem)}
+#online-match .online-investigation-banner .investigation-verdict{font-size:clamp(1.5rem,3vw,2.3rem);font-weight:950;letter-spacing:.055em}
+#online-match .online-investigation-banner small{font-size:.76rem;opacity:.85}
+@keyframes online-investigate-arrive{0%{opacity:0;transform:translate(-50%,-15px) scale(.94)}100%{opacity:1;transform:translate(-50%,0) scale(1)}}
+#online-match .council-round-chip{display:inline-block;vertical-align:middle;margin-right:4px;padding:2px 4px;background:#364052;color:#e3eaf6;border-radius:4px;font-size:.65rem;font-weight:950}
+#online-match .online-chat-messages .council-event-line{margin:3px 0;padding:6px 8px;line-height:1.45;border-radius:6px}
+#online-match .online-chat-messages .council-nomination{border-left:3px solid #e8b665;background:#302819;color:#f6dfb0}
+#online-match .online-chat-messages .council-white-policy{border-left:4px solid #93c5fd;background:#202e47;color:#d4eaff}
+#online-match .online-chat-messages .council-communist-policy{border-left:4px solid #ef7777;background:#421d26;color:#ffe0e0}
+#online-match .online-chat-messages .council-invest-white{border-left:4px solid #93c5fd;background:#1c324b;color:#dfecff}
+#online-match .online-chat-messages .council-invest-communist{border-left:4px solid #fb7185;background:#44202a;color:#ffe1e1}
+#online-match .online-chat-messages .council-policy-claim{border-left:3px solid #c5a264;background:#2d2b2d;color:#e6dfd5}
+#online-match .online-chat-messages .council-handoff{display:grid;gap:5px;border:1px solid #8a6a39;border-left:4px solid #e4b565;background:#30291d;color:#eee4ce;padding:9px 11px}
+#online-match .online-chat-messages .council-handoff>div{font-size:.75rem;line-height:1.4}
+#online-match .online-chat-messages .council-handoff>small{font-size:.65rem;color:#bcb1a1}
+#online-match .online-chat-messages .council-conflict{border-left:4px solid #ef4444;background:#4b1d22;color:#ffb4b4;font-weight:750}
+#online-match .online-chat-messages .council-execution{border-left:4px solid #f36b53;background:#4d231f;color:#ffe0d7;font-weight:750}
+#online-match .online-chat-messages .claim-white{color:#93c5fd}
+#online-match .online-chat-messages .claim-communist{color:#fca5a5}
+#online-match .online-chat-messages .council-ballot-detail{border-left:3px solid #8e9aad;background:#222937}
+#online-match .ballot-list{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+#online-match .ballot-mini{padding:3px 5px;border-radius:4px;font-size:.66rem;font-weight:800}
+#online-match .ballot-mini.yes{background:#164b36;color:#b8f0d0}
+#online-match .ballot-mini.no{background:#62252c;color:#ffb4b4}
+#screen-game .track-slot.policy-new{animation:offline-policy-land .95s cubic-bezier(.16,1,.28,1) both;position:relative;z-index:2}
+@keyframes offline-policy-land{0%{transform:scale(1.7) rotate(-8deg);filter:brightness(2.8);box-shadow:0 0 0 10px #e6ba4b66}55%{transform:scale(.93) rotate(3deg);filter:brightness(1.5)}100%{transform:scale(1) rotate(0);filter:brightness(1)}}
+#screen-game .offline-policy-flash{position:fixed;top:35%;left:50%;transform:translateX(-50%);z-index:1550;pointer-events:none;padding:18px 28px;border:2px solid;border-radius:12px;font-size:clamp(1rem,2.1vw,1.75rem);font-weight:950;letter-spacing:.08em;text-align:center;box-shadow:0 16px 80px #000a;animation:offline-policy-announcement 1.55s ease both}
+#screen-game .offline-policy-flash.white{background:#1b334e;color:#d8ecff;border-color:#93c5fd}
+#screen-game .offline-policy-flash.red{background:#481a20;color:#ffc6c6;border-color:#f87171}
+@keyframes offline-policy-announcement{0%{opacity:0;transform:translateX(-50%) scale(.75)}12%,75%{opacity:1;transform:translateX(-50%) scale(1)}100%{opacity:0;transform:translateX(-50%) scale(1.06)}}
+#online-code{text-transform:uppercase;letter-spacing:.09em}
+#online-match .online-player .online-dossier-open:hover{background:#374151;border-color:#fbbf24;color:#fff0c2}
+#online-match .online-player .online-dossier-open:focus-visible{outline:2px solid #fbbf24;outline-offset:2px}
+#online-match .online-dossier[hidden]{display:none}
+#online-match .online-dossier{position:fixed;inset:0;z-index:1800;background:rgba(3,6,14,.83);display:flex;align-items:center;justify-content:center;padding:16px}
+#online-match .online-dossier-card{background:#171c28;color:#f1f5f9;border:2px solid #9f7d38;box-shadow:0 22px 80px #000b;border-radius:12px;padding:18px;width:min(600px,100%);max-height:85vh;overflow:auto;position:relative}
+#online-match .online-dossier-card h3{font-size:1.22rem;color:#fbbf24;margin:0 38px 12px 0}
+#online-match .online-dossier-card h4{margin:14px 0 8px;font-size:.86rem;color:#fbbf24;letter-spacing:.5px}
+#online-match #online-dossier-close{position:absolute;right:12px;top:10px;min-width:38px;min-height:38px;border:1px solid #64748b;border-radius:6px;background:#293242;color:white;font-size:1.3rem;cursor:pointer}
+#online-match .dossier-summary{display:flex;flex-wrap:wrap;gap:5px}
+#online-match .dossier-summary span{font-size:.65rem;font-weight:800;background:#303746;border-radius:5px;padding:6px 8px}
+#online-match .dossier-summary .dossier-cleared{color:#bbf7d0;background:#14532d}
+#online-match .dossier-tally{font-size:.84rem;margin:13px 0;color:#d5ddeb}
+#online-match .dossier-tally .yes-count{color:#86efac}
+#online-match .dossier-tally .no-count{color:#fca5a5}
+#online-match .dossier-history{display:flex;flex-direction:column;gap:6px}
+#online-match .dossier-history p{margin:0;padding:8px 10px;font-size:.78rem;line-height:1.55;background:#222b3a;border-left:2px solid #8a7350;border-radius:4px}
+#online-match .dossier-history strong{color:#e5c577}
+#online-match .online-match-navigation{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:12px 0}
+#online-match .online-match-navigation button{width:auto;margin:0;min-width:150px}
+@media(max-width:480px){#online-match .online-match-navigation{flex-wrap:wrap}#online-match .online-match-navigation button{flex:1}#online-match .online-player .online-dossier-open{font-size:.52rem}}
+
+/* The policy disclosure is an intentional, blocking full-screen intermission.
+   Public accounts are shown only after the required debrief has completed. */
+#online-match .online-policy-report{position:fixed;inset:0;z-index:1900;display:flex;align-items:center;justify-content:center;max-width:none;width:100vw;height:100dvh;margin:0;padding:24px;border:0;border-radius:0;background:rgba(5,7,13,.94);box-shadow:none;overflow:auto}
+#online-match .online-policy-report.white,#online-match .online-policy-report.red{background:rgba(5,7,13,.94)}
+#online-match .online-policy-report .policy-report-dialog{position:relative;width:min(760px,95vw);background:linear-gradient(155deg,#242b37,#141921);border:3px solid #ddd5c1;border-radius:18px;padding:clamp(24px,5vh,52px);box-shadow:0 0 0 1px #ffffff22,0 28px 100px #000}
+#online-match .online-policy-report.red .policy-report-dialog{border-color:#ef4444;background:linear-gradient(155deg,#421c25,#171923)}
+#online-match .online-policy-report .policy-report-dialog>strong{display:block;font-size:clamp(1.7rem,3vw,3rem);text-align:center;color:#fff3d5;margin-bottom:8px;letter-spacing:1.5px}
+#online-match .online-policy-report.red .policy-report-dialog>strong{color:#fda4af}
+#online-match .online-policy-report .report-round{display:block;text-align:center;font-size:1rem;margin-bottom:26px;color:#cbd5e1}
+#online-match .online-policy-report .policy-report-dialog p{font-size:clamp(1rem,1.4vw,1.2rem);background:#ffffff0b;border-left:3px solid #b8a579;padding:13px 16px;margin:11px 0;line-height:1.55;border-radius:6px}
+#online-match .online-policy-report .policy-report-dialog small{font-size:.85rem;text-align:center;margin:14px 0 22px;line-height:1.5}
+#online-match .online-policy-report .policy-report-continue{display:block;width:100%;min-height:54px;background:#c58d20;color:#171a23;border:0;border-radius:9px;font-size:1.05rem;font-weight:900;cursor:pointer}
+#online-match .online-policy-report .policy-report-continue:hover{background:#fbbf24}
+#online-match .online-policy-report .policy-report-hint{display:block;text-align:center;color:#94a3b8;font-size:.76rem;margin-top:12px}
+#online-match .online-chat-messages .bot-opinion-line{background:rgba(148,163,184,.09);border-left:3px solid #71829c;color:#d4deef;padding:8px 10px;border-radius:5px}
+#online-match .online-chat-messages .bot-opinion-line strong{color:#bfdbfe}
+#online-match .online-chat-messages .council-round-separator{background:#314159;color:#fde68a;font-size:.7rem;font-weight:900;letter-spacing:1.4px;padding:6px 10px;margin:12px 0 6px;border-top:1px solid #64748b;border-bottom:1px solid #64748b;border-radius:3px;text-align:center}
+
+/* Full-width desktop command table: no outer scrolling, internal chat scroll. */
+#online-match .online-round-guide{display:grid;grid-template-columns:1fr 1fr;gap:9px;min-width:0}
+#online-match .online-round-guide>div{min-width:0;display:flex;flex-direction:column;justify-content:center;border-radius:8px;padding:7px 12px;background:#1b2735;border:1px solid #49637a;color:#e5eefb}
+#online-match .online-round-guide .round-guide-now{border-left:5px solid #e9b952}
+#online-match .online-round-guide .round-guide-last{border-left:5px solid #71839b}
+#online-match .online-round-guide .round-guide-last[data-kind="approved"]{border-left-color:#4ade80}
+#online-match .online-round-guide .round-guide-last[data-kind="rejected"],#online-match .online-round-guide .round-guide-last[data-kind="communist"]{border-left-color:#fb7185}
+#online-match .online-round-guide .round-guide-last[data-kind="white"]{border-left-color:#f5e9bf}
+#online-match .online-round-guide .round-guide-last[data-kind="investigation"]{border-left-color:#8fbfff}
+#online-match .online-round-guide .round-guide-last[data-kind="execution"]{border-left-color:#fb7185}
+#online-match .online-round-guide .round-guide-last.fresh-result{animation:online-result-spotlight .7s ease-in-out 2}
+#online-match .online-round-timeline.fresh-round{animation:online-result-spotlight .5s ease-in-out 2}
+@keyframes online-result-spotlight{50%{filter:brightness(1.5)}}
+@media(prefers-reduced-motion:reduce){#online-match .fresh-result,#online-match .fresh-round{animation:none!important}}
+#online-match .online-round-guide .guide-eyebrow{font-size:.57rem;letter-spacing:1.4px;font-weight:900;color:#9dafc8}
+#online-match .online-round-guide strong{font-size:.88rem;line-height:1.15;color:#f8e4ac}
+#online-match .online-round-guide small{color:#d2dceb;font-size:.7rem;line-height:1.25;overflow:hidden;text-overflow:ellipsis}
+#online-match .online-round-timeline{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;min-width:0}
+#online-match .online-timeline-step{min-width:0;border:1px solid #465363;background:#222b38;color:#9dacbe;border-radius:7px;padding:6px 8px;display:flex;gap:6px;align-items:center;justify-content:center}
+#online-match .online-timeline-step strong{font-size:.62rem;letter-spacing:.5px;white-space:nowrap}
+#online-match .online-timeline-step>span{width:20px;height:20px;flex:0 0 20px;display:grid;place-items:center;border-radius:50%;background:#343f50;font-size:.72rem;font-weight:900}
+#online-match .online-timeline-step.complete{border-color:#426d5b;color:#bbf7d0;background:#1c342e}
+#online-match .online-timeline-step.current{border-color:#e7ac40;color:#ffe5a3;background:#46351c;box-shadow:inset 0 0 0 1px #e7ac4060}
+#online-match .online-timeline-step.current>span{background:#e7ac40;color:#1a1a1a}
+#online-match .online-government{background:#192432;border:1px solid #64748b;border-radius:8px;color:#e6edf6;display:grid;grid-template-columns:1fr 1fr;min-width:0;overflow:hidden}
+#online-match .government-people{display:grid;grid-template-columns:1fr 1fr;min-width:0;gap:5px;border-right:1px solid #475569;padding:8px}
+#online-match .government-people>div{min-width:0;display:flex;flex-direction:column;gap:2px}
+#online-match .government-people small{color:#d1a959;font-size:.57rem;font-weight:900;letter-spacing:.7px}
+#online-match .government-people strong{font-size:.94rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#online-match .government-people span{font-size:.62rem;line-height:1.2}
+#online-match .government-outcome{padding:7px;display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0;font-size:.74rem}
+#online-match .government-outcome .government-election{font-weight:900;color:#fbbf24}
+#online-match .government-outcome .government-election.passed{color:#86efac}
+#online-match .government-outcome .government-election.failed{color:#fda4af}
+#online-match .government-outcome small{font-size:.62rem;color:#ced7e5}
+#online-match .government-contradiction{color:#fda4af;font-size:.7rem}
+#online-match .government-wait{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;font-size:.9rem;padding:10px}
+#online-match .government-wait span{color:#cbd5e1;font-size:.76rem}
+#online-match .online-log-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:5px 0 9px}
+#online-match .online-log-tabs button{padding:9px 4px;background:#253040;color:#adbcd2;border:1px solid #526175;border-radius:7px;font-size:.68rem;font-weight:900;cursor:pointer}
+#online-match .online-log-tabs button.active{background:#665026;color:#fff0c0;border-color:#ecc36c}
+#online-match .online-empty-log{text-align:center;padding:18px;color:#9ca9b8;font-style:italic}
+#online-match .dossier-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}
+#online-match .dossier-stat-grid>div{display:flex;flex-direction:column;align-items:center;gap:3px;background:#253246;padding:11px 5px;border-radius:6px}
+#online-match .dossier-stat-grid strong{font-size:1.25rem;color:#f8e5af}
+#online-match .dossier-stat-grid small{font-size:.59rem;color:#afc0d8}
+#online-match .dossier-private-note{background:#303643;border-radius:6px;padding:8px;font-size:.78rem;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+#online-match .dossier-private-note small{color:#cbd5e1;font-size:.7rem}
+#online-match .dossier-public-actions{display:flex;gap:8px;margin:10px 0}
+#online-match .dossier-public-actions button{flex:1;padding:10px 6px;font-size:.74rem;font-weight:900;cursor:pointer;color:#fff;border-radius:7px;background:#246846;border:1px solid #4ade80}
+#online-match .dossier-public-actions button+button{background:#7f2635;border-color:#fb7185}
+#online-match .dossier-explain{font-size:.7rem;color:#b4c1d7}
+#online-match .dossier-history.notable p{border-left-color:#fbbf24}
+#online-match .online-noteworthy{background:#453724;color:#ffe0a0;font-weight:800;font-size:.5rem;padding:2px 4px;border-radius:4px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#online-match.your-final-fifteen .online-clock{color:#fff;background:#b91c1c!important;border:3px solid #fff!important;animation:urgent-human-flash .48s steps(2,start) infinite!important;font-size:1.2rem;font-weight:1000}
+#online-match.your-final-fifteen .online-action-panel{border:4px solid #ef4444!important;box-shadow:0 0 0 4px #ff000065,0 0 30px #ef444475!important;animation:urgent-human-border .48s steps(2,start) infinite}
+#online-match.your-final-fifteen #online-decision-title:before{content:'⚠ 15 SECONDS OR LESS — YOUR TURN! ';color:#fff;background:#b91c1c;padding:4px 7px;margin-right:8px}
+@keyframes urgent-human-flash{0%,100%{background:#b91c1c;color:#fff}50%{background:#fff;color:#b91c1c}}
+@keyframes urgent-human-border{0%,100%{border-color:#ff1010}50%{border-color:#fff}}
+@media(prefers-reduced-motion:reduce){#online-match.your-final-fifteen .online-clock,#online-match.your-final-fifteen .online-action-panel{animation:none!important}}
+@media(min-width:900px){
+  body:has(#online-match:not([hidden])){height:100dvh;min-height:0;overflow:hidden}
+  #screen-online:has(#online-match:not([hidden])){width:100%;max-width:none;height:100dvh;min-height:0;overflow:hidden;padding:8px 12px}
+  #screen-online:has(#online-match:not([hidden])) .online-wrap{height:100%;width:100%;margin:0;min-height:0;max-width:none;padding:0}
+  #online-match:not([hidden]){display:grid;grid-template-columns:minmax(0,1fr) clamp(300px,28vw,430px);grid-template-rows:42px 31px 39px 64px 82px minmax(105px,.8fr) 24px minmax(172px,1.55fr) minmax(98px,.85fr) 34px;grid-template-areas:"header chat" "identity chat" "timeline chat" "guide chat" "government chat" "board chat" "playershead chat" "players chat" "actions chat" "nav nav";gap:5px 12px;height:100%;min-height:0;width:100%;align-items:stretch}
+  #online-match .game-header{grid-area:header;margin:0;padding:5px 14px}
+  #online-match .identity-bar{grid-area:identity;margin:0;padding:4px 12px;min-height:0}
+  #online-match .online-round-guide{grid-area:guide;min-height:0}
+  #online-match .online-round-timeline{grid-area:timeline;min-height:0}
+  #online-match .online-government{grid-area:government;min-height:0}
+  #online-match .board-container{grid-area:board;min-height:0;overflow:hidden;margin:0;padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr) auto auto;gap:2px 16px}
+  #online-match .board-container>.track{margin:0;min-width:0;min-height:0}
+  #online-match .track-slot{height:clamp(37px,6vh,54px)}
+  #online-match .election-tracker-bar{grid-column:1/-1;margin:0;padding:3px 0;font-size:.68rem}
+  #online-match .online-election{grid-column:1/-1;margin:0;padding:2px 0;border:0;font-size:.66rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #online-match .online-dispute{grid-column:1/-1}
+  #online-match .online-dispute.active{position:fixed;z-index:1050;top:8px;left:50%;transform:translateX(-50%);width:min(700px,65vw);margin:0;pointer-events:none}
+  #online-match .players-grid-header{grid-area:playershead;margin:0;align-items:center}
+  #online-match .online-players{grid-area:players;min-height:0;overflow:hidden;margin:0;gap:6px}
+  #online-match .online-players .players-row{flex:1;min-height:0;gap:6px}
+  #online-match .online-players .players-row .player-card{height:100%;min-height:0;max-width:none;flex-basis:calc((100% - (var(--cols) - 1) * 6px) / var(--cols));padding:3px 4px;gap:1px;overflow:hidden}
+  #online-match .online-player .online-avatar{font-size:1.25rem}
+  #online-match .online-player .online-name{font-size:clamp(.69rem,.9vw,.88rem)}
+  #online-match .online-player .online-role{font-size:.57rem}
+  #online-match .online-player .online-seat-vote{min-height:19px}
+  #online-match .online-player .online-dossier-open{min-height:23px;padding:3px 7px}
+  #online-match .online-player .player-card-actions{margin-top:0}
+  #online-match .online-action-panel{grid-area:actions;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-start;margin:0;padding:8px 12px}
+  #online-match .online-action-panel .action-title{font-size:.9rem;margin:0}
+  #online-match #online-prompt{font-size:.74rem;line-height:1.25;margin:3px 0}
+  #online-match #online-actions{flex:1;min-height:0;align-content:center;align-items:center;overflow:auto;gap:5px;margin:2px 0}
+  #online-match .online-choice{padding:6px 9px;font-size:.7rem;min-width:90px;min-height:32px}
+  #online-match .online-choice.yes,#online-match .online-choice.no{height:62px;width:108px;font-size:1rem}
+  #online-match .online-choice.policy-card{height:92px;width:76px;min-width:76px;flex:0 0 76px}
+  #online-match .online-choice.policy-card .card-icon{font-size:1.5rem}
+  #online-match .online-chat-panel{grid-area:chat;display:flex;flex-direction:column;min-height:0;overflow:hidden;margin:0;padding:11px}
+  #online-match .online-chat-header{flex:0 0 auto;margin-bottom:6px}
+  #online-match .online-chat-messages{flex:1;height:auto;min-height:0;overflow-y:auto}
+  #online-match .online-chat-form{flex:0 0 auto}
+  #online-match .online-chat-status{flex:0 0 auto}
+  #online-match .online-match-navigation{grid-area:nav;min-height:0;margin:0;justify-content:flex-end}
+  #online-match .online-match-navigation button{font-size:.7rem;padding:5px 14px;min-height:32px}
+}
+@media(min-width:900px) and (max-height:835px){
+  #online-match .online-player .online-avatar{display:none}
+  #online-match .online-player .online-seat-vote{min-height:15px}
+  #online-match .online-player .online-seat-controls{min-height:22px}
+  #online-match .online-player .online-seat-controls button{max-height:23px;padding:2px 1px;font-size:.48rem}
+  #online-match .online-player .online-cleared{padding:1px 3px;font-size:.49rem}
+  #online-match .online-player .player-gov-badge{font-size:.5rem;padding:2px 3px}
+}
+
+/* v1.6 — quiet multiplayer table. Keep the live action and policies visible;
+   the detailed story stays in Game Events, Conversation and dossiers. */
+#online-match .online-round-timeline,
+#online-match .round-guide-last,
+#online-match .online-government,
+#online-match .online-mark-counters{display:none!important}
+#online-match .online-round-guide{display:block;min-width:0}
+#online-match .online-round-guide .round-guide-now{height:100%;padding:8px 12px;display:flex;gap:5px;justify-content:center}
+#online-match .online-round-guide .round-guide-now .guide-eyebrow{display:none}
+#online-match .online-round-guide .round-guide-now strong{font-size:clamp(.88rem,1.1vw,1.08rem);color:#ffe3a1}
+#online-match .online-round-guide .round-guide-now small{font-size:.75rem;color:#d6e0ed}
+#online-match .players-grid-header{margin-top:2px}
+#online-match .online-player .online-noteworthy{display:none}
+#online-match .online-chat-header span{display:none}
+#online-match .online-chat-panel{border-color:#4b5563}
+#online-match .online-match-navigation{padding-right:135px}
+#online-match .online-match-navigation button{min-width:0}
+@media(min-width:900px){
+  #screen-online:has(#online-match:not([hidden])){padding:10px 16px 44px}
+  #online-match:not([hidden]){
+    grid-template-columns:minmax(0,1fr) clamp(300px,29vw,430px);
+    grid-template-rows:44px 30px 57px minmax(142px,1fr) 23px minmax(182px,1.32fr) minmax(112px,.86fr) 36px;
+    grid-template-areas:
+      "header chat"
+      "identity chat"
+      "guide chat"
+      "board chat"
+      "playershead chat"
+      "players chat"
+      "actions chat"
+      "nav nav";
+    gap:7px 12px;
+  }
+  #online-match .board-container{padding:8px 11px;gap:4px 14px}
+  #online-match .board-container .track-slot{height:clamp(42px,6.5vh,62px)}
+  #online-match .online-players{overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding:2px}
+  #online-match .online-players .players-row{flex:1 0 77px;min-height:77px}
+  #online-match .online-players .players-row .player-card{min-height:75px;overflow:hidden}
+  #online-match .online-player .online-avatar{display:none}
+  #online-match .online-player .online-seat-vote{min-height:19px}
+  #online-match .online-player .online-seat-controls{min-height:25px}
+  #online-match .online-action-panel{overflow-y:auto;padding:8px 10px}
+  #online-match #online-actions{overflow-y:auto}
+  #online-match .online-choice.policy-card{height:79px;width:70px;min-width:70px;flex-basis:70px}
+  #online-match .online-chat-panel{padding:9px}
+  #online-match .online-match-navigation{justify-content:flex-start;padding-right:140px}
+}
+@media(min-width:900px) and (max-height:730px){
+  #online-match:not([hidden]){grid-template-rows:38px 28px 50px minmax(110px,.9fr) 20px minmax(145px,1.3fr) minmax(95px,.8fr) 32px;gap:4px 10px}
+  #online-match .online-players .players-row{flex-basis:69px;min-height:69px}
+  #online-match .online-players .players-row .player-card{min-height:67px}
+  #online-match .online-player .online-seat-controls button{font-size:.52rem}
+  #online-match .online-choice.yes,#online-match .online-choice.no{height:50px}
+}
+
+/* v1.7: the actual table is the scoreboard. The timer is the only persistent
+   top bar element; votes, government and round detail live on seats and in logs. */
+#online-match .game-branding,
+#online-match .online-round-badge,
+#online-match .phase-pill,
+#online-match .online-identity-bar,
+#online-match .online-round-guide,
+#online-match .election-tracker-bar,
+#online-match .online-election{display:none!important}
+#online-match .game-header{justify-content:flex-end;background:transparent;border:0;box-shadow:none;padding:0!important}
+#online-match .online-clock{margin-left:auto;font-size:1.1rem;min-width:64px;text-align:center}
+#online-match .board-container{grid-template-rows:minmax(0,1fr) auto!important}
+@media(min-width:900px){
+  #online-match:not([hidden]){
+    grid-template-rows:40px minmax(160px,.85fr) 24px minmax(210px,1.45fr) minmax(118px,.82fr) 36px;
+    grid-template-areas:
+      "header chat"
+      "board chat"
+      "playershead chat"
+      "players chat"
+      "actions chat"
+      "nav nav";
+  }
+  #online-match .online-players .players-row{flex-basis:94px;min-height:94px}
+  #online-match .online-players .players-row .player-card{min-height:91px}
+}
+@media(min-width:900px) and (max-height:730px){
+  #online-match:not([hidden]){grid-template-rows:35px minmax(110px,.8fr) 21px minmax(155px,1.3fr) minmax(100px,.8fr) 32px}
+  #online-match .online-players .players-row{flex-basis:75px;min-height:75px}
+  #online-match .online-players .players-row .player-card{min-height:73px}
+}
+
+/* v1.9: lively but deliberate feedback on a quiet council table. */
+#online-match .online-seen-count{font-size:clamp(.56rem,.75vw,.7rem);font-weight:700;color:#d4c4a1;margin-left:auto;margin-right:12px;white-space:nowrap}
+#online-match .track-header{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#online-match .online-choice{transition:transform .16s cubic-bezier(.2,1.6,.4,1),background .16s,border-color .16s,box-shadow .16s;transform-origin:center}
+#online-match .online-choice:hover:not(:disabled){transform:scale(1.075);box-shadow:0 0 0 3px #fbbf2460,0 9px 25px #0009;background-color:#3a3527}
+#online-match .online-choice.yes:hover:not(:disabled){background:#14532d;color:#fff;border-color:#86efac}
+#online-match .online-choice.no:hover:not(:disabled){background:#7f1d1d;color:#fff;border-color:#fecaca}
+#online-match .online-choice:active:not(:disabled){transform:scale(.89);filter:brightness(1.5)}
+#online-match .online-choice.chosen{animation:online-picked-flash .38s ease-out both}
+.flow-announcement{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px 14px;text-align:center;border:1px solid #6b728066;border-radius:10px;background:#121820;color:#f4f4f5;box-sizing:border-box;min-height:68px}
+.flow-announcement>strong{font-size:clamp(1rem,1.65vw,1.55rem);letter-spacing:.025em;line-height:1.25}
+.flow-announcement>span{font-weight:850;font-size:.95rem}
+.flow-announcement>small{font-size:.78rem;line-height:1.35;color:#d5dae4;max-width:100%}
+.flow-announcement.flow-yes{border-color:#43a677;background:#123629}
+.flow-announcement.flow-no,.flow-announcement.flow-red{border-color:#d35b5b;background:#3e1a24}
+.flow-announcement.flow-white{border-color:#e5dac1;background:#3b3831}
+.flow-announcement .flow-contradiction{color:#ff9999;animation:online-flow-dispute .48s ease-in-out 2}
+@keyframes online-flow-dispute{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* v2.2 — let the decision area breathe; never require its own scrollbar. */
+@media(min-width:900px){
+  #online-match:not([hidden]){
+    grid-template-rows:40px minmax(130px,.78fr) 24px minmax(170px,1.15fr) minmax(184px,1.07fr) 36px;
+  }
+  #online-match .online-action-panel{overflow:hidden!important;padding:6px 12px;justify-content:center}
+  #online-match #online-actions{overflow:visible!important;flex:0 1 auto;min-height:0;max-height:100%;align-content:center;gap:5px 7px}
+  #online-match .online-action-panel .action-title{flex:none;line-height:1.15}
+  #online-match #online-prompt{flex:none;margin:3px 0;font-size:clamp(.65rem,.82vw,.79rem)}
+  #online-match .online-choice{flex:0 1 auto;padding:5px 8px;min-height:34px}
+  #online-match .online-choice.policy-card{height:85px}
+  #online-match .flow-announcement{min-height:64px;padding:7px 10px;gap:4px}
+  #online-match .flow-announcement>strong{font-size:clamp(.94rem,1.4vw,1.32rem)}
+  #online-match .flow-announcement>small{font-size:clamp(.69rem,.78vw,.82rem)}
+  #online-match .flow-reshuffle{gap:3px}
+}
+@media(min-width:900px) and (max-height:730px){
+  #online-match:not([hidden]){
+    grid-template-rows:38px minmax(118px,.74fr) 20px minmax(145px,1.14fr) minmax(174px,1.07fr) 32px;
+  }
+  #online-match .online-choice.policy-card{height:75px}
+  #online-match .flow-announcement{padding:5px 8px;gap:2px;min-height:57px}
+}
+#online-match .online-choice{touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#online-match .online-submit-error{flex:0 0 100%;font-size:.76rem;font-weight:800;color:#fecaca;background:#7f1d1d;border:1px solid #f87171;padding:5px 9px;border-radius:6px}
+#online-match .online-log-tabs button.has-unread{border-color:#fbbf24;box-shadow:0 0 0 1px #fbbf2466}
+#online-match .online-unread-badge:not([hidden]){display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;margin-left:5px;padding:0 4px;border-radius:11px;background:#ef4444;color:white;font-size:.66rem;font-weight:950;animation:online-unread-pulse 1.2s ease-in-out infinite}
+@keyframes online-unread-pulse{50%{box-shadow:0 0 0 5px #ef444436}}
+@media(prefers-reduced-motion:reduce){#online-match .online-unread-badge{animation:none!important}}
+#online-match .online-click-confirmation{animation:online-picked-flash .65s ease-out both}
+@keyframes online-picked-flash{0%{transform:scale(.87);filter:brightness(2.6)}55%{transform:scale(1.06);filter:brightness(1.6)}100%{transform:scale(1);filter:brightness(1)}}
+#online-match .track-slot.new-policy{position:relative;z-index:3;animation:online-new-policy 1s ease-in-out 3!important}
+@keyframes online-new-policy{0%,100%{transform:scale(1);filter:brightness(1)}35%{transform:scale(1.2);filter:brightness(2.5);box-shadow:0 0 0 6px #fbbf247d,0 0 25px #fbbf24}}
+@media(prefers-reduced-motion:reduce){#online-match .online-choice.chosen,#online-match .online-click-confirmation,#online-match .track-slot.new-policy{animation:none!important}}
+
+/* v2.0: a short noninteractive policy landing celebration. The server holds
+   the following phase, so this doesn't steal any time from a human player. */
+#online-match .board-container{position:relative}
+#online-match .online-policy-celebration[hidden]{display:none!important}
+#online-match .online-policy-celebration{position:absolute;z-index:11;left:50%;top:44%;transform:translate(-50%,-50%);width:max-content;max-width:90%;padding:13px 22px;border:3px solid;border-radius:12px;font-weight:1000;font-size:clamp(1.05rem,2.5vw,2.1rem);letter-spacing:.06em;text-align:center;pointer-events:none;text-shadow:0 2px 8px #0009;box-shadow:0 0 45px #000e;animation:online-policy-spotlight 1s ease-in-out 3}
+#online-match .online-policy-celebration.white{border-color:#f8e5a5;background:#283b55;color:#fff0b9;box-shadow:0 0 45px #e6d3a65c}
+#online-match .online-policy-celebration.communist{border-color:#ff8181;background:#66232d;color:#fff0f0;box-shadow:0 0 45px #ef44446b}
+@keyframes online-policy-spotlight{0%,100%{opacity:.82;filter:brightness(1);transform:translate(-50%,-50%) scale(.97)}48%{opacity:1;filter:brightness(1.8);transform:translate(-50%,-50%) scale(1.1)}}
+@media(prefers-reduced-motion:reduce){#online-match .online-policy-celebration{animation:none!important}}

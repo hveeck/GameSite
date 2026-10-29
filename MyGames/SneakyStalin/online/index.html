@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SNEAKY STALIN — ONLINE</title>
+  <link rel="stylesheet" href="../styles.css?v=2.4" />
+</head>
+<body>
+  <span class="game-build-version" aria-label="Sneaky Stalin version 2.4">v2.4</span>
+  <div id="app">
+    <div id="screen-online" class="screen active">
+      <div class="online-wrap">
+        <h2>☭ Sneaky Stalin Online</h2>
+        <p id="online-status" role="status">Connecting...</p>
+        <div id="online-entry">
+          <label class="setting-label" for="online-name">Your public name</label>
+          <input id="online-name" maxlength="24" placeholder="Comrade" autocomplete="nickname" />
+          <div class="online-actions">
+            <button class="btn" id="online-quick">Quick Match</button>
+            <button class="btn" id="online-create">Create Private Room</button>
+          </div>
+          <label class="setting-label" for="online-code">Private room code</label>
+          <div class="online-actions">
+            <input id="online-code" maxlength="48" placeholder="MAVORA" autocapitalize="characters" spellcheck="false" aria-label="Room code (not case sensitive)" />
+            <button class="btn" id="online-join">Join Room</button>
+          </div>
+          <button class="pill-btn" id="online-back">← Back to Modes</button>
+        </div>
+        <div id="online-room" hidden>
+          <h3 id="online-room-title">Council Room</h3>
+          <p id="online-timer"></p>
+          <div id="online-seats" class="online-seats"></div>
+          <div class="online-actions">
+            <button class="btn" id="online-start">Start With Bots (10 Players)</button>
+            <button class="btn" id="online-start-humans">Start With Humans Only (5–10)</button>
+            <button class="pill-btn" id="online-copy">Copy Invite Code</button>
+          </div>
+          <button class="pill-btn" id="online-leave">Leave Room</button>
+        </div>
+        <div id="online-match" hidden>
+          <div class="game-header">
+            <div class="game-branding"><h2>☭ SNEAKY STALIN</h2></div>
+            <div class="online-round-badge" id="online-round-badge">ROUND 1</div>
+            <div class="phase-pill" id="online-phase">Nomination</div>
+            <div class="online-clock" id="online-clock">0:00</div>
+          </div>
+          <div class="identity-bar online-identity-bar">
+            <span>Your Secret Identity:</span><span id="online-identity" class="identity-tag">★ White</span>
+          </div>
+          <nav id="online-round-timeline" class="online-round-timeline" aria-label="Round progress"></nav>
+          <section class="online-round-guide" aria-live="polite" aria-label="Current round and latest result">
+            <div class="round-guide-now"><span class="guide-eyebrow">HAPPENING NOW</span><strong id="online-step-title">Preparing council</strong><small id="online-step-detail">Waiting for the game to begin.</small></div>
+            <div class="round-guide-last" id="online-last-card"><span class="guide-eyebrow">LATEST RESULT</span><strong id="online-last-title">No result yet</strong><small id="online-last-detail">Results stay here while the next decision begins.</small></div>
+          </section>
+          <section id="online-government" class="online-government" aria-label="Current government summary"></section>
+          <div class="board-container">
+            <div class="track">
+              <div class="track-header"><span class="track-title whi">★ White Policies</span><span class="online-seen-count" id="online-reported-whites" title="Publicly reported White cards drawn this deck cycle. Claims can be false; resets after reshuffling.">White reported seen: 0/6</span><span class="track-count" id="online-white">0 / 5</span></div>
+              <div class="track-slots whi-slots" id="online-white-slots"></div>
+            </div>
+            <div class="track">
+              <div class="track-header"><span class="track-title comm">☭ Communist Policies</span><span class="track-count" id="online-communist">0 / 6</span></div>
+              <div class="track-slots comm-slots" id="online-communist-slots"></div>
+            </div>
+            <div class="election-tracker-bar">
+              <span>Election Tracker</span><div class="tracker-dots" id="online-tracker"></div>
+              <span>3 Fails = Chaos</span>
+            </div>
+            <div id="online-policy-celebration" class="online-policy-celebration" hidden></div>
+            <div id="online-dispute" class="online-dispute" role="status" aria-live="polite"></div>
+            <div id="online-investigation-banner" class="online-investigation-banner" role="status" aria-live="polite" hidden></div>
+            <div id="online-policy-report" class="online-policy-report" role="status" aria-live="polite" hidden></div>
+            <p id="online-election" class="online-election"></p>
+          </div>
+          <div class="players-grid-header"><span>COUNCIL COMRADES</span>
+            <div class="online-mark-counters"><span class="trust-counter-badge" id="online-trusted-count">Trusted: 0</span><span class="sus-counter-badge" id="online-suspect-count">Suspects: 0</span></div>
+          </div>
+          <div id="online-players" class="players-grid online-players"></div>
+          <section id="online-dossier" class="online-dossier" role="dialog" aria-modal="true" aria-label="Player dossier" hidden>
+            <div class="online-dossier-card">
+              <button type="button" id="online-dossier-close" aria-label="Close dossier">×</button>
+              <h3 id="online-dossier-title">Player dossier</h3>
+              <div id="online-dossier-content"></div>
+            </div>
+          </section>
+          <section class="action-area online-action-panel">
+            <div class="action-title" id="online-decision-title">Your Decision</div>
+            <p class="action-desc" id="online-prompt"></p>
+            <div id="online-actions"></div>
+          </section>
+          <section class="online-chat-panel game-log">
+            <div class="online-chat-header"><strong>COUNCIL</strong><span>Claims are unverified</span></div>
+            <div class="online-log-tabs" role="group" aria-label="Council history view">
+              <button type="button" class="active" data-log-view="events">📜 GAME EVENTS</button>
+              <button type="button" data-log-view="conversation">💬 CONVERSATION <span class="online-unread-badge" hidden>0</span></button>
+            </div>
+            <div id="online-chat-messages" class="online-chat-messages" aria-live="polite"></div>
+            <form id="online-chat-form" class="online-chat-form">
+              <input id="online-chat-input" maxlength="300" placeholder="Address the council… e.g. I trust Denis" autocomplete="off" required />
+              <button class="btn" type="submit">SEND</button>
+            </form>
+            <p id="online-chat-status" class="online-chat-status" role="status" aria-live="polite"></p>
+          </section>
+          <div class="online-match-navigation">
+            <button type="button" class="pill-btn" id="online-exit-match">← Leave This Match</button>
+            <button type="button" class="btn" id="online-new-match" hidden>Play Another Match</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="../online.js?v=2.4"></script>
+</body>
+</html>

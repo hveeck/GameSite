@@ -1,0 +1,336 @@
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&display=swap');
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* =========================================================
+   DEFAULT: DESKTOP-FIRST LAYOUT
+   ========================================================= */
+body {
+    background-color: #050507;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cpath d='M24 6 C26 18, 30 22, 42 24 C30 26, 26 30, 24 42 C22 30, 18 26, 6 24 C18 22, 22 18, 24 6 Z' fill='%23f3d03e' fill-opacity='0.07' stroke='%23f3d03e' stroke-opacity='0.55' stroke-width='0.6'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    color: #e4e4e7;
+    font-family: 'EB Garamond', Georgia, serif;
+    line-height: 1.45;
+    padding: 3.5rem 1.5rem 5rem 1.5rem;
+    max-width: 820px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+    width: 100%;
+}
+
+.view-toggle-btn {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    background: #121216;
+    color: #f3d03e;
+    border: 1px solid #3f3f46;
+    padding: 0.45rem 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'EB Garamond', Georgia, serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    z-index: 800;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.view-toggle-btn:hover {
+    background-color: #f3d03e;
+    color: #050507;
+    border-color: #f3d03e;
+}
+
+header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.bio-card {
+    background: rgba(14, 14, 18, 0.95);
+    border: 2.5px solid #115740;
+    border-radius: 6px;
+    padding: 1.75rem 2rem;
+    max-width: 580px;
+    margin: 0 auto;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+}
+
+.bio-card h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #f3d03e;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.01em;
+}
+
+.bio {
+    color: #d4d4d8;
+    font-size: 1.1rem;
+    line-height: 1.5;
+    font-style: italic;
+}
+
+h2 { 
+    font-size: 1.15rem; 
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #f3d03e;
+    margin-top: 2.5rem; 
+    margin-bottom: 1.25rem; 
+    text-align: center;
+}
+
+/* 2-column grid on desktop */
+.browser-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    max-width: 620px;
+    margin: 0 auto;
+}
+
+.desktop-grid {
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+.card {
+    background-color: #0d0d10;
+    border: 1px solid #3f3f46;
+    border-radius: 6px;
+    padding: 1.75rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 210px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.card:hover {
+    border-color: #f3d03e;
+    transform: translateY(-2px);
+}
+
+.card-top {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    color: #f3d03e;
+}
+
+.card-content h3 { 
+    font-size: 1.35rem; 
+    font-weight: 700;
+    color: #ffffff; 
+    margin-bottom: 0.35rem; 
+}
+
+.card-content p { 
+    color: #a1a1aa; 
+    font-size: 0.95rem; 
+    line-height: 1.4;
+}
+
+.platform-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    color: #f3d03e;
+    background: rgba(243, 208, 62, 0.12);
+    border: 1px solid rgba(243, 208, 62, 0.3);
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    margin-top: 0.4rem;
+    font-weight: 600;
+}
+
+.platform-badge.desktop-only {
+    color: #a1a1aa;
+    background: rgba(161, 161, 170, 0.1);
+    border-color: rgba(161, 161, 170, 0.25);
+}
+
+.dual-btn-row {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.btn {
+    display: inline-block;
+    background-color: #121216;
+    color: #e4e4e7;
+    border: 1px solid #3f3f46;
+    padding: 0.65rem 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    width: 100%;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    font-family: 'EB Garamond', Georgia, serif;
+}
+
+.btn:hover {
+    background-color: #f3d03e;
+    color: #050507;
+    border-color: #f3d03e;
+}
+
+.btn-secondary {
+    border-color: #3f3f46;
+    color: #a1a1aa;
+}
+
+.easter-egg-link {
+    position: fixed;
+    bottom: 1.25rem;
+    left: 1.25rem;
+    font-size: 1.5rem;
+    text-decoration: none;
+    opacity: 0.5;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 500;
+}
+
+.easter-egg-link:hover {
+    opacity: 1;
+    transform: scale(1.15);
+}
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.88);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+}
+
+.modal-content {
+    background: #141418;
+    border: 1.5px solid #3f3f46;
+    border-radius: 6px;
+    padding: 2rem;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+}
+
+.modal-content h3 {
+    color: #f3d03e;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.modal-content p {
+    color: #d4d4d8;
+    font-size: 1.05rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.45;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+/* =========================================================
+   FORCED MOBILE VIEW (Zero Side Gutters, Full Width)
+   ========================================================= */
+body.mobile-mode-active {
+    max-width: 100%;
+    padding: 1.25rem 0.75rem 5rem 0.75rem;
+}
+
+body.mobile-mode-active .view-toggle-btn {
+    top: 0.6rem;
+    right: 0.6rem;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8rem;
+}
+
+body.mobile-mode-active .bio-card {
+    max-width: 100%;
+    padding: 1.25rem 1rem;
+}
+
+body.mobile-mode-active .bio-card h1 {
+    font-size: 1.75rem;
+}
+
+body.mobile-mode-active .bio {
+    font-size: 1rem;
+}
+
+body.mobile-mode-active .browser-grid,
+body.mobile-mode-active .desktop-grid {
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+    gap: 1.25rem;
+}
+
+body.mobile-mode-active .card {
+    width: 100%;
+    min-height: 180px;
+    padding: 1.5rem 1.25rem;
+}
+
+body.mobile-mode-active .card-top {
+    gap: 0.6rem;
+    margin-bottom: 1.25rem;
+}
+
+body.mobile-mode-active .card-icon {
+    width: 32px;
+    height: 32px;
+}
+
+body.mobile-mode-active .card-content h3 {
+    font-size: 1.45rem;
+}
+
+body.mobile-mode-active .card-content p {
+    font-size: 1.05rem;
+    color: #d4d4d8;
+}
+
+body.mobile-mode-active .platform-badge {
+    font-size: 0.8rem;
+}
+
+body.mobile-mode-active .btn {
+    padding: 0.85rem 1rem;
+    font-size: 1.1rem;
+}

@@ -1,0 +1,2707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TallyGrid - Spatial Cribbage Strategy</title>
+  <style>
+    :root {
+      --bg-gradient: radial-gradient(circle at 50% 15%, #18263f 0%, #0c1322 70%, #050812 100%);
+      --felt-bg: radial-gradient(circle at 50% 50%, #12342b 0%, #0a1f19 85%, #05100d 100%);
+      --card-bg: #fffdf9;
+      --card-border: #d4cbb8;
+      --gold-primary: #e5b869;
+      --gold-light: #fbe3a1;
+      --gold-dark: #b8862d;
+      --gold-glow: rgba(229, 184, 105, 0.45);
+      --suit-red: #dc2626;
+      --suit-black: #1e293b;
+      --accent-cyan: #38bdf8;
+      --accent-purple: #c084fc;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --slot-empty: rgba(255, 255, 255, 0.04);
+      --slot-border: rgba(229, 184, 105, 0.25);
+      --slot-valid: rgba(16, 185, 129, 0.22);
+      --slot-valid-border: #10b981;
+      --slot-overwrite: rgba(239, 68, 68, 0.25);
+      --slot-overwrite-border: #ef4444;
+      --font-display: 'Cinzel', 'Trajan Pro', Georgia, serif;
+      --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 8px 12px 24px;
+    }
+
+    /* Setup / Title View Overlay */
+    #setup-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(6, 10, 20, 0.94);
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+
+    #setup-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .setup-modal {
+      background: linear-gradient(145deg, #131d31 0%, #0c1220 100%);
+      border: 1px solid var(--gold-primary);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px var(--gold-glow);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 520px;
+      padding: 28px 24px;
+      text-align: center;
+      margin: auto;
+    }
+
+    .setup-title {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      letter-spacing: 3px;
+      color: var(--gold-light);
+      text-shadow: 0 0 15px rgba(229, 184, 105, 0.6);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .setup-subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 22px;
+      letter-spacing: 1px;
+    }
+
+    .setup-group {
+      text-align: left;
+      margin-bottom: 18px;
+    }
+
+    .setup-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--gold-primary);
+      margin-bottom: 8px;
+      display: block;
+      font-weight: 600;
+    }
+
+    .setup-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 8px;
+    }
+
+    .setup-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(229, 184, 105, 0.3);
+      color: var(--text-main);
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .setup-btn:hover {
+      background: rgba(229, 184, 105, 0.15);
+      border-color: var(--gold-primary);
+    }
+
+    .setup-btn.active {
+      background: linear-gradient(135deg, var(--gold-primary), var(--gold-dark));
+      color: #0c1220;
+      border-color: var(--gold-light);
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(229, 184, 105, 0.4);
+    }
+
+    .setup-desc {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-top: 6px;
+      min-height: 18px;
+    }
+
+    .btn-start-match {
+      margin-top: 14px;
+      width: 100%;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #0c1220;
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4);
+      transition: all 0.25s ease;
+      text-transform: uppercase;
+    }
+
+    .btn-start-match:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(245, 158, 11, 0.6);
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    }
+
+    /* Main Container strictly adhering to vertical hierarchy */
+    #game-container {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Top Utility Bar */
+    .top-utility-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 6px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .brand-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      color: var(--gold-primary);
+      text-shadow: 0 0 10px rgba(229, 184, 105, 0.4);
+    }
+
+    .util-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+
+    .icon-btn:hover {
+      background: rgba(229, 184, 105, 0.2);
+      border-color: var(--gold-primary);
+      color: var(--gold-light);
+    }
+
+    /* 1. TOP BAR - Opponent Dashboard */
+    .opponent-dashboard {
+      width: 100%;
+      background: linear-gradient(135deg, rgba(20, 29, 47, 0.92) 0%, rgba(13, 19, 32, 0.92) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 10px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      position: relative;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .opponent-dashboard.active-turn {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+    }
+
+    .dash-row-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .player-identity {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .player-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #1e293b;
+      border: 2px solid var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+    }
+
+    .player-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-difficulty {
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: rgba(168, 85, 247, 0.25);
+      border: 1px solid var(--accent-purple);
+      color: #d8b4fe;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .turn-badge {
+      display: none;
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      animation: pulse 1.5s infinite;
+    }
+
+    .active-turn .turn-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(56, 189, 248, 0.25);
+      border: 1px solid var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.75; transform: scale(0.97); }
+    }
+
+    .dash-score-container {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .score-number {
+      font-family: var(--font-display);
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: var(--gold-light);
+      line-height: 1;
+    }
+
+    .score-target {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Progress Bar */
+    .progress-bar-wrap {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #38bdf8, #10b981, #e5b869);
+      border-radius: 4px;
+      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .dash-row-sub {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+
+    .king-status-tag {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .king-status-tag.ready {
+      border-color: var(--gold-primary);
+      color: var(--gold-light);
+      background: rgba(229, 184, 105, 0.12);
+    }
+
+    .king-status-tag.used {
+      color: #64748b;
+      text-decoration: line-through;
+    }
+
+    /* 2. CENTER - The 5x5 Board Arena */
+    .board-arena-wrapper {
+      position: relative;
+      padding: 12px;
+      background: var(--felt-bg);
+      border: 2px solid var(--gold-dark);
+      border-radius: 18px;
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.85), 0 10px 30px rgba(0, 0, 0, 0.7);
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Coordinate Axis Labels */
+    .grid-col-labels {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      width: 100%;
+      margin-bottom: 4px;
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--gold-primary);
+      letter-spacing: 1px;
+    }
+
+    .board-grid-with-rows {
+      display: flex;
+      width: 100%;
+      gap: 4px;
+    }
+
+    .grid-row-labels {
+      display: grid;
+      grid-template-rows: repeat(5, 1fr);
+      align-items: center;
+      text-align: center;
+      width: 16px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--gold-primary);
+    }
+
+    .board-5x5 {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(5, 1fr);
+      gap: 6px;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+    }
+
+    /* Grid Slot States */
+    .grid-cell {
+      background: var(--slot-empty);
+      border: 1px dashed var(--slot-border);
+      border-radius: 8px;
+      position: relative;
+      cursor: default;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.4);
+    }
+
+    .grid-cell .cell-coord {
+      position: absolute;
+      font-size: 0.6rem;
+      color: rgba(229, 184, 105, 0.2);
+      font-weight: 600;
+      top: 3px;
+      left: 4px;
+      pointer-events: none;
+    }
+
+    /* Valid placement highlight */
+    .grid-cell.valid-move {
+      border: 2px solid var(--slot-valid-border);
+      background: var(--slot-valid);
+      cursor: pointer;
+      animation: slot-pulse 1.6s infinite alternate;
+    }
+
+    .grid-cell.valid-move:hover {
+      background: rgba(16, 185, 129, 0.45);
+      border-color: #34d399;
+      transform: scale(1.03);
+      z-index: 5;
+    }
+
+    @keyframes slot-pulse {
+      0% { box-shadow: 0 0 4px rgba(16, 185, 129, 0.3); }
+      100% { box-shadow: 0 0 14px rgba(16, 185, 129, 0.75); }
+    }
+
+    /* Overwrite valid highlight (King) */
+    .grid-cell.valid-overwrite {
+      border: 2px solid var(--slot-overwrite-border) !important;
+      background: var(--slot-overwrite) !important;
+      cursor: pointer !important;
+      animation: overwrite-pulse 1.4s infinite alternate;
+    }
+
+    .grid-cell.valid-overwrite:hover {
+      background: rgba(239, 68, 68, 0.5) !important;
+      transform: scale(1.04);
+      z-index: 6;
+    }
+
+    @keyframes overwrite-pulse {
+      0% { box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
+      100% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.85); }
+    }
+    /* Playing Card Visuals */
+    .card-face {
+      width: 94%;
+      height: 94%;
+      background: var(--card-bg);
+      border-radius: 6px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 3px 5px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card-face.suit-red {
+      color: var(--suit-red);
+    }
+
+    .card-face.suit-black {
+      color: var(--suit-black);
+    }
+
+    .card-corner-top, .card-corner-bottom {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 0.95;
+    }
+
+    .card-corner-bottom {
+      transform: rotate(180deg);
+    }
+
+    .card-rank {
+      font-weight: 800;
+      font-size: 0.92rem;
+      font-family: var(--font-display);
+    }
+
+    .card-suit-pip {
+      font-size: 0.72rem;
+    }
+
+    .card-center-art {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      opacity: 0.16;
+      pointer-events: none;
+    }
+
+    .card-court-badge {
+      position: absolute;
+      bottom: 2px;
+      right: 3px;
+      font-size: 0.5rem;
+      font-weight: 800;
+      background: rgba(0, 0, 0, 0.08);
+      padding: 1px 3px;
+      border-radius: 3px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .card-face.card-joker {
+      background: linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%);
+      border-color: #c084fc;
+      color: #9333ea;
+    }
+
+    .card-face.card-joker .card-rank {
+      font-size: 0.75rem;
+    }
+
+    /* Score floater animation */
+    .score-floater {
+      position: absolute;
+      color: #fde047;
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 800;
+      text-shadow: 0 0 8px rgba(0,0,0,0.9), 0 0 15px rgba(250, 204, 21, 0.9);
+      pointer-events: none;
+      z-index: 100;
+      animation: float-up 1.6s forwards cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes float-up {
+      0% { opacity: 0; transform: translate(-50%, 0) scale(0.7); }
+      20% { opacity: 1; transform: translate(-50%, -15px) scale(1.2); }
+      80% { opacity: 1; transform: translate(-50%, -40px) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -60px) scale(0.9); }
+    }
+
+    /* Line scoring highlight */
+    .grid-cell.highlight-line {
+      box-shadow: inset 0 0 15px rgba(250, 204, 21, 0.7), 0 0 15px rgba(250, 204, 21, 0.6) !important;
+      border-color: #fde047 !important;
+    }
+
+    /* 3. LOWER MIDDLE - Player Hand Dock */
+    .player-hand-dock {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(229, 184, 105, 0.35);
+      border-radius: 16px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .hand-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--gold-primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    .hand-cards-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      min-height: 86px;
+      align-items: center;
+    }
+
+    .hand-card-wrapper {
+      width: 64px;
+      height: 88px;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s;
+    }
+
+    .hand-card-wrapper:hover {
+      transform: translateY(-8px) scale(1.05);
+      z-index: 10;
+    }
+
+    .hand-card-wrapper.selected {
+      transform: translateY(-12px) scale(1.08);
+      z-index: 20;
+    }
+
+    .hand-card-wrapper.selected .card-face {
+      border: 2px solid var(--gold-light);
+      box-shadow: 0 8px 25px rgba(229, 184, 105, 0.75), 0 0 15px rgba(245, 158, 11, 0.8);
+    }
+
+    .hand-card-wrapper .card-face {
+      width: 100%;
+      height: 100%;
+      padding: 6px;
+    }
+
+    .hand-card-wrapper .card-rank {
+      font-size: 1.15rem;
+    }
+
+    .hand-card-wrapper .card-suit-pip {
+      font-size: 0.88rem;
+    }
+
+    .hand-card-power-tag {
+      position: absolute;
+      top: -6px;
+      right: -4px;
+      font-size: 0.55rem;
+      font-weight: 800;
+      padding: 2px 4px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      pointer-events: none;
+    }
+
+    .power-jack { background: #3b82f6; color: #fff; }
+    .power-queen { background: #ec4899; color: #fff; }
+    .power-king { background: #eab308; color: #000; }
+    .power-joker { background: #a855f7; color: #fff; }
+
+    /* 4. BOTTOM BAR - Player Dashboard */
+    .player-dashboard {
+      width: 100%;
+      background: linear-gradient(135deg, rgba(20, 29, 47, 0.95) 0%, rgba(13, 19, 32, 0.95) 100%);
+      border: 1px solid rgba(229, 184, 105, 0.4);
+      border-radius: 14px;
+      padding: 10px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      position: relative;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .player-dashboard.active-turn {
+      border-color: var(--accent-emerald);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .active-turn.player-dashboard .turn-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(16, 185, 129, 0.25);
+      border: 1px solid var(--accent-emerald);
+      color: #34d399;
+    }
+
+    /* Court Powers Quick-Reference Legend */
+    .powers-legend-bar {
+      margin-top: 4px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      font-size: 0.66rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .legend-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+    }
+
+    .legend-icon {
+      font-weight: 800;
+      border-radius: 3px;
+      padding: 1px 4px;
+      font-size: 0.65rem;
+    }
+
+    /* 5. FOOTER / STATUS BAR - Live Turn Log */
+    .status-footer {
+      width: 100%;
+      background: rgba(10, 15, 26, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.78rem;
+      max-height: 90px;
+    }
+
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      color: var(--gold-primary);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .log-content {
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-height: 60px;
+      padding-right: 4px;
+    }
+
+    .log-content::-webkit-scrollbar {
+      width: 4px;
+    }
+    .log-content::-webkit-scrollbar-thumb {
+      background: rgba(229, 184, 105, 0.3);
+      border-radius: 2px;
+    }
+
+    .log-entry {
+      line-height: 1.3;
+      color: var(--text-main);
+    }
+
+    .log-entry.latest {
+      color: #fef08a;
+      font-weight: 600;
+    }
+
+    .log-entry .score-tag {
+      color: var(--accent-emerald);
+      font-weight: 700;
+    }
+
+    .log-entry .power-tag {
+      color: #38bdf8;
+      font-weight: 700;
+    }
+
+    /* Modals (Joker Selector, Rules, Game Over) */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(5, 8, 16, 0.88);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      overflow-y: auto;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-card {
+      background: linear-gradient(145deg, #131d31 0%, #0c1220 100%);
+      border: 1px solid var(--gold-primary);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px var(--gold-glow);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 450px;
+      padding: 24px 20px;
+      text-align: center;
+      position: relative;
+      margin: auto;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+    }
+
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      color: var(--gold-light);
+      margin-bottom: 8px;
+    }
+
+    .modal-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+
+    .modal-btn-close {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px 8px;
+    }
+
+    .modal-btn-close:hover {
+      color: var(--text-main);
+    }
+
+    /* Joker Modal Picker */
+    .joker-picker-ranks {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .joker-rank-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-weight: 700;
+      padding: 8px 4px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+
+    .joker-rank-btn.selected {
+      background: var(--gold-primary);
+      color: #0c1220;
+      border-color: #fff;
+    }
+
+    .joker-picker-suits {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .joker-suit-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      font-size: 1.4rem;
+      padding: 8px 4px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .joker-suit-btn.suit-red { color: var(--suit-red); }
+    .joker-suit-btn.suit-black { color: #f8fafc; }
+
+    .joker-suit-btn.selected {
+      background: rgba(229, 184, 105, 0.3);
+      border-color: var(--gold-primary);
+      box-shadow: 0 0 10px var(--gold-glow);
+    }
+
+    .btn-action-primary {
+      background: linear-gradient(135deg, var(--gold-primary), var(--gold-dark));
+      color: #0c1220;
+      font-weight: 700;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+    }
+
+    .btn-action-primary:hover {
+      box-shadow: 0 4px 16px var(--gold-glow);
+      transform: translateY(-1px);
+    }
+
+    /* Rules modal content */
+    .rules-list {
+      text-align: left;
+      font-size: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 360px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .rules-section-title {
+      color: var(--gold-primary);
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+      body { padding: 4px 6px 16px; }
+      .board-arena-wrapper { padding: 8px; }
+      .hand-card-wrapper { width: 54px; height: 76px; }
+      .hand-card-wrapper .card-rank { font-size: 0.95rem; }
+      .score-number { font-size: 1.6rem; }
+      .setup-modal { padding: 22px 16px; }
+    }
+  </style>
+<style>
+body{background:#111820!important;background-image:none!important} .setup-card,.modal-card,.opponent-dashboard,.player-dashboard,.player-hand-dock{background:#1b2530!important;background-image:none!important;box-shadow:none!important;border:1px solid #354353!important;border-radius:12px!important} .powers-legend-bar{background:none!important} .board-arena-wrapper{position:relative} .side-player{position:absolute;top:30%;width:155px;background:#1b2530;border:1px solid #354353;border-radius:12px;padding:18px} #side-left{right:calc(100% + 18px)} #side-right{left:calc(100% + 18px)} .side-player.active-turn{border-color:#d8b563} .side-player small{font-size:12px} #result-overlay{position:fixed;inset:0;z-index:2000;background:#000a;display:flex;align-items:center;justify-content:center;padding:20px} #result-overlay[hidden]{display:none} .result-card{width:min(650px,100%);max-height:90vh;overflow:auto;background:#1b2530;border:1px solid #526170;border-radius:16px;padding:24px} .result-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;max-width:340px;margin:18px auto}.result-cell{background:#111820;min-height:48px;border:1px solid #354353;display:grid;place-items:center;border-radius:5px}.result-cell.played{outline:2px solid #e8bc63}.combo-row{padding:10px 0;border-bottom:1px solid #354353;display:flex;justify-content:space-between;gap:12px}.combo-cards{display:block;color:#b6c8d8;margin-top:4px} .result-card button{width:100%;margin-top:20px;padding:12px;border-radius:8px;border:0;cursor:pointer} #final-scores+ .modal-desc+div{display:none!important}
+@media(max-width:1000px){.side-player{position:static;width:auto;margin:8px;display:inline-block} .side-player[hidden]{display:none}.side-player .score-number{font-size:20px}} 
+</style><style>
+.card-face{background:#fcfbf7!important;border:1px solid #d5d3cc!important;padding:0!important;display:grid!important;place-items:center!important;box-shadow:0 2px 5px #0002!important;border-radius:7px!important}.minimal-card-art{width:100%;height:100%;display:block}.combo-section{padding:18px 0;border-bottom:1px solid #354353}.combo-heading{display:flex;align-items:baseline;justify-content:space-between;gap:16px;font-size:14px}.combo-heading strong{white-space:nowrap;color:#e8bc63}.combo-layout{--combo-width:60px;--combo-height:84px;display:grid;gap:10px;margin:20px auto 4px;width:max-content;max-width:100%}.combo-slot{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px}.combo-slot .card-face{width:100%;height:calc(100% - 16px);flex-shrink:0}.combo-slot small{font-size:10px;color:#93a4b6;line-height:12px}.combo-slot.new-card .card-face{outline:2px solid #e8bc63;outline-offset:2px}.result-card{width:min(570px,100%)}#result-total{font-size:22px;font-weight:600;color:#e8bc63;margin-top:10px}#result-title{font-size:18px;font-weight:500;line-height:1.4}#result-grid[hidden]{display:none}
+@media(max-width:480px){.combo-layout{--combo-width:44px;--combo-height:65px;gap:7px}.result-card{padding:18px}.combo-heading{font-size:12px}}
+</style><style>
+.card-face{background:#fffefa!important;border-color:#d8d7d2!important;box-shadow:0 2px 4px #0003,0 1px 0 #fff inset!important;border-radius:6px!important}.grid-cell .card-face{width:78%;height:96%}.hand-card-wrapper .card-face{width:100%;height:100%}.combo-slot .card-face{width:100%;height:calc(100% - 16px)}
+</style><style>
+.centered-settings{text-align:center;display:flex;justify-content:center}.mobile-layout #game-container{max-width:390px}.mobile-layout #setup-screen{padding:10px}.mobile-layout .setup-modal{width:100%;max-width:390px;padding:20px 16px}.mobile-layout .top-utility-bar{flex-direction:column;gap:8px}.mobile-layout .util-buttons{flex-wrap:wrap;justify-content:center;gap:5px}.mobile-layout .icon-btn{font-size:11px;padding:7px 9px}.mobile-layout .board-arena-wrapper{max-width:370px;padding:8px}.mobile-layout .board-5x5{gap:4px}.mobile-layout .hand-card-wrapper{width:54px;height:76px}.mobile-layout .player-dashboard,.mobile-layout .opponent-dashboard{width:100%;padding:10px}.mobile-layout .score-number{font-size:24px}.mobile-layout .side-player{position:static;width:auto;margin:5px;padding:10px;align-self:stretch}.mobile-layout .side-player[hidden]{display:none}.mobile-layout .player-hand-dock{width:100%;padding:10px}.mobile-layout .powers-legend-bar{flex-wrap:wrap;gap:8px}.mobile-layout .result-card{max-width:390px;padding:16px}.mobile-layout .combo-layout{--combo-width:44px;--combo-height:65px;gap:7px}
+</style><style>#screen-size{position:fixed;top:12px;right:12px;z-index:2500;background:#1b2530;border:1px solid #526170;box-shadow:0 2px 8px #0003} .top-utility-bar{margin-top:38px}#setup-screen{padding-top:60px}@media(max-width:480px){#screen-size{top:8px;right:8px;font-size:11px}}</style><style>.name-input{width:100%;padding:11px 13px;background:#111820;color:#edf1f5;border:1px solid #526170;border-radius:8px;font:inherit}.name-input:focus{outline:2px solid #d8b563;outline-offset:2px}[hidden]{display:none!important}</style><style>.hint-cell{outline:3px solid #e8bc63;outline-offset:2px}.util-buttons{flex-wrap:wrap}</style><style>#solo-goals{font-size:12px;color:#93a4b6;text-align:center;line-height:1.7;padding:2px 8px}#solo-goals strong{font-weight:500;color:#becbd7}</style><style>.three-settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.three-settings>div{min-width:0;text-align:center}.three-settings .setup-btn{width:100%;padding:10px 3px;font-size:12px;white-space:nowrap}.three-settings .setup-label{font-size:10px;letter-spacing:.4px}.bot-hand-preview{display:flex;flex-wrap:wrap;gap:3px;margin-top:8px}.bot-hand-preview .card-face{width:30px!important;height:42px!important;flex:none}.bot-hand-preview .card-face svg{width:100%;height:100%}@media(max-width:480px){.setup-modal{padding:16px 12px}.three-settings .setup-btn{font-size:10px}}</style><style>
+.open-bot-hands{width:100%;display:flex;justify-content:center;align-items:stretch;flex-wrap:wrap;gap:10px}
+.bot-hand-dock{min-width:0;flex:1 1 185px;max-width:100%;background:rgba(15,23,42,.75);border:1px solid rgba(229,184,105,.35);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;align-items:center;gap:9px}
+.bot-hand-dock .hand-header{width:100%;display:flex;justify-content:space-between;gap:8px}
+.bot-hand-dock .hand-cards-row{min-height:0;gap:10px;flex-wrap:nowrap}
+.bot-hand-dock .hand-card-wrapper{width:64px;height:88px;cursor:default;flex:none}
+.bot-hand-dock .hand-card-wrapper:hover{transform:none}
+.bot-hand-dock .hand-card-wrapper .card-face{width:100%;height:100%}
+@media(max-width:600px){.bot-hand-dock{padding:8px;flex-basis:100%}.bot-hand-dock .hand-card-wrapper{width:min(13vw,54px);height:min(18vw,76px)}.bot-hand-dock .hand-cards-row{gap:8px}}
+</style></head>
+<body>
+  <button class="icon-btn" id="screen-size" aria-pressed="false">Screen: Desktop</button>
+
+  <!-- 1. TITLE / SETUP SCREEN (Opening View) -->
+  <div id="setup-screen">
+    <div class="setup-modal">
+      <h1 class="setup-title">TallyGrid</h1>
+      <p class="setup-subtitle">Spatial card scoring</p>
+
+      <div class="setup-group"><label class="setup-label" for="player-name-input">Your name</label><input id="player-name-input" maxlength="24" placeholder="Player 1" autocomplete="nickname" class="name-input"></div>
+      <!-- Game Mode Selection -->
+      <div class="setup-group">
+        <label class="setup-label">Game Mode</label>
+        <div class="setup-options" id="opt-mode">
+          <button type="button" class="setup-btn active" data-val="ai">vs. AI</button>
+          <button type="button" class="setup-btn" data-val="pvp">Pass & Play (PvP)</button>
+        </div>
+      </div>
+
+      <!-- AI Difficulty Selection -->
+      <div class="setup-group" id="grp-difficulty">
+        <label class="setup-label">AI Difficulty</label>
+        <div class="setup-options" id="opt-difficulty">
+          <button type="button" class="setup-btn" data-val="easy">Easy</button>
+          <button type="button" class="setup-btn active" data-val="medium">Medium</button>
+          <button type="button" class="setup-btn" data-val="hard">Hard</button><button type="button" class="setup-btn" data-val="pro">Pro</button>
+        </div>
+        <p class="setup-desc" id="difficulty-desc">Evaluates all cards to maximize immediate point payout.</p>
+      </div>
+
+      <!-- Board Setup Selection -->
+      <div class="setup-group">
+        <label class="setup-label">Board Setup</label>
+        <div class="setup-options" id="opt-setup">
+          <button type="button" class="setup-btn" data-val="cross">Cross</button>
+          <button type="button" class="setup-btn active" data-val="open">Open Canvas</button>
+          <button type="button" class="setup-btn" data-val="checkerboard">Full Checkerboard</button>
+        </div>
+        <p class="setup-desc" id="setup-desc">Only 1 starting card dealt at center cell C3.</p>
+      </div>
+
+      <div class="setup-group"><label class="setup-label">Players</label><div class="setup-options" id="opt-players"><button class="setup-btn" data-count="1">1 player</button><button class="setup-btn active" data-count="2">2 players</button><button class="setup-btn" data-count="3">3 players</button><button class="setup-btn" data-count="4">4 players</button></div></div>
+      <p id="solo-desc" class="setup-desc" hidden>Solo: fill the board and earn the highest score you can. Same deck and scoring.</p>
+      <div class="setup-group"><div class="three-settings">
+<div><span class="setup-label">J/Q/K Court Powers</span><button class="setup-btn" id="toggle-powers" aria-pressed="false">Powers: Off</button></div>
+<div><span class="setup-label">Scoring</span><button class="setup-btn" id="toggle-scoring" aria-pressed="false">Classic scoring</button></div>
+<div><span class="setup-label">Bot Hands</span><button class="setup-btn" id="toggle-hands" aria-pressed="false">Closed hands</button></div>
+</div></div>
+      <button type="button" class="btn-start-match" id="btn-start-match">Start Match</button>
+    </div>
+  </div>
+
+  <!-- MAIN GAME CONTAINER (Vertical Order) -->
+  <div id="game-container">
+    
+    <!-- Top Utility Bar -->
+    <div class="top-utility-bar">
+      <div class="brand-title">TALLYGRID</div>
+      <div class="util-buttons"><button class="icon-btn" id="btn-hint">Hint</button><button class="icon-btn" id="toggle-explanations" aria-pressed="true">Explanations: On</button>
+        <button type="button" class="icon-btn" id="btn-rules">📖 Rules & Powers</button>
+        <button type="button" class="icon-btn" id="btn-sound">🔊 Sound: On</button>
+        <button type="button" class="icon-btn" id="btn-new-match">🔄 Restart</button>
+      </div>
+    </div>
+
+    <p id="hint-text" role="status" hidden style="font-size:13px;text-align:center;color:#e8bc63"></p>
+    <!-- 1. TOP BAR - Opponent Dashboard -->
+    <div class="opponent-dashboard" id="opp-dashboard">
+      <div class="dash-row-main">
+        <div class="player-identity">
+          <div class="player-avatar" id="opp-avatar">🤖</div>
+          <div>
+            <div class="player-name">
+              <span id="opp-name">AI Opponent</span>
+              <span class="badge-difficulty" id="opp-diff-badge">Medium</span>
+            </div>
+            <span class="turn-badge" id="opp-turn-badge">⚡ Active Turn</span>
+          </div>
+        </div>
+        <div class="dash-score-container">
+          <span class="score-number" id="opp-score">0</span>
+        </div>
+      </div>
+      <div class="dash-row-sub">
+        </div>
+      </div>
+    </div>
+
+    <div id="open-bot-hands" class="open-bot-hands" hidden aria-label="Visible bot hands"></div>
+
+    <!-- 2. CENTER - The 5x5 Board Arena -->
+    <div class="board-arena-wrapper"><aside id="side-left" class="side-player"></aside><aside id="side-right" class="side-player"></aside>
+      <div class="grid-col-labels">
+        <span>A</span><span>B</span><span>C</span><span>D</span><span>E</span>
+      </div>
+      <div class="board-grid-with-rows">
+        <div class="grid-row-labels">
+          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+        </div>
+        <div class="board-5x5" id="board-grid">
+          <!-- 25 Cells populated via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. LOWER MIDDLE - Player Hand Dock -->
+    <div class="player-hand-dock" id="player-hand-dock">
+      <div class="hand-header">
+        <span id="hand-owner-label">Your Hand (Select a Card to Play)</span>
+        <span id="deck-count-label">Deck: 45 cards</span>
+      </div>
+      <div class="hand-cards-row" id="hand-cards-row">
+        <!-- Up to 4 cards populated via JS -->
+      </div>
+    </div>
+
+    <!-- 4. BOTTOM BAR - Player Dashboard -->
+    <div class="player-dashboard active-turn" id="player-dashboard">
+      <div class="dash-row-main">
+        <div class="player-identity">
+          <div class="player-avatar" id="player-avatar">👤</div>
+          <div>
+            <div class="player-name">
+              <span id="player-name">Player 1</span>
+            </div>
+            <span class="turn-badge" id="player-turn-badge">⚡ Active Turn</span>
+          </div>
+        </div>
+        <div class="dash-score-container">
+          <span class="score-number" id="player-score">0</span>
+        </div>
+      </div>
+      <div class="dash-row-sub">
+        </div>
+      </div>
+      
+    </div>
+
+    <div id="solo-goals" hidden aria-label="Solo score goals"></div>
+    <!-- 5. FOOTER / STATUS BAR - Live Turn Log -->
+    <div class="status-footer">
+      <div class="log-header">
+        <span>Turn Log & Scoring Breakdown</span>
+        <span id="turn-round-indicator">Match In Progress</span>
+      </div>
+      <div class="log-content" id="log-content">
+        <div class="log-entry latest">Welcome to TallyGrid. Select a card and place it adjacent to existing cards.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- JOKER CHAMELEON ASSIGNMENT MODAL -->
+  <div class="modal-overlay" id="joker-modal">
+    <div class="modal-card">
+      <button type="button" class="modal-btn-close" id="btn-close-joker">&times;</button>
+      <h2 class="modal-title">Chameleon Joker</h2>
+      <p class="modal-desc">Assign this Joker any Rank (A–10) and Suit for scoring combinations.</p>
+      
+      <div style="font-size:0.75rem; color:var(--gold-primary); margin-bottom:6px; font-weight:700;">CHOOSE RANK</div>
+      <div class="joker-picker-ranks" id="joker-rank-picker">
+        <button type="button" class="joker-rank-btn selected" data-rank="A" data-val="1">A</button>
+        <button type="button" class="joker-rank-btn" data-rank="2" data-val="2">2</button>
+        <button type="button" class="joker-rank-btn" data-rank="3" data-val="3">3</button>
+        <button type="button" class="joker-rank-btn" data-rank="4" data-val="4">4</button>
+        <button type="button" class="joker-rank-btn" data-rank="5" data-val="5">5</button>
+        <button type="button" class="joker-rank-btn" data-rank="6" data-val="6">6</button>
+        <button type="button" class="joker-rank-btn" data-rank="7" data-val="7">7</button>
+        <button type="button" class="joker-rank-btn" data-rank="8" data-val="8">8</button>
+        <button type="button" class="joker-rank-btn" data-rank="9" data-val="9">9</button>
+        <button type="button" class="joker-rank-btn" data-rank="10" data-val="10">10</button>
+      </div>
+
+      <div style="font-size:0.75rem; color:var(--gold-primary); margin-bottom:6px; font-weight:700;">CHOOSE SUIT</div>
+      <div class="joker-picker-suits" id="joker-suit-picker">
+        <button type="button" class="joker-suit-btn suit-black selected" data-suit="♠">♠</button>
+        <button type="button" class="joker-suit-btn suit-red" data-suit="♥">♥</button>
+        <button type="button" class="joker-suit-btn suit-red" data-suit="♦">♦</button>
+        <button type="button" class="joker-suit-btn suit-black" data-suit="♣">♣</button>
+      </div>
+
+      <button type="button" class="btn-action-primary" id="btn-confirm-joker">Place Card</button>
+    </div>
+  </div>
+
+  <!-- RULES & POWERS MODAL -->
+  <div class="modal-overlay" id="rules-modal">
+    <div class="modal-card" style="max-width: 500px;">
+      <button type="button" class="modal-btn-close" id="btn-close-rules">&times;</button>
+      <h2 class="modal-title">Rules & Scoring Guide</h2>
+      <div class="rules-list">
+        <div class="rules-section-title">Objective & Playing</div>
+        <div>Play on a 5×5 grid with 1–4 players. The game uses one shuffled 54-card deck: 52 standard cards and 2 Jokers, with no replacement. Take turns placing one card from your hand in an empty space touching a card already on the board <strong>by an edge</strong> (up, down, left, or right), then draw a replacement card when available. Diagonal-only contact does not count. The initial board varies with your chosen layout. In multiplayer, the highest total score when the board fills wins; in solo, maximize your final total.</div>
+        <div class="rules-section-title">Card Values — Both Scoring Modes</div>
+        <div><strong>Ace = 1.</strong> Number cards <strong>2–10</strong> are worth their printed number. <strong>Jack, Queen, and King = 10 points each</strong> when adding card values for 15 and 31. For runs, ranks are A, 2, 3, …, 10, J, Q, K in that order (Ace is low). For pairs, cards must match <em>rank</em>, not just value: J and K are both worth 10 in sums but do <strong>not</strong> form a pair. Suits are ♠, ♥, ♦, ♣.</div>
+        <div class="rules-section-title">General Scoring</div>
+        <div>You score combinations <strong>created or extended by the card you just placed</strong>; a combination must include that new card. You may earn several awards on a single move (such as a 15 and a pair). Scores are awarded immediately; combinations already sitting on the board are not scored again unless they form a new qualifying combination involving your played card. The same card can take part in multiple distinct combinations.</div>
+        <div id="rookie-rules">
+          <div class="rules-section-title">Classic Scoring — Straight Rows or Columns</div>
+          <div>Every scoring combination must occupy <strong>consecutive, uninterrupted cells in the same single row or column</strong>, including your new card. No gaps, bends, branching, or diagonal connections. <strong>Flushes never score in Classic.</strong></div>
+          <ul style="padding-left:18px;display:flex;flex-direction:column;gap:5px">
+            <li><strong>15 = 3 points:</strong> Each distinct consecutive segment of at least two cards totaling exactly 15. Example: 7 + 8 = 15; J + 5 = 15 because J is worth 10.</li>
+            <li><strong>Pairs and sets:</strong> Consecutive identical ranks in the same row/column earn <strong>2 points for 2</strong>, <strong>6 for 3</strong>, <strong>12 for 4</strong>, or <strong>15 for 5</strong>. Different suits can pair. Example: 9♠ next to 9♥ makes a pair; J and Q do not.</li>
+            <li><strong>Runs:</strong> 3 consecutive cells showing consecutive ranks <em>in ascending or descending spatial order</em> earn <strong>4 points</strong>; 4 cards earn <strong>8</strong>; 5 earn <strong>12</strong>. Example: 4–5–6 scores; 5–4–6 does not. A smaller run fully contained within a longer scored run is not counted again.</li>
+            <li><strong>31 = 6 points:</strong> All currently occupied cards in the entire row or column must total exactly 31 (even if one or more spaces are still empty). You cannot skip an occupied card to make 31. Filling an empty space later does not undo previously earned points. Each <strong>row</strong> and each <strong>column</strong> can award a 31 bonus only <strong>once during the entire game</strong>, regardless of which player earned it. A new 31 on an already-claimed row/column earns no second bonus.</li>
+          </ul>
+        </div>
+        <div id="pro-rules">
+          <div class="rules-section-title">Expanded Scoring — Connected Shapes</div>
+          <div>For <strong>15s, runs, and flushes</strong>, cards may form any <strong>orthogonally connected</strong> group that includes the newly placed card: a chain, bend, T, or branch all qualify. Every card in the group must be reachable from another group card through edge-to-edge touches. <strong>Diagonals alone do not connect.</strong> These connected groups contain 2–5 cards for 15s and 3–5 for runs/flushes. Cards need not appear in rank order on the grid for an Expanded run.</div>
+          <ul style="padding-left:18px;display:flex;flex-direction:column;gap:5px">
+            <li><strong>15 = 3 points:</strong> Every distinct connected group of 2–5 cards totaling exactly 15. Example: a 7 and 8 touching on a corner-shaped chain still score if the cards of the chosen group connect edge-to-edge.</li>
+            <li><strong>Runs:</strong> A connected group containing 3, 4, or 5 <strong>distinct consecutive ranks in any arrangement</strong> earns <strong>4, 8, or 12 points</strong>. Example: 5–4–6 can score in Expanded as long as the three cards form a connected group. A contained shorter run is not awarded again when its longer run scores.</li>
+            <li><strong>Flushes:</strong> 3, 4, or 5 connected cards <strong>all of the same suit</strong> earn <strong>2, 4, or 8 points</strong>. Contained smaller flushes are not also awarded when a larger flush scores. A Queen uses its printed suit, not a wildcard suit.</li>
+            <li><strong>Pairs and sets:</strong> Unlike the three combinations above, pairs remain <strong>straight and consecutive in a single row or column</strong>. Exact matching rank awards <strong>2/6/12/15 points</strong> for 2/3/4/5 cards.</li>
+            <li><strong>31 = 6 points:</strong> The values of <strong>every currently occupied card in the entire row or column</strong> must total exactly 31. Empty spaces are allowed, but you cannot omit occupied cards or score a subsection. The bonus may be collected <strong>only once per row and once per column across the whole game</strong>.</li>
+          </ul>
+        </div>
+        <div class="rules-section-title">J/Q/K Court Powers — Optional</div>
+        <div>The <strong>J/Q/K Court Powers</strong> setup switch starts <strong>Off</strong>. With powers Off, J/Q/K are regular cards (value 10 for sums; J, Q, K as their respective ranks in runs and sets). When powers are On:</div>
+        <ul style="padding-left:18px;display:flex;flex-direction:column;gap:6px">
+          <li><strong>Jack — Suit Strike:</strong> In addition to regular scoring, gain <strong>+3 points per card</strong> directly adjacent above/below/left/right that shares the Jack’s printed suit. Diagonals do not count.</li>
+          <li><strong>Queen — Wild Run:</strong> A Queen may stand for a missing rank <strong>in a run only</strong>. In Classic its position must fit the straight ascending/descending run; in Expanded it can stand for a needed rank anywhere in the connected group. It is still worth <strong>10 for 15/31</strong>, counts as rank Q for pairs, and uses its actual printed suit for Expanded flushes.</li>
+          <li><strong>King — The Usurper:</strong> Play normally into an empty valid cell, or <strong>once per player per game</strong> use a King to overwrite an existing <strong>A–10</strong> card on the board, removing that old card. The King keeps its printed rank, suit, and sum value of <strong>10</strong>; it is <strong>not a wildcard</strong>. A King cannot overwrite J, Q, K, or Joker cards.</li>
+        </ul>
+        <div class="rules-section-title">Jokers & Hand Visibility</div>
+        <div><strong>Joker — Chameleon:</strong> When you play either Joker, choose any <strong>A–10 rank</strong> and one of the four suits. It then scores using those chosen properties (the chosen rank also determines its value for 15 and 31). Jokers are present regardless of whether court powers are enabled. <strong>Open Hands</strong> shows the bots’ cards; <strong>Closed Hands</strong> hides them. Neither changes how points are calculated.</div>
+      </div>
+      <button type="button" class="btn-action-primary" style="margin-top:16px;" id="btn-close-rules-bottom">Got It</button>
+    </div>
+  </div>
+
+  <!-- GAME OVER MODAL -->
+  <div class="modal-overlay" id="gameover-modal">
+    <div class="modal-card">
+      <h2 class="modal-title" id="go-title" style="font-size:2rem;">Victory!</h2>
+      <div id="final-scores"></div><p class="modal-desc" id="go-desc">The board is full.</p>
+      
+      <div style="background:rgba(255,255,255,0.05); padding:16px; border-radius:10px; margin-bottom:20px; text-align:left; font-size:0.88rem; display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; justify-content:space-between;">
+          <span id="go-p1-label">Player 1:</span>
+          <strong id="go-p1-score" style="color:var(--gold-light);">0 pts</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span id="go-p2-label">AI Opponent:</span>
+          <strong id="go-p2-score" style="color:var(--gold-light);">0 pts</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; border-top:1px solid rgba(255,255,255,0.1); padding-top:6px;">
+          <span>Total Turns Played:</span>
+          <strong id="go-turns">0</strong>
+        </div>
+      </div>
+
+      <div id="analysis-report" class="analysis-report" aria-label="Postgame analysis"></div>
+      <button type="button" class="btn-action-primary" id="btn-rematch" style="width:100%; font-size:1.1rem; padding:12px;">Play Again</button><button class="btn-action-primary" id="btn-menu" style="width:100%;padding:12px;margin-top:10px;background:#263340">Menu</button>
+    </div>
+  </div>
+
+  <div id="result-overlay" hidden><section class="result-card" role="dialog" aria-modal="true" aria-labelledby="result-title"><h2 id="result-title"></h2><p id="result-total"></p><div id="result-grid" class="result-grid"></div><div id="result-combos"></div><button id="result-continue">Continue</button></section></div>
+<style>
+#gameover-modal .modal-card{max-width:850px;text-align:left;max-height:92vh;padding:22px clamp(14px,3vw,30px)}
+#gameover-modal .modal-title{text-align:center}.analysis-report{margin:22px 0 16px;display:grid;gap:20px;color:#eaf0f6}
+.analysis-section{border:1px solid #354353;border-radius:13px;padding:16px;background:#141e29}
+.analysis-section h3{font-size:17px;color:#f0cb80;margin:0 0 10px}
+.analysis-muted{color:#a9bbca;font-size:12px;line-height:1.5}.analysis-note{color:#d4dfeb;line-height:1.6;font-size:13px;margin-top:8px}
+.analysis-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:9px}
+.analysis-metric{background:#23303e;border-radius:9px;padding:12px;min-width:0}.analysis-metric b{display:block;font-size:21px;color:#f0cb80;margin:4px 0}.analysis-metric small{color:#a9bbca}
+.analysis-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #354353;font-size:13px}
+.analysis-row:last-child{border:0}.analysis-bar{height:9px;background:#303e4c;border-radius:10px;overflow:hidden;flex:1;min-width:35px}.analysis-bar span{display:block;height:100%;background:#e1b76a}
+.analysis-two{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.analysis-insight{padding:12px;border-left:3px solid #d4a655;background:#202d3c;border-radius:5px;font-size:13px;line-height:1.6}
+.analysis-replay-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;max-width:340px;margin:10px auto}
+.analysis-replay-cell{aspect-ratio:0.85;background:#263342;border:1px solid #475464;border-radius:5px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:clamp(10px,2.5vw,15px)}
+.analysis-replay-cell.last{outline:2px solid #f0cb80;outline-offset:1px}.analysis-replay-cell.empty{opacity:.35}
+.analysis-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.analysis-controls button,.analysis-copy{cursor:pointer;color:#f6e5c5;background:#2a3c4b;border:1px solid #667582;border-radius:7px;padding:9px 12px}
+.analysis-controls input{flex:1;min-width:110px;accent-color:#e1b76a}.analysis-timeline{width:100%;height:auto;max-height:180px}
+@media(max-width:500px){.analysis-section{padding:12px}.analysis-report{gap:12px}.analysis-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+  <!-- AUDIO SYNTHESIS & GAME LOGIC -->
+  <script>
+    /* =========================================================================
+       AUDIO SYNTHESIS ENGINE (Web Audio API)
+       ========================================================================= */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      toggleMute() {
+        this.muted = !this.muted;
+        return this.muted;
+      }
+
+      playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.12) {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      playCardDeal() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const bufferSize = this.ctx.sampleRate * 0.08;
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+          }
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = buffer;
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.value = 1200;
+          const gain = this.ctx.createGain();
+          gain.gain.value = 0.18;
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+          noise.start();
+        } catch (e) {}
+      }
+
+      playCardSelect() {
+        this.playTone(523.25, 'triangle', 0.08, 0.08); // C5
+      }
+
+      playCardPlace() {
+        this.playTone(220, 'sine', 0.12, 0.2); // A3 felt thud
+      }
+
+      playScore(points) {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        const count = points >= 12 ? 4 : (points >= 6 ? 3 : 2);
+        notes.slice(0, count).forEach((freq, idx) => {
+          setTimeout(() => {
+            this.playTone(freq, 'triangle', 0.22, 0.1);
+          }, idx * 70);
+        });
+      }
+
+      playKingOverwrite() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        [110, 164.81, 220].forEach((freq) => {
+          this.playTone(freq, 'sawtooth', 0.4, 0.15);
+        });
+      }
+
+      playVictory() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const fanfare = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+        fanfare.forEach((f, i) => {
+          setTimeout(() => {
+            this.playTone(f, 'sine', 0.4, 0.15);
+          }, i * 120);
+        });
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    /* =========================================================================
+       GAME STATE & CORE MODELS
+       ========================================================================= */
+    const SUITS = ['♠', '♥', '♦', '♣'];
+    const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+    function getCardValue(rank) {
+      if (rank === 'A') return 1;
+      if (['J', 'Q', 'K'].includes(rank)) return 10;
+      return parseInt(rank, 10);
+    }
+
+    function getCardRankVal(rank) {
+      if (rank === 'A') return 1;
+      if (rank === 'J') return 11;
+      if (rank === 'Q') return 12;
+      if (rank === 'K') return 13;
+      return parseInt(rank, 10);
+    }
+
+    function createDeck() {
+      const deck = [];
+      let idCounter = 1;
+      for (const suit of SUITS) {
+        for (const rank of RANKS) {
+          deck.push({
+            id: `card_${idCounter++}`,
+            rank: rank,
+            suit: suit,
+            value: getCardValue(rank),
+            rankVal: getCardRankVal(rank),
+            isCourt: ['J', 'Q', 'K'].includes(rank),
+            isJoker: false,
+            power: rank === 'J' ? 'jack' : (rank === 'Q' ? 'queen' : (rank === 'K' ? 'king' : null))
+          });
+        }
+      }
+      // One physical deck: 52 unique suited cards plus two unique Jokers.
+      for(let i=1;i<=2;i++) deck.push({id:`joker_${i}`,rank:'JOKER',suit:'★',value:10,rankVal:0,isCourt:false,isJoker:true,power:'joker'});
+      // Shuffle Fisher-Yates
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+      return deck;
+    }
+
+    const GameState = {
+      claimed31Rows: [], claimed31Cols: [], publicDiscards: [], playerCount: 2, powersEnabled: false, explanations: true, busy: false, generation: 0,
+      mode: 'ai', // 'ai' or 'pvp'
+      aiDifficulty: 'medium', scoringMode:'rookie', openHands:false, // bot options
+      boardSetup: 'open', // 'cross', 'checkerboard', 'open'
+      board: [], // 5x5 grid with persistent cards
+      deck: [],
+      players: [
+        { id: 0, name: 'Player 1', isAI: false, score: 0, hand: [], kingUsed: false },
+        { id: 1, name: 'AI Opponent', isAI: true, score: 0, hand: [], kingUsed: false }
+      ],
+      currentTurn: 0,
+      selectedCardIdx: null,
+      pendingJokerPlacement: null,
+      turnCount: 0,
+      gameOver: false, analysisHistory: [], analysisSeed: []
+    };
+
+    /* =========================================================================
+       SCORING ENGINE
+       ========================================================================= */
+    function combinations(arr, k) {
+      if (k === 0) return [[]];
+      if (arr.length === 0) return [];
+      const head = arr[0];
+      const tail = arr.slice(1);
+      const withHead = combinations(tail, k - 1).map(c => [head, ...c]);
+      const withoutHead = combinations(tail, k);
+      return [...withHead, ...withoutHead];
+    }
+
+    function evaluateLine(cards, newCard = null) {
+      if (!cards || cards.length < 2) {
+        return { score: 0, breakdowns: [], is31: false };
+      }
+
+      let score = 0;
+      const breakdowns = [];
+
+      // Fifteens use uninterrupted segments containing the newly played card. 31 is evaluated separately across every occupied card in the entire row/column.
+      let is31 = false;
+      for (let start=0; start<cards.length; start++) {
+        for(let end=start+2; end<=cards.length; end++) {
+          const combo=cards.slice(start,end);
+          if(newCard && !combo.includes(newCard)) continue;
+          const sum=combo.reduce((n,c)=>n+c.value,0);
+          if(sum===15) { score+=3; breakdowns.push({text:'Fifteen',pts:3,cards:combo}); }
+        }
+      }
+
+      // 3. Pairs / Sets
+      // Matching ranks must occupy consecutive touching cells in this line.
+      for (let start = 0; start < cards.length;) {
+        let end = start + 1;
+        while (end < cards.length && cards[end].rank === cards[start].rank) end++;
+        const group = cards.slice(start, end);
+        const count = group.length;
+        if (count >= 2 && (!newCard || group.includes(newCard))) {
+          const pts = count===5 ? 15 : count * (count - 1);
+          score += pts;
+          const name = count === 2 ? 'Pair' : `${count}-of-a-kind`;
+          breakdowns.push({text: `${name} of ${cards[start].rank}s`, pts, cards: group});
+        }
+        start = end;
+      }
+
+      // Runs: consecutive touching cells; each enabled Queen can fill one rank.
+      const countedRuns=[];
+      for(const len of [5,4,3]) {
+        for(let start=0;start+len<=cards.length;start++) {
+          const indices=Array.from({length:len},(_,i)=>start+i);
+          const group=cards.slice(start,start+len);
+          if(newCard && !group.includes(newCard)) continue;
+          if(countedRuns.some(full=>indices.every(i=>full.includes(i)))) continue;
+          const ranks=group.map(c=>c.rankVal);
+          const natural=[1,-1].some(direction=>ranks.every((rank,i)=>i===0||rank===ranks[i-1]+direction));
+          let wild=false;
+          if(!natural && GameState.powersEnabled && group.some(c=>c.rank==='Q')) {
+            for(const direction of [1,-1]) {
+              const fixedIndex=group.findIndex(c=>c.rank!=='Q');
+              const first=fixedIndex===-1?(direction===1?1:13):group[fixedIndex].rankVal-direction*fixedIndex;
+              if(group.every((c,i)=>{
+                const expected=first+direction*i;
+                return expected>=1&&expected<=13&&(c.rank==='Q'||c.rankVal===expected);
+              })) {wild=true;break;}
+            }
+          }
+          if(natural||wild) {
+            countedRuns.push(indices);
+            const pts=({3:4,4:8,5:12})[len];score+=pts;
+            breakdowns.push({text:`${wild?'Queen Wild ':''}Run of ${len} (${group.map(c=>c.rank).join('-')})`,pts,cards:group});
+          }
+        }
+      }
+
+      // 5. Flushes
+      // Natural suits only: Queens never substitute another suit.
+      const naturalFlushGroups=[];
+      for(let start=0;GameState.scoringMode==='pro' && start<cards.length;) {
+        let end=start+1;
+        while(end<cards.length && cards[end].suit===cards[start].suit) end++;
+        const group=cards.slice(start,end);
+        if(group.length>=3) {
+          naturalFlushGroups.push(group);
+          if(!newCard || group.includes(newCard)) {
+            const pts=({3:2,4:4,5:8})[group.length];score+=pts;breakdowns.push({text:`Flush of ${group.length} ${group[0].suit}`,pts,cards:group});
+          }
+        }
+        start=end;
+      }
+      return { score, breakdowns, is31 };
+    }
+
+    function getContinuousLine(board, r, c, isHorizontal) {
+      const cards = [];
+      const cellCoords = [];
+      let startIdx, endIdx;
+
+      if (isHorizontal) {
+        let left = c;
+        while (left - 1 >= 0 && board[r][left - 1].card !== null) {
+          left--;
+        }
+        let right = c;
+        while (right + 1 < 5 && board[r][right + 1].card !== null) {
+          right++;
+        }
+        startIdx = left;
+        endIdx = right;
+        for (let col = left; col <= right; col++) {
+          cards.push(board[r][col].card);
+          cellCoords.push({ r, c: col });
+        }
+      } else {
+        let top = r;
+        while (top - 1 >= 0 && board[top - 1][c].card !== null) {
+          top--;
+        }
+        let bottom = r;
+        while (bottom + 1 < 5 && board[bottom + 1][c].card !== null) {
+          bottom++;
+        }
+        startIdx = top;
+        endIdx = bottom;
+        for (let row = top; row <= bottom; row++) {
+          cards.push(board[row][c].card);
+          cellCoords.push({ r: row, c });
+        }
+      }
+
+      return { cards, cellCoords, startIdx, endIdx };
+    }
+
+    // Pro combinations are distinct sets of orthogonally connected occupied cells.
+    // A group must include the newly played card; bends and branches are permitted.
+    // 31 is evaluated separately using all occupied cards in each affected row/column.
+    function evaluateProClusters(board,r,c,card){
+      const occupied=[];
+      for(let y=0;y<5;y++) for(let x=0;x<5;x++) if(board[y][x].card) occupied.push({r:y,c:x,card:board[y][x].card});
+      const source=occupied.findIndex(v=>v.r===r&&v.c===c);
+      const links=occupied.map((v,i)=>occupied.map((w,j)=>j).filter(j=>j!==i&&Math.abs(v.r-occupied[j].r)+Math.abs(v.c-occupied[j].c)===1));
+      const groups=new Map(),visited=new Set();
+      function visit(indices){
+        const sorted=indices.slice().sort((a,b)=>a-b), key=sorted.join(',');
+        if(visited.has(key))return;
+        visited.add(key);
+        if(indices.length>=2)groups.set(key,sorted);
+        if(indices.length>=5)return;
+        const neighbors=new Set(indices.flatMap(i=>links[i]).filter(i=>!indices.includes(i)));
+        for(const i of neighbors) visit([...indices,i]);
+      }
+      visit([source]);
+      const entries=[...groups.values()].map(indices=>({indices,cards:indices.map(i=>occupied[i].card)}));
+      let score=0; const breakdowns=[];
+      // Distinct connected subsets of 2-5 cards totalling fifteen.
+      for(const e of entries){
+        if(e.cards.reduce((sum,v)=>sum+v.value,0)===15){score+=3;breakdowns.push({text:'Connected fifteen',pts:3,cards:e.cards});}
+      }
+      // A valid run contains distinct consecutive ranks. A queen may be a wild rank.
+      const runs=[];
+      for(const e of entries){
+        if(e.cards.length<3)continue;
+        const len=e.cards.length;
+        let wild=false,valid=false;
+        for(let start=1;start<=14-len;start++){
+          const required=Array.from({length:len},(_,i)=>start+i);
+          const actual=e.cards.map(v=>v.rankVal);
+          if(actual.slice().sort((a,b)=>a-b).every((v,i)=>v===required[i])){valid=true;break;}
+          if(GameState.powersEnabled){
+            const fixed=e.cards.filter(v=>v.rank!=='Q').map(v=>v.rankVal);
+            if(new Set(fixed).size===fixed.length&&fixed.every(v=>required.includes(v))){valid=true;wild=true;break;}
+          }
+        }
+        if(valid)runs.push({...e,wild});
+      }
+      // Avoid double-scoring a smaller run fully contained in a larger connected run.
+      for(const e of runs){
+        if(runs.some(other=>other.indices.length>e.indices.length&&e.indices.every(i=>other.indices.includes(i))))continue;
+        const pts=({3:4,4:8,5:12})[e.cards.length];score+=pts;
+        breakdowns.push({text:`${e.wild?'Queen wild ':''}Connected run of ${e.cards.length}`,pts,cards:e.cards});
+      }
+      // Score maximal connected, same-suit groups of 3-5 cards once.
+      // Branches with >5 same-suit cards are scored as distinct maximal 5-card groups.
+      const flushes=entries.filter(e=>e.cards.length>=3&&e.cards.every(v=>v.suit===e.cards[0].suit));
+      for(const e of flushes){
+        if(flushes.some(other=>other.indices.length>e.indices.length&&e.indices.every(i=>other.indices.includes(i))))continue;
+        const pts=({3:2,4:4,5:8})[e.cards.length];score+=pts;
+        breakdowns.push({text:`Connected flush of ${e.cards.length} ${e.cards[0].suit}`,pts,cards:e.cards});
+      }
+      return {score,breakdowns};
+    }
+    function evaluatePlacement(board, r, c, card, player) {
+      const originalCard = board[r][c].card;
+      board[r][c].card = card;
+
+      let totalScore = 0;
+      const breakdowns = [];
+
+      // 1. Horizontal continuous line
+      const hLine = getContinuousLine(board, r, c, true);
+      const hEval = evaluateLine(hLine.cards, card);
+      totalScore += hEval.score;
+      if (hEval.breakdowns.length > 0) {
+        hEval.breakdowns.forEach(b => breakdowns.push({ ...b, axis: 'Row' }));
+      }
+
+      // 2. Vertical continuous line
+      const vLine = getContinuousLine(board, r, c, false);
+      const vEval = evaluateLine(vLine.cards, card);
+      totalScore += vEval.score;
+      if (vEval.breakdowns.length > 0) {
+        vEval.breakdowns.forEach(b => breakdowns.push({ ...b, axis: 'Col' }));
+      }
+
+      // A 31 considers ALL occupied cards in the entire row or column,
+      // including cards separated by empty cells. Once claimed it never scores again.
+      // Only the newly played card can trigger the award; old points are never revoked.
+      const rowCards = board[r].map(cell => cell.card).filter(Boolean);
+      const colCards = board.map(row => row[c].card).filter(Boolean);
+      const scored31Row = !GameState.claimed31Rows[r] && rowCards.reduce((sum, v) => sum + v.value, 0) === 31;
+      const scored31Col = !GameState.claimed31Cols[c] && colCards.reduce((sum, v) => sum + v.value, 0) === 31;
+      if (scored31Row) {
+        totalScore += 6;
+        breakdowns.push({text:'Entire-row 31',pts:6,is31:true,cards:rowCards,axis:'Row'});
+      }
+      if (scored31Col) {
+        totalScore += 6;
+        breakdowns.push({text:'Entire-column 31',pts:6,is31:true,cards:colCards,axis:'Col'});
+      }
+
+      if(GameState.scoringMode==='pro'){
+        // Remove line-only fifteens, runs and flushes; retain pairs and 31.
+        const lineOnly=b=>b.text==='Fifteen'||b.text.includes('Run of ')||b.text.includes('Flush of ');
+        for(let i=breakdowns.length-1;i>=0;i--) if(lineOnly(breakdowns[i])){totalScore-=breakdowns[i].pts;breakdowns.splice(i,1);}
+        const clusters=evaluateProClusters(board,r,c,card);
+        totalScore+=clusters.score;
+        clusters.breakdowns.forEach(b=>breakdowns.push({...b,axis:'Connected'}));
+      }
+
+      // 3. Jack Suit Strike bonus (+3 flat for each orthogonally adjacent card sharing suit)
+      let jackBonus = 0;
+      if (GameState.powersEnabled && card.rank === 'J') {
+        const neighbors = [
+          { r: r - 1, c },
+          { r: r + 1, c },
+          { r, c: c - 1 },
+          { r, c: c + 1 }
+        ];
+        let suitMatches = 0;
+        neighbors.forEach(n => {
+          if (n.r >= 0 && n.r < 5 && n.c >= 0 && n.c < 5) {
+            const neighborCard = board[n.r][n.c].card;
+            if (neighborCard && neighborCard.suit === card.suit) {
+              suitMatches++;
+            }
+          }
+        });
+        if (suitMatches > 0) {
+          jackBonus = suitMatches * 3;
+          totalScore += jackBonus;
+          breakdowns.push({
+            text: `Jack Suit Strike (${suitMatches} adj ${card.suit})`,
+            pts: jackBonus, cards:[card,...neighbors.filter(n=>n.r>=0&&n.r<5&&n.c>=0&&n.c<5).map(n=>board[n.r][n.c].card).filter(c=>c&&c.suit===card.suit)]
+          });
+        }
+      }
+
+      board[r][c].card = originalCard;
+
+      return {
+        totalScore,
+        breakdowns,
+        is31H: scored31Row,
+        is31V: scored31Col,
+        hCoords: hLine.cellCoords,
+        vCoords: vLine.cellCoords
+      };
+    }
+
+    /* =========================================================================
+       VALID MOVE CALCULATOR
+       ========================================================================= */
+    function getValidMoves(board, card, player) {
+      const moves = [];
+      const hasCardAdjacent = (r, c) => {
+        const deltas = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+        for (const [dr, dc] of deltas) {
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < 5 && nc >= 0 && nc < 5) {
+            if (board[nr][nc].card !== null) return true;
+          }
+        }
+        return false;
+      };
+
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          const cell = board[r][c];
+
+          // 1. Empty cell adjacent to an existing card, 
+          if (cell.card === null) {
+            if (hasCardAdjacent(r, c)) {
+              moves.push({ r, c, isOverwrite: false });
+            }
+          }
+
+          // 2. King Overwrite: on top of any number card (A-10)
+          if (GameState.powersEnabled && card && card.rank === 'K' && !player.kingUsed && cell.card !== null) {
+            const tgt = cell.card;
+            if (['A', '2', '3', '4', '5', '6', '7', '8', '9', '10'].includes(tgt.rank)) {
+              moves.push({ r, c, isOverwrite: true });
+            }
+          }
+        }
+      }
+
+      return moves;
+    }
+
+    /* =========================================================================
+       AI ENGINE (Easy, Medium, Hard/Cutthroat)
+       ========================================================================= */
+    // Public-information opponent model. Never inspect an opponent's concealed hand.
+    // The unseen pool excludes only the AI's own cards and publicly revealed cards;
+    // neither the deck order nor private hands enter the calculation.
+    function unseenCardsFor(playerIdx) {
+      const known=new Set(GameState.players[playerIdx].hand.map(c=>c.id));
+      GameState.board.forEach(row=>row.forEach(cell=>{if(cell.card)known.add(cell.card.id);}));
+      GameState.publicDiscards.forEach(card=>known.add(card.id));
+      const pool=[];
+      let n=1;
+      for(const suit of SUITS)for(const rank of RANKS){
+        const card={id:`card_${n++}`,rank,suit,value:getCardValue(rank),rankVal:getCardRankVal(rank),isJoker:false};
+        if(!known.has(card.id))pool.push(card);
+      }
+      for(let i=1;i<=2;i++){
+        const card={id:`joker_${i}`,rank:'JOKER',suit:'★',isJoker:true};
+        if(!known.has(card.id))pool.push(card);
+      }
+      return pool;
+    }
+    function jokerVariants(card, broad=true) {
+      if(!card.isJoker)return [card];
+      const ranks=broad?RANKS.slice(0,10):['A','5','10'];
+      return ranks.flatMap(rank=>SUITS.map(suit=>({...card,rank,suit,value:getCardValue(rank),rankVal:getCardRankVal(rank)})));
+    }
+    function maxOpponentReply(board, opponent, cards, exhaustive=false) {
+      let best=0;
+      const representative={...opponent,kingUsed:opponent.kingUsed};
+      for(const card of cards)for(const option of jokerVariants(card,exhaustive)){
+        for(const pos of getValidMoves(board,option,representative)){
+          const points=evaluatePlacement(board,pos.r,pos.c,option,representative).totalScore;
+          if(points>best)best=points;
+        }
+      }
+      return best;
+    }
+    function riskOfReply(board, playerIdx, difficulty, opponent) {
+      if(!opponent || opponent.id===playerIdx)return 0;
+      if(GameState.openHands)return maxOpponentReply(board,opponent,opponent.hand,difficulty==='pro');
+      const unseen=unseenCardsFor(playerIdx);
+      if(!unseen.length)return 0;
+      // Monte Carlo: draw hypothetical opponent hands from unknown cards, never
+      // the actual hidden hands. Hard uses fewer samples; Pro uses more.
+      const samples=difficulty==='pro'?8:4;
+      let risk=0;
+      for(let k=0;k<samples;k++){
+        const selected=[];
+        const available=unseen.slice();
+        for(let h=0;h<Math.min(4,available.length);h++){
+          const j=Math.floor(Math.random()*available.length);
+          selected.push(available.splice(j,1)[0]);
+        }
+        risk+=maxOpponentReply(board,opponent,selected,false);
+      }
+      return risk/samples;
+    }
+    function getAIMove(playerIdx=GameState.currentTurn,diff=GameState.aiDifficulty) {
+      const aiPlayer=GameState.players[playerIdx];
+      if(!aiPlayer.hand.length)return null;
+      const candidates=[];
+      aiPlayer.hand.forEach((card,handIdx)=>{
+        for(const pos of getValidMoves(GameState.board,card,aiPlayer)){
+          const variants=card.isJoker?jokerVariants(card,diff!=='easy'):[card];
+          for(const option of variants){
+            const score=evaluatePlacement(GameState.board,pos.r,pos.c,option,aiPlayer).totalScore;
+            candidates.push({handIdx,card:option,r:pos.r,c:pos.c,isOverwrite:pos.isOverwrite,score});
+          }
+        }
+      });
+      if(!candidates.length)return null;
+      if(diff==='easy'){
+        const best=Math.max(...candidates.map(m=>m.score));
+        const band=candidates.filter(m=>m.score>=Math.max(0,best-7));
+        const weights=band.map(m=>Math.exp((m.score-best)/3.5));
+        let draw=Math.random()*weights.reduce((a,b)=>a+b,0);
+        for(let i=0;i<band.length;i++){draw-=weights[i];if(draw<=0)return band[i];}
+        return band[0];
+      }
+      if(diff==='medium'){
+        for(const m of candidates){
+          const board=GameState.board.map(row=>row.map(cell=>({...cell})));
+          board[m.r][m.c].card=m.card;
+          const sums=[true,false].map(horizontal=>getContinuousLine(board,m.r,m.c,horizontal).cards.reduce((a,c)=>a+c.value,0));
+          const danger=sums.filter(sum=>[10,11,21,26].includes(sum)).length*2.2;
+          m.utility=m.score*2-danger-(m.isOverwrite&&m.score<5?6:0);
+        }
+        candidates.sort((a,b)=>b.utility-a.utility);
+        const top=candidates[0].utility;
+        const close=candidates.filter(m=>m.utility>=top-2);
+        return close[Math.floor(Math.random()*Math.min(close.length,4))];
+      }
+      // Hard and Pro analyze plausible counterplays. In closed-hand mode this
+      // uses probability samples drawn strictly from public information.
+      candidates.sort((a,b)=>b.score-a.score);
+      const next=GameState.players[(playerIdx+1)%GameState.players.length];
+      const shortlist=diff==='pro'?candidates.slice(0,Math.min(10,candidates.length)):
+        candidates.filter(m=>m.score>=candidates[0].score-10).slice(0,16);
+      for(const m of shortlist){
+        const board=GameState.board.map(row=>row.map(cell=>({...cell})));
+        board[m.r][m.c].card=m.card;
+        const danger=riskOfReply(board,playerIdx,diff,next);
+        const boardFreedom=getValidMoves(board,null,aiPlayer).length;
+        const weight=diff==='pro'?0.42:0.34;
+        m.utility=m.score-danger*weight+(diff==='pro'?boardFreedom*.04:0)-(m.isOverwrite&&m.score<5?2:0);
+      }
+      shortlist.sort((a,b)=>b.utility-a.utility);
+      return shortlist[0];
+    }
+
+    /* =========================================================================
+       DOM CONTROLLER & INTERACTION
+       ========================================================================= */
+    const UI = {
+      setupScreen: document.getElementById('setup-screen'),
+      btnStartMatch: document.getElementById('btn-start-match'),
+      boardGrid: document.getElementById('board-grid'),
+      handCardsRow: document.getElementById('hand-cards-row'),
+      handOwnerLabel: document.getElementById('hand-owner-label'),
+      deckCountLabel: document.getElementById('deck-count-label'),
+      
+      // Dashboards
+      oppDashboard: document.getElementById('opp-dashboard'),
+      oppAvatar: document.getElementById('opp-avatar'),
+      oppName: document.getElementById('opp-name'),
+      oppDiffBadge: document.getElementById('opp-diff-badge'),
+      oppScore: document.getElementById('opp-score'),
+      oppTokenPips: document.getElementById('opp-token-pips'),
+      oppKingTag: document.getElementById('opp-king-tag'),
+      oppTurnBadge: document.getElementById('opp-turn-badge'),
+
+      playerDashboard: document.getElementById('player-dashboard'),
+      playerAvatar: document.getElementById('player-avatar'),
+      playerName: document.getElementById('player-name'),
+      playerScore: document.getElementById('player-score'),
+      playerTokenPips: document.getElementById('player-token-pips'),
+      playerKingTag: document.getElementById('player-king-tag'),
+      playerTurnBadge: document.getElementById('player-turn-badge'),
+
+      logContent: document.getElementById('log-content'),
+      turnRoundIndicator: document.getElementById('turn-round-indicator'),
+
+      // Modals
+      jokerModal: document.getElementById('joker-modal'),
+      btnCloseJoker: document.getElementById('btn-close-joker'),
+      btnConfirmJoker: document.getElementById('btn-confirm-joker'),
+      rulesModal: document.getElementById('rules-modal'),
+      btnRules: document.getElementById('btn-rules'),
+      btnCloseRules: document.getElementById('btn-close-rules'),
+      btnCloseRulesBottom: document.getElementById('btn-close-rules-bottom'),
+      btnSound: document.getElementById('btn-sound'),
+      btnNewMatch: document.getElementById('btn-new-match'),
+      gameoverModal: document.getElementById('gameover-modal'),
+      goTitle: document.getElementById('go-title'),
+      goDesc: document.getElementById('go-desc'),
+      goP1Label: document.getElementById('go-p1-label'),
+      goP1Score: document.getElementById('go-p1-score'),
+      goP2Label: document.getElementById('go-p2-label'),
+      goP2Score: document.getElementById('go-p2-score'),
+      goTurns: document.getElementById('go-turns'),
+      btnRematch: document.getElementById('btn-rematch')
+    };
+
+    function initBoardGrid() {
+      UI.boardGrid.innerHTML = '';
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          const cellEl = document.createElement('div');
+          cellEl.className = 'grid-cell';
+          cellEl.dataset.r = r;
+          cellEl.dataset.c = c;
+          
+          const coordName = `${String.fromCharCode(65 + c)}${r + 1}`;
+          cellEl.dataset.coord = coordName;
+
+          const coordSpan = document.createElement('span');
+          coordSpan.className = 'cell-coord';
+          coordSpan.textContent = coordName;
+          cellEl.appendChild(coordSpan);
+
+          cellEl.addEventListener('click', () => onCellClicked(r, c));
+          UI.boardGrid.appendChild(cellEl);
+        }
+      }
+    }
+
+    function cardMarkup(card) {
+      if(card.isJoker){
+        const assigned=card.rank!=='JOKER';
+        const red=card.suit==='♥'||card.suit==='♦';
+        return `<svg class="minimal-card-art" viewBox="0 0 100 126" aria-hidden="true"><text x="50" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="12" letter-spacing="1.2" fill="#29313d">JOKER</text><path d="M50 31 L77 63 L50 95 L23 63 Z" fill="none" stroke="${assigned&&red?'#b92332':'#29313d'}" stroke-width="1.2"/><text x="50" y="${assigned?62:70}" text-anchor="middle" font-family="Georgia, serif" font-size="${assigned?28:34}" fill="${assigned&&red?'#b92332':'#29313d'}">${assigned?card.rank:'★'}</text>${assigned?`<text x="50" y="83" text-anchor="middle" font-family="Georgia, serif" font-size="20" fill="${red?'#b92332':'#29313d'}">${card.suit}</text>`:''}<g transform="translate(100 126) rotate(180)"><text x="50" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="12" letter-spacing="1.2" fill="#29313d">JOKER</text></g></svg>`;
+      }
+      const shapes={
+        '♥':'M50 83 C42 74 13 55 13 32 C13 10 40 7 50 27 C60 7 87 10 87 32 C87 55 58 74 50 83 Z',
+        '♦':'M50 8 L86 50 L50 92 L14 50 Z',
+        '♠':'M50 8 C42 20 14 37 14 55 C14 77 39 82 48 64 L43 88 L57 88 L52 64 C61 82 86 77 86 55 C86 37 58 20 50 8 Z',
+        '♣':'M50 10 C29 10 24 31 36 42 C14 32 6 58 20 70 C30 80 43 75 48 64 L43 90 L57 90 L52 64 C57 75 70 80 80 70 C94 58 86 32 64 42 C76 31 71 10 50 10 Z'
+      };
+      const shape=shapes[card.suit];
+      const color=card.suit==='♥'||card.suit==='♦'?'#b92332':'#161b24';
+      const pip=(x,y,size=17,flip=false)=>shape?`<g transform="translate(${x} ${y}) ${flip?'rotate(180) ':''}scale(${size/100}) translate(-50 -50)"><path d="${shape}" fill="${color}"/></g>`:'';
+      const rank=card.rank;
+      const corner=`<text x="13" y="21" text-anchor="middle" font-size="${rank==='10'?16:19}" font-family="Georgia, serif" font-weight="bold" fill="${color}">${rank.length>2?'★':rank}</text>${pip(13,31,12)}`;
+      let center='';
+      if(['J','Q','K'].includes(rank)) {
+        center=`<text x="50" y="69" text-anchor="middle" font-family="Georgia, serif" font-weight="normal" font-size="48" fill="${color}">${rank}</text>`;
+      } else if(rank==='A') center=pip(50,63,38);
+      else {
+        const layouts={
+          2:[[50,36],[50,90]],3:[[50,36],[50,63],[50,90]],
+          4:[[32,36],[68,36],[32,90],[68,90]],
+          5:[[32,36],[68,36],[50,63],[32,90],[68,90]],
+          6:[[32,36],[68,36],[32,63],[68,63],[32,90],[68,90]],
+          7:[[32,36],[68,36],[50,49],[32,63],[68,63],[32,90],[68,90]],
+          8:[[32,36],[68,36],[50,49],[32,63],[68,63],[50,77],[32,90],[68,90]],
+          9:[[32,33],[68,33],[32,53],[68,53],[50,63],[32,73],[68,73],[32,93],[68,93]],
+          10:[[32,33],[68,33],[50,43],[32,53],[68,53],[32,73],[68,73],[50,83],[32,93],[68,93]]
+        };
+        center=(layouts[Number(rank)]||[]).map(([x,y])=>pip(x,y,Number(rank)>=9?15:17,y>63)).join('');
+        if(!center) center=`<text x="50" y="67" text-anchor="middle" font-family="Georgia, serif" font-size="32" fill="${color}">★</text>`;
+      }
+      return `<svg class="minimal-card-art" viewBox="0 0 100 126" aria-hidden="true">${corner}<g transform="translate(100 126) rotate(180)">${corner}</g>${center}</svg>`;
+    }
+
+    function createCardElement(card) {
+      if(!card) return null;
+      const el=document.createElement('div');
+      el.className=`card-face ${card.suit==='♥'||card.suit==='♦'?'suit-red':'suit-black'}`;
+      el.setAttribute('role','img');el.setAttribute('aria-label',`${card.rank} ${card.suit}${card.isJoker?' (Joker)':''}`);
+      el.innerHTML=cardMarkup(card);return el;
+    }
+
+    function renderBoard() {
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          const cellData = GameState.board[r][c];
+          const cellEl = UI.boardGrid.children[r * 5 + c];
+
+          const coordSpan = cellEl.querySelector('.cell-coord');
+          cellEl.innerHTML = '';
+          if (coordSpan) cellEl.appendChild(coordSpan);
+
+          cellEl.className = 'grid-cell';
+
+          if (cellData.card) {
+            const cardEl = createCardElement(cellData.card);
+            cellEl.appendChild(cardEl);
+          }
+        }
+      }
+    }
+
+    function renderHand() {
+      UI.handCardsRow.innerHTML = '';
+      const activePlayer = GameState.players[GameState.currentTurn];
+      const displayedPlayer = GameState.mode==='ai' ? GameState.players[0] : activePlayer;
+      const isHumanTurn = !activePlayer.isAI && !GameState.busy;
+
+      UI.handOwnerLabel.textContent = `${displayedPlayer.name}'s Hand ${activePlayer.isAI ? '(Waiting for bot)' : GameState.busy ? '(Scoring...)' : '(Select a Card to Play)'}`;
+      UI.deckCountLabel.textContent = `Deck: ${GameState.deck.length} cards`;
+
+      displayedPlayer.hand.forEach((card, idx) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = `hand-card-wrapper ${GameState.selectedCardIdx === idx ? 'selected' : ''}`;
+        
+        const cardFace = createCardElement(card);
+        wrapper.appendChild(cardFace);
+
+        if (isHumanTurn && !GameState.gameOver) {
+          wrapper.addEventListener('click', () => {
+            selectHandCard(idx);
+          });
+        }
+
+        UI.handCardsRow.appendChild(wrapper);
+      });
+    }
+
+    function selectHandCard(idx) {
+      document.querySelectorAll('.hint-cell').forEach(el=>el.classList.remove('hint-cell'));
+      if(GameState.busy || GameState.gameOver || GameState.players[GameState.currentTurn].isAI) return;
+      if (GameState.selectedCardIdx === idx) {
+        GameState.selectedCardIdx = null;
+      } else {
+        GameState.selectedCardIdx = idx;
+        sound.playCardSelect();
+      }
+      renderHand();
+      highlightValidMoves();
+    }
+
+    function highlightValidMoves() {
+      Array.from(UI.boardGrid.children).forEach(cellEl => {
+        cellEl.classList.remove('valid-move', 'valid-overwrite');
+      });
+
+      if (GameState.selectedCardIdx === null || GameState.gameOver) return;
+
+      const activePlayer = GameState.players[GameState.currentTurn];
+      if (activePlayer.isAI) return;
+
+      const selectedCard = activePlayer.hand[GameState.selectedCardIdx];
+      const validMoves = getValidMoves(GameState.board, selectedCard, activePlayer);
+
+      validMoves.forEach(m => {
+        const cellEl = UI.boardGrid.children[m.r * 5 + m.c];
+        if (m.isOverwrite) {
+          cellEl.classList.add('valid-overwrite');
+        } else {
+          cellEl.classList.add('valid-move');
+        }
+      });
+    }
+
+    const SOLO_GOALS={
+      rookie:{off:{open:[60,80,90],cross:[55,75,85],checkerboard:[35,60,65]},on:{open:[75,110,120],cross:[65,100,110],checkerboard:[45,85,90]}},
+      pro:{off:{open:[120,165,205],cross:[105,145,180],checkerboard:[80,115,145]},on:{open:[140,190,240],cross:[125,175,215],checkerboard:[95,135,170]}}
+    };
+    function updateDashboards() {
+      const goalsEl=document.getElementById('solo-goals');
+      goalsEl.hidden=GameState.players.length!==1;
+      if(!goalsEl.hidden){
+        const goals=SOLO_GOALS[GameState.scoringMode][GameState.powersEnabled?'on':'off'][GameState.boardSetup];
+        goalsEl.innerHTML=`${GameState.scoringMode==='pro'?'Expanded':'Classic'} goals (estimated) · Alright <strong>${goals[0]}</strong> · Good <strong>${goals[1]}</strong> · GOAT <strong>${goals[2]}</strong>`;
+      }
+      const p1 = GameState.players[0];
+      const p2 = GameState.players[1];
+
+      // Player 1 (Bottom)
+      UI.playerName.textContent = p1.name;
+      UI.playerScore.textContent = p1.score;
+      UI.playerDashboard.classList.toggle('active-turn', GameState.currentTurn === 0);
+
+      // Player 2 / Opponent (Top)
+      UI.oppDashboard.hidden=!p2;
+      if(p2) {
+      UI.oppName.textContent = p2.name;
+      UI.oppScore.textContent = p2.score;
+      UI.oppDashboard.classList.toggle('active-turn', GameState.currentTurn === 1);
+
+      if (GameState.mode === 'ai') {
+        UI.oppDiffBadge.style.display = 'inline-block';
+        UI.oppDiffBadge.textContent = GameState.aiDifficulty;
+        UI.oppAvatar.textContent = '🤖';
+      } else {
+        UI.oppDiffBadge.style.display = 'none';
+        UI.oppAvatar.textContent = '👤';
+      }
+
+      }
+
+      for(const [id,i] of [['side-left',2],['side-right',3]]) {
+        const el=document.getElementById(id),p=GameState.players[i]; el.hidden=!p;
+        if(p) {el.classList.toggle('active-turn',GameState.currentTurn===i); el.innerHTML=`<strong>${escapeText(p.name)}</strong><div class="score-number">${p.score}</div><small>${GameState.currentTurn===i?'Active turn':`${p.hand.length} cards`}</small>`;}
+      }
+      const botHandsDock=document.getElementById('open-bot-hands');
+      const visibleBots=GameState.openHands?GameState.players.filter(p=>p.isAI):[];
+      botHandsDock.hidden=visibleBots.length===0;
+      botHandsDock.innerHTML=visibleBots.map(p=>`<div class="bot-hand-dock"><div class="hand-header"><span>${escapeText(p.name)}'s Hand</span><span>${p.hand.length} cards</span></div><div class="hand-cards-row">${p.hand.map(card=>`<div class="hand-card-wrapper"><div class="card-face ${card.suit==='♥'||card.suit==='♦'?'suit-red':'suit-black'}">${cardMarkup(card)}</div></div>`).join('')}</div></div>`).join('');
+      UI.turnRoundIndicator.textContent = `Round ${Math.floor(GameState.turnCount / GameState.players.length) + 1} • Turn ${GameState.turnCount + 1}`;
+    }
+
+    function addLogEntry(text, isLatest = true) {
+      if (isLatest) {
+        Array.from(UI.logContent.children).forEach(el => el.classList.remove('latest'));
+      }
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${isLatest ? 'latest' : ''}`;
+      entry.innerHTML = text;
+      UI.logContent.appendChild(entry);
+      UI.logContent.scrollTop = UI.logContent.scrollHeight;
+    }
+
+    function spawnScoreFloater(r, c, text) {
+      const cellEl = UI.boardGrid.children[r * 5 + c];
+      const rect = cellEl.getBoundingClientRect();
+      const floater = document.createElement('div');
+      floater.className = 'score-floater';
+      floater.textContent = text;
+      floater.style.left = `${rect.left + rect.width / 2}px`;
+      floater.style.top = `${rect.top + rect.height / 2}px`;
+      document.body.appendChild(floater);
+      setTimeout(() => floater.remove(), 1600);
+    }
+
+    /* =========================================================================
+       MATCH START & BOARD SEEDING
+       ========================================================================= */
+    function escapeText(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function startMatch() {
+      sound.init();
+      GameState.claimed31Rows=Array(5).fill(false);GameState.claimed31Cols=Array(5).fill(false);
+      document.getElementById('hint-text').hidden=true;
+      document.getElementById('rookie-rules').hidden=GameState.scoringMode!=='rookie';document.getElementById('pro-rules').hidden=GameState.scoringMode!=='pro';
+      GameState.deck = createDeck();
+      GameState.board = [];
+      for (let r = 0; r < 5; r++) {
+        const row = [];
+        for (let c = 0; c < 5; c++) {
+          row.push({
+            r,
+            c,
+            coord: `${String.fromCharCode(65 + c)}${r + 1}`,
+            card: null
+          });
+        }
+        GameState.board.push(row);
+      }
+
+      GameState.generation++; GameState.busy=false; closeResult=null;
+      document.getElementById('result-overlay').hidden=true;
+      const inputName=document.getElementById('player-name-input').value.trim();
+      const botNames=['Bot','Clanker','Roboboy','Slopster'];
+      for(let i=botNames.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[botNames[i],botNames[j]]=[botNames[j],botNames[i]];}
+      GameState.players=Array.from({length:GameState.playerCount},(_,i)=>({id:i,name:i===0?(inputName||'Player 1'):GameState.mode==='ai'?botNames[i-1]:`Player ${i+1}`,isAI:i>0&&GameState.mode==='ai',score:0,hand:[],kingUsed:false}));
+      GameState.publicDiscards = [];
+      GameState.currentTurn = 0;
+      GameState.selectedCardIdx = null;
+      GameState.turnCount = 0;
+      GameState.gameOver = false;
+      GameState.analysisHistory = [];
+
+      // Helper: deal a non-joker card for board seeding
+      function dealSeedCard() {
+        let card = GameState.deck.pop();
+        if (card.isJoker) {
+          // Put joker back inside the deck so players can draw it
+          const nonJokerIdx = GameState.deck.findIndex(c => !c.isJoker);
+          if (nonJokerIdx !== -1) {
+            const temp = GameState.deck[nonJokerIdx];
+            GameState.deck[nonJokerIdx] = card;
+            card = temp;
+          }
+        }
+        return card;
+      }
+
+      // Seed Board Setup
+      if (GameState.boardSetup === 'cross') {
+        const crossPositions = [
+          { r: 2, c: 2 }, // C3
+          { r: 1, c: 2 }, // C2
+          { r: 3, c: 2 }, // C4
+          { r: 2, c: 3 }, // D3
+          { r: 2, c: 1 }  // B3
+        ];
+        crossPositions.filter(pos=>GameState.playerCount!==3 || pos.r!==2 || pos.c!==2).forEach(pos => {
+          GameState.board[pos.r][pos.c].card = dealSeedCard();
+        });
+      } else if (GameState.boardSetup === 'checkerboard') {
+        for (let r = 0; r < 5; r++) {
+          for (let c = 0; c < 5; c++) {
+            if ((r + c) % 2 === 0) {
+              GameState.board[r][c].card = dealSeedCard();
+            }
+          }
+        }
+      } else if (GameState.boardSetup === 'open') {
+        GameState.board[2][2].card = dealSeedCard();
+      }
+
+      GameState.analysisSeed = GameState.board.map(row=>row.map(cell=>cell.card ? {...cell.card} : null));
+
+      // Deal 4 cards to each player
+      for (let i = 0; i < 4; i++) {
+        GameState.players.forEach(p=>p.hand.push(GameState.deck.pop()));
+      }
+
+      initBoardGrid();
+      renderBoard();
+      renderHand();
+      updateDashboards();
+
+      UI.logContent.innerHTML = '';
+      addLogEntry(`Match started! Setup: <strong>${getSetupName(GameState.boardSetup)}</strong>. Mode: <strong>${GameState.playerCount===1?'Solo':GameState.mode === 'ai' ? `vs Bots (${GameState.aiDifficulty})` : 'Pass & Play'}</strong>.`);
+      sound.playCardDeal();
+
+      UI.setupScreen.classList.add('hidden');
+    }
+
+    function getSetupName(val) {
+      if (val === 'cross') return 'Cross';
+      if (val === 'checkerboard') return 'Full Checkerboard';
+      return 'Open Canvas';
+    }
+
+    /* =========================================================================
+       TURN EXECUTION
+       ========================================================================= */
+    function onCellClicked(r, c) {
+      const activePlayer = GameState.players[GameState.currentTurn];
+      if (activePlayer.isAI || GameState.gameOver || GameState.busy) return;
+      if (GameState.selectedCardIdx === null) return;
+
+      const selectedCard = activePlayer.hand[GameState.selectedCardIdx];
+      const validMoves = getValidMoves(GameState.board, selectedCard, activePlayer);
+      const move = validMoves.find(m => m.r === r && m.c === c);
+
+      if (!move) return;
+
+      if (selectedCard.isJoker) {
+        GameState.pendingJokerPlacement = { r, c, handIdx: GameState.selectedCardIdx };
+        openJokerModal();
+      } else {
+        executePlay(GameState.currentTurn, GameState.selectedCardIdx, r, c, selectedCard, move.isOverwrite);
+      }
+    }
+
+    function executePlay(playerIdx, handIdx, r, c, playedCard, isOverwrite) {
+      document.getElementById('hint-text').hidden=true;document.querySelectorAll('.hint-cell').forEach(el=>el.classList.remove('hint-cell'));
+      const player = GameState.players[playerIdx];
+      const cellData = GameState.board[r][c];
+
+      // Record real decisions and board positions, not hypothetical future outcomes.
+      const beforeBoard=GameState.board.map(row=>row.map(cell=>cell.card ? {...cell.card}:null));
+      const beforeScores=GameState.players.map(p=>p.score);
+      // Local, immediate-scoring comparison: not a claim about strategically optimal play.
+      // For an assigned Joker evaluate the chosen identity only, avoiding speculative identities.
+      let bestImmediate=-Infinity, bestImmediateLabel='';
+      for(const held of player.hand){
+        const options=held.isJoker ? (held.id===playedCard.id ? [playedCard] : []) : [held];
+        for(const option of options){
+          for(const spot of getValidMoves(GameState.board,option,player)){
+            const points=evaluatePlacement(GameState.board,spot.r,spot.c,option,player).totalScore;
+            if(points>bestImmediate){bestImmediate=points;bestImmediateLabel=`${option.rank}${option.suit} at ${String.fromCharCode(65+spot.c)}${spot.r+1}`;}
+          }
+        }
+      }
+      // Handle King Overwrite
+      if (isOverwrite) {
+        const discarded = cellData.card;
+        player.kingUsed = true;
+        GameState.publicDiscards.push(discarded);
+        sound.playKingOverwrite();
+        addLogEntry(`👑 <strong>${escapeText(player.name)}</strong> executed <strong>King Overwrite</strong> at ${cellData.coord} (discarded ${discarded.rank}${discarded.suit})!`);
+      } else {
+        sound.playCardPlace();
+      }
+
+      cellData.card = playedCard;
+      player.hand.splice(handIdx, 1);
+      GameState.selectedCardIdx = null;
+
+      const evalRes = evaluatePlacement(GameState.board, r, c, playedCard, player);
+      player.score += evalRes.totalScore;
+      const categories=evalRes.breakdowns.map(b=>({name:b.text,pts:b.pts,axis:b.axis||'',cards:(b.cards||[]).map(x=>`${x.rank}${x.suit}`)}));
+      GameState.analysisHistory.push({
+        turn:GameState.turnCount+1,playerId:playerIdx,playerName:player.name,
+        card:`${playedCard.rank}${playedCard.suit}`,coord:cellData.coord,r,c,
+        overwrite:!!isOverwrite,score:evalRes.totalScore,categories,
+        bestImmediate:Number.isFinite(bestImmediate)?bestImmediate:null,bestLabel:bestImmediateLabel,
+        comparisonLimited:player.hand.some(x=>x.isJoker && x.id!==playedCard.id),
+        beforeScores,scores:GameState.players.map(p=>p.score),
+        beforeBoard,board:GameState.board.map(row=>row.map(cell=>cell.card?{...cell.card}:null))
+      });
+      if(evalRes.is31H)GameState.claimed31Rows[r]=true;
+      if(evalRes.is31V)GameState.claimed31Cols[c]=true;
+
+      const scoredCells = [...evalRes.hCoords, ...evalRes.vCoords];
+      scoredCells.forEach(coord => {
+        const cellEl = UI.boardGrid.children[coord.r * 5 + coord.c];
+        cellEl.classList.add('highlight-line');
+        setTimeout(() => cellEl.classList.remove('highlight-line'), 800);
+      });
+
+      if (evalRes.totalScore > 0) {
+        sound.playScore(evalRes.totalScore);
+        spawnScoreFloater(r, c, `+${evalRes.totalScore}`);
+      }
+
+      const breakdownItems = evalRes.breakdowns.map(b => b.text).join(', ');
+      const scoreSummary = evalRes.totalScore > 0
+        ? `<span class="score-tag">+${evalRes.totalScore} pts</span>: ${breakdownItems}`
+        : `0 pts`;
+
+      addLogEntry(`<strong>${escapeText(player.name)}</strong> played <strong>${playedCard.rank}${playedCard.suit}</strong> at <strong>${cellData.coord}</strong> ➔ ${scoreSummary}`);
+
+      if (GameState.deck.length > 0 && player.hand.length < 4) {
+        const drawn = GameState.deck.pop();
+        player.hand.push(drawn);
+      }
+
+      renderBoard();
+      renderHand();
+      updateDashboards();
+
+      GameState.busy=true;
+      const generation=GameState.generation;
+      const advance=()=>{
+        if(generation!==GameState.generation) return;
+        GameState.turnCount++;
+        checkGameOver(); if(GameState.gameOver) return;
+        GameState.currentTurn=(GameState.currentTurn+1)%GameState.players.length;
+        GameState.busy=GameState.players[GameState.currentTurn].isAI;
+        updateDashboards(); renderHand();
+        if(GameState.busy) setTimeout(()=>{if(generation===GameState.generation) runAITurn();},1000);
+      };
+      const explain=()=>{
+        if(generation!==GameState.generation) return;
+        if(GameState.explanations) showResult(player,playedCard,cellData.coord,evalRes,r,c,advance);
+        else advance();
+      };
+      setTimeout(explain,500);
+    }
+
+    function runAITurn() {
+      if(GameState.gameOver) return;
+      const move=getAIMove();
+      if(!move) { checkGameOver(true); return; }
+      executePlay(GameState.currentTurn,move.handIdx,move.r,move.c,move.card,move.isOverwrite);
+    }
+    function checkGameOver(forced=false) {
+      if(!forced && GameState.board.some(row=>row.some(cell=>!cell.card))) return;
+      GameState.gameOver=true; GameState.busy=true; sound.playVictory();
+      const best=Math.max(...GameState.players.map(p=>p.score));
+      const winners=GameState.players.filter(p=>p.score===best);
+      UI.goTitle.textContent=GameState.players.length===1?'Solo game complete':winners.length===1?`${winners[0].name} Wins!`:'Tie Game!';
+      UI.goDesc.textContent=forced?'No legal moves remain.':'The board is full.';
+      document.getElementById('final-scores').innerHTML=GameState.players.map(p=>`<div style="display:flex;justify-content:space-between"><span>${escapeText(p.name)}</span><strong>${p.score} pts</strong></div>`).join('')+`<p>Total turns: ${GameState.turnCount}</p>`;
+      renderMatchAnalysis();
+      UI.gameoverModal.classList.add('open');
+    }
+
+    // POSTGAME FIELD NOTES: all reported statistics derive from actual recorded moves.
+    function analysisCategory(text){
+      if(/31/.test(text))return '31s';
+      if(/Jack Suit/.test(text))return 'Court powers';
+      if(/Flush/i.test(text))return 'Flushes';
+      if(/Run/i.test(text))return 'Runs';
+      if(/Fifteen/i.test(text))return '15s';
+      if(/Pair|of-a-kind/i.test(text))return 'Pairs & sets';
+      return 'Other';
+    }
+    function renderMatchAnalysis(){
+      const history=GameState.analysisHistory;
+      const target=document.getElementById('analysis-report');
+      if(!history.length){target.innerHTML='<p class="analysis-muted">No moves were recorded for this match.</p>';return;}
+      const players=GameState.players;
+      const counts=players.map(p=>history.filter(m=>m.playerId===p.id));
+      const sum=(arr,fn)=>arr.reduce((a,x)=>a+fn(x),0);
+      const fmt=n=>Number(n).toFixed(1).replace(/\.0$/,'');
+      const leaders=[...history].sort((a,b)=>b.score-a.score);
+      const high=leaders[0];
+      const zero=history.filter(m=>m.score===0).length;
+      const total=sum(history,m=>m.score);
+      const categoryNames=['Runs','15s','Pairs & sets','31s','Flushes','Court powers','Other'];
+      const categoryData=players.map((p,i)=>{
+        const map={};for(const m of counts[i])for(const b of m.categories){const k=analysisCategory(b.name);map[k]=(map[k]||0)+b.pts;}
+        return map;
+      });
+      const claimed31=history.flatMap(m=>m.categories.filter(c=>analysisCategory(c.name)==='31s').map(c=>({...c,turn:m.turn,player:m.playerName,coord:m.coord})));
+      const positive=history.filter(m=>m.score>0);
+      const potential=history.filter(m=>m.bestImmediate!==null&&!m.comparisonLimited&&m.bestImmediate>m.score);
+      const bigGap=[...potential].sort((a,b)=>(b.bestImmediate-b.score)-(a.bestImmediate-a.score))[0];
+      const biggestReply=history.slice(1).map((m,i)=>({...m,previous:history[i]})).sort((a,b)=>b.score-a.score)[0];
+      const peakConcentration=total>0 ? Math.round(sum(leaders.slice(0,3),m=>m.score)/total*100):0;
+      const headlineMetrics=[
+        ['Total points',total],['Moves played',history.length],['Biggest move',`+${high.score}`],['Zero-point moves',zero],
+        ['31 bonuses',claimed31.length],['Top 3 move share',`${peakConcentration}%`]
+      ];
+      const e=escapeText;
+      target.innerHTML=`
+        <div class="analysis-section"><h3>Match at a glance</h3><div class="analysis-metrics">${headlineMetrics.map(([n,v])=>`<div class="analysis-metric"><small>${e(n)}</small><b>${e(v)}</b></div>`).join('')}</div><p class="analysis-note">${e(high.playerName)} made the highest-scoring play: ${e(high.card)} at ${e(high.coord)} on turn ${high.turn}, earning ${high.score} points. ${positive.length} of ${history.length} moves earned points. The three largest moves accounted for ${peakConcentration}% of all points scored.</p></div>
+        <div class="analysis-section"><h3>How each player earned their score</h3><div class="analysis-two">${players.map((p,i)=>{
+          const moves=counts[i],n=moves.length,score=sum(moves,m=>m.score),cat=categoryData[i];
+          return `<div><b>${e(p.name)} · ${score} pts</b><div class="analysis-muted">${n} moves · ${n?fmt(score/n):'0'} points/move · ${moves.filter(m=>m.score===0).length} scoreless · best +${Math.max(0,...moves.map(m=>m.score))}</div>${categoryNames.filter(k=>cat[k]).map(k=>`<div class="analysis-row"><span style="width:88px">${e(k)}</span><div class="analysis-bar"><span style="width:${score?Math.max(1,cat[k]/score*100):0}%"></span></div><b>${cat[k]}</b></div>`).join('')}<p class="analysis-muted">${n?`Your largest single play contributed ${Math.round(Math.max(...moves.map(m=>m.score))/Math.max(1,score)*100)}% of your points.`:'No moves recorded.'}</p></div>`;
+        }).join('')}</div><p class="analysis-muted">Categories are credited from the game's actual scoring breakdown. They may overlap spatially but their awarded points are counted once.</p></div>
+        <div class="analysis-section"><h3>The big turning points</h3>
+          ${leaders.slice(0,Math.min(5,leaders.length)).map(m=>`<div class="analysis-row"><div><b>Turn ${m.turn}: ${e(m.playerName)} · ${e(m.card)} at ${e(m.coord)}</b><div class="analysis-muted">${e(m.categories.map(c=>`${c.name} +${c.pts}`).join(' · ')||'No scoring combinations')}</div></div><b>+${m.score}</b></div>`).join('')}
+          <p class="analysis-note">A high-scoring turn is not necessarily the best strategic turn. Large moves can be set up by earlier placements, or leave a valuable follow-up for an opponent.</p>
+        </div>
+        <div class="analysis-section"><h3>What this match teaches</h3><div class="analysis-insight">${claimed31.length ? `The table claimed ${claimed31.length} line-31 bonuses (${claimed31.length*6} points). The first came on turn ${claimed31[0].turn} by ${e(claimed31[0].player)}. A 31 counts every occupied card in its entire row or column; once awarded, later additions do not remove the points.`:'No 31 bonus was claimed. Watch entire row and column totals—not just connected segments—and look for ways to reach exactly 31 before an opponent does.'}</div>
+          <div class="analysis-insight" style="margin-top:9px">${bigGap?`On turn ${bigGap.turn}, ${e(bigGap.playerName)} scored ${bigGap.score} at ${e(bigGap.coord)}. A different available move (${e(bigGap.bestLabel)}) would have scored ${bigGap.bestImmediate} immediately—a ${bigGap.bestImmediate-bigGap.score}-point difference. This is a calculation exercise, <b>not</b> proof of a mistake: the lower-scoring move may have had better future value.`:'Across the fully comparable turns, no move was identified with a strictly higher immediate score than the one played. This is not evidence of perfect strategy: future threats and responses were not exhaustively evaluated.'}</div>
+          <div class="analysis-insight" style="margin-top:9px">${biggestReply?`The largest immediate reply was ${biggestReply.score} points by ${e(biggestReply.playerName)} on turn ${biggestReply.turn}, following ${e(biggestReply.previous.playerName)}'s move at ${e(biggestReply.previous.coord)}. Examine these two consecutive positions in the replay. Did the preceding move leave a useful opening? The sequence alone does not prove it caused the reply.`:'Only one move was recorded, so there is no subsequent opponent reply to investigate.'}</div>
+          <p class="analysis-note"><b>Questions to bring into the next match:</b> When should you sacrifice immediate points to deny a future combination? Which intersections serve both players? When does pursuing a 31 create a more dangerous opportunity elsewhere?</p>
+        </div>
+        <div class="analysis-section"><h3>Turn-by-turn board replay</h3><p class="analysis-muted">Scrub through actual board states. Highlighted square = the latest played card. Choose a turn to inspect its points and combinations. This is a faithful replay, not an AI reconstruction.</p>
+          <div class="analysis-controls"><button id="analysis-prev" type="button">←</button><input id="analysis-turn" type="range" min="0" max="${history.length}" value="${history.length}" aria-label="Replay turn"><button id="analysis-next" type="button">→</button><b id="analysis-turn-label"></b></div>
+          <div class="analysis-replay-grid" id="analysis-replay-board"></div><div id="analysis-replay-note" class="analysis-note"></div>
+        </div>
+        <div class="analysis-section"><h3>Closing reflection</h3><p class="analysis-note">The final score records who captured the most value, not necessarily who created the most. In TallyGrid, the real challenge is deciding which opportunities to claim now and which opportunities your placement leaves behind. Revisit a turning point above and ask: would you make the same move knowing what followed?</p><p class="analysis-muted">Limits of this analysis: immediate alternatives are evaluated using cards actually available to the mover; unchosen Joker identities are not enumerated. No hidden hands, unrevealed future cards, or alternative timelines are assumed. Matches are not graded by an exhaustive strategy solver.</p><button type="button" class="analysis-copy" id="analysis-copy">Copy match summary</button></div>`;
+      const slider=document.getElementById('analysis-turn');
+      function refresh(){
+        const n=Number(slider.value),m=history[n-1],board=m?m.board:GameState.analysisSeed;
+        document.getElementById('analysis-turn-label').textContent=n?`Turn ${n} / ${history.length}`:'Starting board';
+        document.getElementById('analysis-replay-board').innerHTML=board.flatMap((row,r)=>row.map((card,c)=>`<div class="analysis-replay-cell ${!card?'empty':''} ${m&&m.r===r&&m.c===c?'last':''}" title="${String.fromCharCode(65+c)}${r+1}">${card?e(`${card.rank}${card.suit}`):'·'}</div>`)).join('');
+        document.getElementById('analysis-replay-note').innerHTML=m?`<b>${e(m.playerName)} played ${e(m.card)} at ${e(m.coord)}: +${m.score} points${m.overwrite?' (King overwrite)':''}.</b><div class="analysis-muted">${e(m.categories.map(x=>`${x.name}: +${x.pts}`).join(' · ')||'No scoring combinations')}</div><div class="analysis-muted">Scores afterward: ${players.map((p,i)=>`${e(p.name)} ${m.scores[i]}`).join(' · ')}</div>`:'The seeded starting position, before players placed their cards.';
+      }
+      slider.oninput=refresh;
+      document.getElementById('analysis-prev').onclick=()=>{slider.value=Math.max(0,Number(slider.value)-1);refresh()};
+      document.getElementById('analysis-next').onclick=()=>{slider.value=Math.min(history.length,Number(slider.value)+1);refresh()};
+      document.getElementById('analysis-copy').onclick=()=>{
+        const lines=[`TallyGrid · ${getSetupName(GameState.boardSetup)} · ${GameState.scoringMode==='pro'?'Expanded':'Classic'} scoring`,...players.map((p,i)=>`${p.name}: ${p.score} points in ${counts[i].length} moves`),`Largest move: ${high.playerName} +${high.score} on turn ${high.turn}`,`31 bonuses: ${claimed31.length}`,`Total moves: ${history.length}`];
+        const btn=document.getElementById('analysis-copy');
+        if(navigator.clipboard?.writeText)navigator.clipboard.writeText(lines.join('\n')).then(()=>{btn.textContent='Summary copied'},()=>{btn.textContent='Copy unavailable'});
+        else btn.textContent='Copy unavailable';
+      };
+      refresh();
+    }
+
+    /* =========================================================================
+       JOKER MODAL HANDLERS
+       ========================================================================= */
+    let selectedJokerRank = 'A';
+    let selectedJokerSuit = '♠';
+
+    function openJokerModal() {
+      UI.jokerModal.classList.add('open');
+    }
+
+    function closeJokerModal() {
+      UI.jokerModal.classList.remove('open');
+      GameState.pendingJokerPlacement = null;
+    }
+
+    UI.btnCloseJoker.addEventListener('click', () => {
+      closeJokerModal();
+    });
+
+    document.querySelectorAll('.joker-rank-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.joker-rank-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedJokerRank = btn.dataset.rank;
+        sound.playCardSelect();
+      });
+    });
+
+    document.querySelectorAll('.joker-suit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.joker-suit-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedJokerSuit = btn.dataset.suit;
+        sound.playCardSelect();
+      });
+    });
+
+    UI.btnConfirmJoker.addEventListener('click', () => {
+      if (!GameState.pendingJokerPlacement) return;
+      const { r, c, handIdx } = GameState.pendingJokerPlacement;
+      const player = GameState.players[GameState.currentTurn];
+      const origJoker = player.hand[handIdx];
+
+      const assignedCard = {
+        ...origJoker,
+        rank: selectedJokerRank,
+        suit: selectedJokerSuit,
+        value: getCardValue(selectedJokerRank),
+        rankVal: getCardRankVal(selectedJokerRank),
+        isCourt: false,
+        isJoker: true
+      };
+
+      closeJokerModal();
+      executePlay(GameState.currentTurn, handIdx, r, c, assignedCard, false);
+    });
+
+    /* =========================================================================
+       SETUP & SETTINGS HANDLERS
+       ========================================================================= */
+    document.querySelectorAll('#opt-mode .setup-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#opt-mode .setup-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        GameState.mode = btn.dataset.val;
+        updateSetupControls();
+        sound.playCardSelect();
+      });
+    });
+
+    document.querySelectorAll('#opt-difficulty .setup-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#opt-difficulty .setup-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        GameState.aiDifficulty = btn.dataset.val;
+        const descs = {
+          easy: 'Chases points, but often misses better scoring opportunities.',
+          medium: 'Consistently scores well and avoids obvious traps.',
+          hard: 'Tough opponent that evaluates scoring and likely counterplays.',
+          pro: 'Calculates likely counterplays using public card information (exact hands only when open).'
+        };
+        document.getElementById('difficulty-desc').textContent = descs[GameState.aiDifficulty];
+        sound.playCardSelect();
+      });
+    });
+
+    document.querySelectorAll('#opt-setup .setup-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#opt-setup .setup-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        GameState.boardSetup = btn.dataset.val;
+        const descs = {
+          cross: 'Four arms dealt face-up; center C3 is empty with 3 players and filled otherwise.',
+          checkerboard: 'Alternating cells pre-seeded face-up from deck.',
+          open: 'Only 1 starting card dealt at center cell C3.'
+        };
+        document.getElementById('setup-desc').textContent = descs[GameState.boardSetup];
+        sound.playCardSelect();
+      });
+    });
+
+    UI.btnStartMatch.addEventListener('click', () => {
+      startMatch();
+    });
+
+    UI.btnNewMatch.addEventListener('click', () => {
+      UI.setupScreen.classList.remove('hidden');
+    });
+
+    UI.btnRematch.addEventListener('click', () => {
+      UI.gameoverModal.classList.remove('open');
+      startMatch();
+    });
+
+    UI.btnSound.addEventListener('click', () => {
+      const isMuted = sound.toggleMute();
+      UI.btnSound.textContent = isMuted ? '🔇 Sound: Off' : '🔊 Sound: On';
+    });
+
+    UI.btnRules.addEventListener('click', () => {
+      UI.rulesModal.classList.add('open');
+    });
+    UI.btnCloseRules.addEventListener('click', () => {
+      UI.rulesModal.classList.remove('open');
+    });
+    UI.btnCloseRulesBottom.addEventListener('click', () => {
+      UI.rulesModal.classList.remove('open');
+    });
+    document.getElementById('btn-menu').onclick=()=>{GameState.generation++;GameState.busy=true;closeResult=null;UI.gameoverModal.classList.remove('open');document.getElementById('result-overlay').hidden=true;UI.setupScreen.classList.remove('hidden');};
+    document.getElementById('btn-hint').onclick=()=>{
+      if(GameState.busy||GameState.gameOver||GameState.players[GameState.currentTurn].isAI)return;
+      const move=getAIMove(GameState.currentTurn,'medium');
+      const label=document.getElementById('hint-text');label.hidden=false;
+      if(!move){label.textContent='No legal moves available.';return;}
+      GameState.selectedCardIdx=null;selectHandCard(move.handIdx);
+      if(move.card.isJoker){selectedJokerRank=move.card.rank;selectedJokerSuit=move.card.suit;
+        document.querySelectorAll('.joker-rank-btn').forEach(b=>b.classList.toggle('selected',b.dataset.rank===selectedJokerRank));
+        document.querySelectorAll('.joker-suit-btn').forEach(b=>b.classList.toggle('selected',b.dataset.suit===selectedJokerSuit));
+      }
+      label.textContent=`Best immediate score: ${move.card.isJoker?'Joker as ':''}${move.card.rank}${move.card.suit} at ${String.fromCharCode(65+move.c)}${move.r+1} → +${move.score} points${move.isOverwrite?' (overwrite)':''}.`;
+      const cell=UI.boardGrid.children[move.r*5+move.c];cell.classList.add('hint-cell');
+    };
+    let mobileLayout=window.matchMedia ? window.matchMedia('(max-width: 600px)').matches : false;
+    function updateScreenSize(){
+      document.body.classList.toggle('mobile-layout',mobileLayout);
+      for(const id of ['screen-size']){
+        const button=document.getElementById(id);
+        button.textContent=`Screen: ${mobileLayout?'Mobile':'Desktop'}`;
+        button.setAttribute('aria-pressed',mobileLayout);button.classList.toggle('active',mobileLayout);
+      }
+    }
+    for(const id of ['screen-size']) document.getElementById(id).onclick=()=>{mobileLayout=!mobileLayout;updateScreenSize();};
+    updateScreenSize();
+    let closeResult=null;
+    function showResult(player,card,coord,result,r,c,done){
+      document.getElementById('result-title').textContent=`${player.name} played ${card.rank}${card.suit} at ${coord}`;
+      document.getElementById('result-total').textContent=`+${result.totalScore} points`;
+      document.getElementById('result-grid').hidden=true;
+      const container=document.getElementById('result-combos');container.innerHTML='';
+      if(!result.breakdowns.length) container.textContent='No scoring combinations this move.';
+      for(const combo of result.breakdowns){
+        const section=document.createElement('section');section.className='combo-section';
+        const header=document.createElement('div');header.className='combo-heading';
+        header.innerHTML=`<span>${combo.axis?combo.axis+': ':''}${combo.text}</span><strong>+${combo.pts} pts</strong>`;
+        section.appendChild(header);
+        const cells=GameState.board.flat().filter(cell=>cell.card&&(combo.cards||[]).includes(cell.card));
+        if(cells.length){
+          const minR=Math.min(...cells.map(x=>x.r)),maxR=Math.max(...cells.map(x=>x.r));
+          const minC=Math.min(...cells.map(x=>x.c)),maxC=Math.max(...cells.map(x=>x.c));
+          const grid=document.createElement('div');grid.className='combo-layout';
+          grid.style.gridTemplateColumns=`repeat(${maxC-minC+1},var(--combo-width))`;
+          grid.style.gridTemplateRows=`repeat(${maxR-minR+1},var(--combo-height))`;
+          for(const cell of cells){
+            const slot=document.createElement('div');slot.className='combo-slot';
+            slot.style.gridColumn=cell.c-minC+1;slot.style.gridRow=cell.r-minR+1;
+            if(cell.r===r&&cell.c===c)slot.classList.add('new-card');
+            slot.appendChild(createCardElement(cell.card));
+            const label=document.createElement('small');label.textContent=cell.coord;slot.appendChild(label);
+            grid.appendChild(slot);
+          }
+          section.appendChild(grid);
+        }
+        container.appendChild(section);
+      }
+      closeResult=()=>{document.getElementById('result-overlay').hidden=true;closeResult=null;done();};
+      document.getElementById('result-overlay').hidden=false;document.getElementById('result-continue').focus();
+    }
+    document.getElementById('result-continue').onclick=()=>closeResult?.();
+    document.getElementById('toggle-powers').onclick=function(){GameState.powersEnabled=!GameState.powersEnabled;this.textContent=`Powers: ${GameState.powersEnabled?'On':'Off'}`;this.setAttribute('aria-pressed',GameState.powersEnabled);this.classList.toggle('active',GameState.powersEnabled);};
+    document.getElementById('btn-rules').addEventListener('click',()=>{document.getElementById('rookie-rules').hidden=GameState.scoringMode!=='rookie';document.getElementById('pro-rules').hidden=GameState.scoringMode!=='pro';});
+    document.getElementById('toggle-scoring').onclick=function(){GameState.scoringMode=GameState.scoringMode==='rookie'?'pro':'rookie';this.textContent=GameState.scoringMode==='pro'?'Expanded scoring':'Classic scoring';this.classList.toggle('active',GameState.scoringMode==='pro');this.setAttribute('aria-pressed',GameState.scoringMode==='pro');};
+    document.getElementById('toggle-hands').onclick=function(){GameState.openHands=!GameState.openHands;this.textContent=GameState.openHands?'Open hands':'Closed hands';this.classList.toggle('active',GameState.openHands);this.setAttribute('aria-pressed',GameState.openHands);};
+    document.getElementById('toggle-explanations').onclick=function(){GameState.explanations=!GameState.explanations;this.textContent=`Explanations: ${GameState.explanations?'On':'Off'}`;this.setAttribute('aria-pressed',GameState.explanations);};
+    function updateSetupControls(){
+      const solo=GameState.playerCount===1;
+      document.getElementById('opt-mode').parentElement.hidden=solo;
+      document.getElementById('grp-difficulty').hidden=solo||GameState.mode!=='ai';
+      document.getElementById('solo-desc').hidden=!solo;
+    }
+    document.querySelectorAll('#opt-players button').forEach(btn=>btn.onclick=()=>{GameState.playerCount=Number(btn.dataset.count);document.querySelectorAll('#opt-players button').forEach(b=>b.classList.toggle('active',b===btn));updateSetupControls();});
+    UI.btnNewMatch.addEventListener('click',()=>{GameState.generation++;GameState.busy=true;closeResult=null;document.getElementById('result-overlay').hidden=true;});
+    updateSetupControls();
+  </script>
+</body>
+</html>

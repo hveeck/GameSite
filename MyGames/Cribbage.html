@@ -1,0 +1,3316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cribbage Royale — Classic Pegboard Cribbage vs AI</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Vollkorn:ital,wght@0,400;0,600;1,400&display=swap');
+
+    :root {
+      --bg-dark: #150e08;
+      --bg-card: #1e1509;
+      --bg-card-hover: #271b0c;
+      --border-color: #3d2c15;
+      --felt-green: #0c3626;
+      --felt-green-deep: #061e16;
+      --felt-border: #a8842f;
+      --wood-dark: #23140a;
+      --wood-mid: #3d220f;
+      --wood-light: #603618;
+      --wood-border: #4a2a12;
+      --brass-gold: #b8862f;
+      --brass-bright: #d9ad55;
+      --brass-glow: rgba(184, 134, 47, 0.28);
+      --player-color: #a8402f;
+      --player-glow: rgba(168, 64, 47, 0.35);
+      --bot-color: #cbb98a;
+      --bot-glow: rgba(203, 185, 138, 0.25);
+      --accent-red: #b1362a;
+      --accent-green: #4c8a63;
+      --text-main: #efe4cf;
+      --text-muted: #a8987a;
+      --text-dim: #726246;
+      --font-display: 'Cinzel', Georgia, serif;
+      --font-family: 'Vollkorn', Georgia, 'Times New Roman', serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 14px 40px;
+      overflow-x: hidden;
+      background-image:
+        repeating-linear-gradient(115deg, rgba(255,255,255,.012) 0 2px, transparent 2px 6px),
+        radial-gradient(ellipse at 50% 10%, rgba(184, 134, 47, 0.09) 0%, rgba(21, 14, 8, 0.98) 70%);
+    }
+
+    #fitWrapper {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #confettiCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 99999;
+    }
+
+    /* HEADER */
+    header {
+      text-align: center;
+      max-width: 1020px;
+      width: 100%;
+      margin-bottom: 12px;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(180deg, rgba(96, 54, 24, 0.5), rgba(35, 20, 10, 0.6));
+      border: 1px solid var(--brass-gold);
+      border-radius: 3px;
+      padding: 4px 18px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--brass-bright);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      margin-bottom: 8px;
+      font-family: var(--font-display);
+      box-shadow: inset 0 0 0 1px rgba(184,134,47,.25);
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: 2.3rem;
+      font-weight: 700;
+      color: var(--brass-bright);
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      text-shadow: 0 1px 0 rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.5);
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-style: italic;
+    }
+
+    .top-controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+      width: 100%;
+      max-width: 680px;
+    }
+
+    .btn-top {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      font-family: var(--font-display);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 6px;
+      transition: all 0.2s;
+      letter-spacing: .5px;
+    }
+    body:not(.in-game) #btnNewGame { display: none; }
+    .btn-top:hover {
+      color: var(--text-main);
+      border-color: var(--brass-gold);
+    }
+    .btn-top.active {
+      background: rgba(184, 134, 47, 0.16);
+      border-color: var(--brass-bright);
+      color: var(--brass-bright);
+    }
+
+    /* MAIN CONTAINER */
+    .container {
+      max-width: 1040px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
+    }
+
+    /* SETUP SCREEN */
+    #setupScreen {
+      display: block;
+    }
+
+    .setup-header {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--brass-bright);
+      margin-bottom: 6px;
+      letter-spacing: .5px;
+    }
+    .setup-desc {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      margin-bottom: 20px;
+      line-height: 1.55;
+    }
+
+    .setup-section {
+      margin-bottom: 20px;
+    }
+    .setup-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--brass-gold);
+      margin-bottom: 8px;
+      display: block;
+      font-family: var(--font-display);
+    }
+
+    .skill-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    @media (max-width: 620px) {
+      .skill-grid { grid-template-columns: 1fr; }
+    }
+    .skill-card {
+      background: #140d06;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .skill-card:hover {
+      border-color: var(--wood-light);
+      background: #1a1208;
+    }
+    .skill-card.active {
+      border-color: var(--brass-gold);
+      background: rgba(184, 134, 47, 0.1);
+      box-shadow: inset 0 0 0 1px var(--brass-gold);
+    }
+    .skill-name {
+      font-weight: 700;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-display);
+    }
+    .skill-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .options-row {
+      justify-content: center;
+      display: grid;
+      grid-template-columns: minmax(0, max-content);
+      gap: 14px;
+    }
+    .options-row > div {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .options-row .btn-group {
+      justify-content: center;
+    }
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-toggle {
+      flex: 1;
+      background: #140d06;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 10px 14px;
+      border-radius: 5px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      font-family: var(--font-display);
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      letter-spacing: .3px;
+    }
+    .btn-toggle:hover {
+      color: var(--text-main);
+      border-color: var(--wood-light);
+    }
+    .btn-toggle.active {
+      background: rgba(184, 134, 47, 0.18);
+      border-color: var(--brass-gold);
+      color: var(--brass-bright);
+    }
+
+    .btn-start {
+      background: linear-gradient(180deg, var(--wood-light), var(--wood-mid));
+      color: var(--brass-bright);
+      border: 1px solid var(--brass-gold);
+      padding: 14px 28px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      font-family: var(--font-display);
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      transition: all 0.2s;
+      box-shadow: 0 3px 0 var(--wood-dark), 0 6px 16px rgba(0,0,0,.5);
+      margin-top: 10px;
+    }
+    .btn-start:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 0 var(--wood-dark), 0 8px 20px rgba(0,0,0,.55);
+      border-color: var(--brass-bright);
+    }
+
+    /* GAME PLAY SCREEN */
+    #gameScreen {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* PEGBOARD */
+    .pegboard-container {
+      background: linear-gradient(160deg, var(--wood-dark) 0%, #180d05 100%);
+      border: 3px solid var(--wood-border);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: inset 0 2px 12px rgba(0,0,0,0.75), 0 6px 18px rgba(0,0,0,0.55);
+      position: relative;
+    }
+
+    .pegboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .score-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 6px 16px;
+      border-radius: 5px;
+      border: 1px solid rgba(239,228,207,0.12);
+    }
+    .score-badge.player {
+      border-color: var(--player-color);
+    }
+    .score-badge.bot {
+      border-color: var(--bot-color);
+    }
+    .score-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: var(--font-display);
+    }
+    .player .score-label { color: var(--player-color); }
+    .bot .score-label { color: var(--bot-color); }
+    .score-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text-main);
+      font-variant-numeric: tabular-nums;
+      font-family: var(--font-display);
+    }
+    .score-to-go {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    /* SVG BOARD */
+    .board-svg-wrap {
+      width: 100%;
+      overflow: hidden;
+      background: #0e0904;
+      border-radius: 6px;
+      padding: 4px;
+      border: 1px solid var(--wood-border);
+      box-sizing: border-box;
+    }
+    #cribbageSvg {
+      width: 100%;
+      max-width: 100%;
+      height: 150px;
+      display: block;
+    }
+
+    /* FELT TABLE */
+    .table-felt {
+      background: radial-gradient(ellipse at center, var(--felt-green) 0%, var(--felt-green-deep) 100%);
+      border: 3px solid var(--felt-border);
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.65), 0 8px 20px rgba(0, 0, 0, 0.45);
+      position: relative;
+    }
+
+    /* STATUS BANNER */
+    .game-status-banner {
+      background: rgba(6, 30, 22, 0.85);
+      border: 1px solid var(--felt-border);
+      border-radius: 6px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .status-msg {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-display);
+    }
+    .dealer-indicator {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 4px 12px;
+      border-radius: 3px;
+      background: rgba(184, 134, 47, 0.16);
+      border: 1px solid var(--brass-gold);
+      color: var(--brass-bright);
+      font-family: var(--font-display);
+    }
+
+    /* BOT AREA */
+    .bot-area {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.22);
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(239,228,207,0.06);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .bot-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .bot-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(160deg, #2c2013, #180f08);
+      border: 2px solid var(--bot-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+    .bot-details {
+      display: flex;
+      flex-direction: column;
+    }
+    .bot-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--bot-color);
+      font-family: var(--font-display);
+    }
+    .bot-speech {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+    .bot-cards {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* CENTER PLAY MAT: CUT CARD, PEGGING TOTAL, CRIB */
+    .center-mat {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 16px;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      padding: 14px 18px;
+      border: 1px solid rgba(239,228,207,0.08);
+    }
+    @media (max-width: 768px) {
+      .center-mat {
+        grid-template-columns: 1fr;
+        justify-items: center;
+      }
+    }
+
+    .starter-box, .crib-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .box-label {
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--brass-bright);
+      font-family: var(--font-display);
+    }
+
+    .pegging-arena {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+    .count-display-gauge {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .count-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .count-number {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--text-main);
+      font-variant-numeric: tabular-nums;
+      font-family: var(--font-display);
+    }
+    .count-max {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-dim);
+    }
+    .pegging-callout {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--brass-bright);
+      min-height: 22px;
+    }
+    .played-cards-track {
+      display: flex;
+      gap: 8px;
+      min-height: 85px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    /* PLAYER HAND AREA */
+    .player-area {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+    .player-cards-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      min-height: 120px;
+    }
+    .player-controls-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    /* CARDS */
+    .card-item {
+      width: 68px;
+      height: 98px;
+      background: #f5ecd9;
+      border-radius: 5px;
+      border: 1px solid #c9b48a;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 5px 6px;
+      position: relative;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+      font-family: var(--font-display);
+    }
+    .card-item:hover:not(.disabled):not(.card-back) {
+      transform: translateY(-8px);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.55);
+      border-color: var(--brass-gold);
+    }
+    .card-item.selected {
+      transform: translateY(-16px);
+      border: 2px solid var(--player-color);
+      box-shadow: 0 0 0 2px rgba(168,64,47,.25), 0 12px 22px rgba(0,0,0,0.6);
+    }
+    .card-item.disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      filter: grayscale(40%);
+    }
+    .card-item.red-suit {
+      color: #9c2b20;
+    }
+    .card-item.black-suit {
+      color: #211a10;
+    }
+    .card-corner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1;
+    }
+    .card-corner.bottom {
+      transform: rotate(180deg);
+    }
+    .card-rank {
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    .card-suit-sm {
+      font-size: 0.75rem;
+    }
+    .card-center-symbol {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.8rem;
+      opacity: 0.85;
+    }
+
+    /* CARD BACK */
+    .card-back {
+      background:
+        repeating-linear-gradient(45deg, #7a2230 0 6px, #611a26 6px 12px);
+      border: 2px solid var(--brass-gold);
+      cursor: default;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.45);
+    }
+    .card-back-pattern {
+      width: 82%;
+      height: 84%;
+      border: 1px dashed rgba(217, 173, 85, 0.5);
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: rgba(217, 173, 85, 0.55);
+    }
+
+    .card-empty-slot {
+      width: 68px;
+      height: 98px;
+      border: 2px dashed rgba(239,228,207,0.18);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: rgba(239,228,207,0.28);
+      text-transform: uppercase;
+      text-align: center;
+      padding: 4px;
+    }
+
+    /* GRID DRAFT */
+    .draft-grid-wrap { display:none; flex-direction:column; align-items:center; gap:10px;
+      background:rgba(0,0,0,.28); border-radius:8px; padding:14px;
+      border:1px solid rgba(184,134,47,.3); box-shadow:inset 0 0 24px rgba(0,0,0,.45); }
+    .draft-grid { display:grid; grid-template-columns:repeat(3,68px); gap:10px; justify-content:center; }
+    .draft-grid .card-item { width:68px; height:98px; }
+    .draft-grid .card-item:not(.disabled):hover { transform:translateY(-6px) scale(1.04);
+      border-color:var(--brass-gold); box-shadow:0 6px 16px rgba(0,0,0,.55); }
+    .draft-grid .card-item.disabled { opacity:.75; cursor:default; filter:none; }
+    .draft-status { font-size:.85rem; font-weight:700; color:var(--brass-bright);
+      text-transform:uppercase; letter-spacing:.5px; font-family: var(--font-display); }
+
+    /* ACTION BUTTONS */
+    .btn-action {
+      background: linear-gradient(180deg, var(--wood-mid), var(--wood-dark));
+      color: var(--brass-bright);
+      border: 1px solid var(--brass-gold);
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      font-family: var(--font-display);
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 0 rgba(0,0,0,.45);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .btn-action:hover:not(:disabled) {
+      border-color: var(--brass-bright);
+      transform: translateY(-1px);
+    }
+    .btn-action:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: var(--border-color);
+    }
+    .btn-go {
+      background: linear-gradient(180deg, #9a2f26, #6e1f19);
+      border-color: #c85a4a;
+      color: #f5ecd9;
+    }
+    .btn-go:hover:not(:disabled) {
+      border-color: #e08b7a;
+    }
+    .btn-hint {
+      background: rgba(61, 44, 21, 0.6);
+      border-color: var(--border-color);
+      color: var(--text-muted);
+    }
+
+    /* GAME LOG */
+    .log-card {
+      background: #140d06;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px 18px;
+    }
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .log-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--brass-bright);
+      font-family: var(--font-display);
+    }
+    .log-feed {
+      max-height: 140px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+    }
+    .log-item {
+      padding: 3px 0;
+      border-bottom: 1px dashed rgba(239,228,207,0.06);
+      color: var(--text-muted);
+    }
+    .log-item .log-time { color: var(--text-dim); margin-right: 6px; }
+    .log-item.player-pts { color: var(--player-color); font-weight: 700; }
+    .log-item.bot-pts { color: var(--bot-color); font-weight: 700; }
+    .log-item.highlight { color: var(--brass-bright); font-weight: 700; }
+
+    /* MODALS */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(8, 5, 2, 0.82);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 16px;
+    }
+    .modal-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-top: 3px solid var(--brass-gold);
+      border-radius: 8px;
+      padding: 24px;
+      max-width: 580px;
+      width: 100%;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--brass-bright);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .modal-content {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .modal-cards-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 8px 0;
+    }
+    .show-score-card-wrap {
+      padding: 3px;
+      border-radius: 6px;
+      transition: background .15s;
+    }
+    .show-score-card-wrap .card-item { cursor: pointer; }
+    .show-score-card-wrap .card-item.selected {
+      transform: translateY(-10px);
+      border-color: var(--brass-bright);
+      box-shadow: 0 0 0 3px rgba(217,173,85,.22), 0 10px 20px rgba(0,0,0,.6);
+    }
+    #btnContinueShow:disabled { opacity:.45; cursor:not-allowed; }
+    .scoring-breakdown-list {
+      background: #0e0904;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .score-breakdown-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+    }
+    .score-breakdown-item.total {
+      border-top: 1px solid rgba(239,228,207,0.1);
+      padding-top: 6px;
+      font-weight: 700;
+      color: var(--brass-bright);
+      font-size: 1rem;
+    }
+    .btn-modal {
+      background: linear-gradient(180deg, var(--wood-light), var(--wood-mid));
+      color: var(--brass-bright);
+      border: 1px solid var(--brass-gold);
+      padding: 12px 24px;
+      border-radius: 5px;
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: var(--font-display);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      align-self: flex-end;
+    }
+
+    /* COACH HINT BOX */
+    .hint-card {
+      background: rgba(61, 44, 21, 0.55);
+      border: 1px solid var(--brass-gold);
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      display: none;
+      margin-top: 4px;
+    }
+    .hint-card.show {
+      display: block;
+    }
+    .hint-title {
+      font-weight: 700;
+      color: var(--brass-bright);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-display);
+    }
+
+    /* ANIMATIONS & NOTIFICATIONS */
+    .score-popup {
+      position: absolute;
+      font-size: 1.8rem;
+      font-weight: 700;
+      font-family: var(--font-display);
+      color: var(--brass-bright);
+      text-shadow: 0 0 8px rgba(0,0,0,0.85);
+      pointer-events: none;
+      animation: floatUp 1.4s ease-out forwards;
+      z-index: 50;
+    }
+    @keyframes floatUp {
+      0% { opacity: 0; transform: translateY(10px) scale(0.8); }
+      20% { opacity: 1; transform: translateY(0) scale(1.1); }
+      80% { opacity: 1; transform: translateY(-25px) scale(1); }
+      100% { opacity: 0; transform: translateY(-40px) scale(0.9); }
+    }
+
+    /* VIEW TOGGLE */
+    #viewToggleBtn {
+      position: fixed; top: 8px; right: 8px; z-index: 10500;
+      background: var(--bg-card); color: var(--brass-bright);
+      border: 1px solid var(--brass-gold); border-radius: 4px;
+      padding: 6px 10px; font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
+      font-family: var(--font-display);
+      box-shadow: 0 3px 8px rgba(0,0,0,.5);
+    }
+    #viewToggleBtn:hover { border-color: var(--text-main); }
+    body.force-mobile #fitWrapper { max-width: 480px; margin: 0 auto; }
+    body.force-mobile .container, body.force-mobile header { max-width: 480px; }
+    body.force-mobile h1 { font-size: 1.6rem; }
+    body.force-mobile .options-row,
+    body.force-mobile .skill-grid { grid-template-columns: 1fr; }
+    body.force-mobile .center-mat { grid-template-columns: 1fr; justify-items: center; }
+    body.force-mobile #cribbageSvg { min-width: 0; height: 145px; }
+    body.force-mobile .card-item, body.force-mobile .card-empty-slot { width: 56px; height: 82px; }
+    body.force-mobile .draft-grid { grid-template-columns: repeat(3, 56px); }
+    body.force-mobile .draft-grid .card-item { width: 56px; height: 82px; }
+
+    body.force-desktop #fitWrapper { width: 92vw; max-width: 760px; margin: 0 auto; }
+    body.force-desktop .container, body.force-desktop header { width: 100%; max-width: 760px; }
+    body.force-desktop h1 { font-size: 2.2rem; }
+    body.force-desktop .skill-grid { grid-template-columns: repeat(2, 1fr); }
+    body.force-desktop .options-row {
+      justify-content: center; grid-template-columns: minmax(0, max-content); }
+    body.force-desktop .card-item, body.force-desktop .card-empty-slot { width: 62px; height: 90px; }
+    body.force-desktop .draft-grid { grid-template-columns: repeat(3, 62px); }
+    body.force-desktop .draft-grid .card-item { width: 62px; height: 90px; }
+    body.force-desktop #cribbageSvg { min-width: 0; height: 150px; }
+    body.force-desktop .log-feed { max-height: 110px; }
+    body.force-desktop .card { padding: 16px; }
+    body.force-desktop .pegboard-container { padding: 10px; }
+    body.force-desktop .table-felt { padding: 14px; gap: 10px; }
+  </style>
+</head>
+<body>
+  <button id="viewToggleBtn" type="button" onclick="toggleDeviceView()">📱 MOBILE VIEW</button>
+  <canvas id="confettiCanvas"></canvas>
+
+  <div id="fitWrapper">
+  <header>
+    <div class="logo-badge">♠ ♥ Traditional 121-Point Classic ♦ ♣</div>
+    <h1>CRIBBAGE ROYALE</h1>
+    <div class="subtitle">Authentic Pegboard Cribbage vs Configurable Bot AI</div>
+    <div class="top-controls">
+      <button class="btn-top" id="btnHowToPlay">📖 How to Play</button>
+      <button class="btn-top" id="btnCoachToggle">💡 Coach Advice: Off</button>
+      <button class="btn-top" id="btnSoundToggle">🔊 Sound: On</button>
+      <button class="btn-top" id="btnNewGame">⚙️ Game Setup</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- SETUP SCREEN -->
+    <div class="card" id="setupScreen">
+      <div class="setup-header">Match Setup & Bot Strategy</div>
+      <div class="setup-desc">
+        Configure your opponent's skill level and choose match length.
+      </div>
+
+      <div class="setup-section">
+        <label class="setup-label">Select Opponent Skill Level</label>
+        <div class="skill-grid">
+          <div class="skill-card active" data-skill="beginner">
+            <div class="skill-name">🟢 Beginner (Casual)</div>
+            <div class="skill-desc">Greedy discarder who ignores crib ownership. Naive pegger who plays whatever card fits. Ideal for a relaxed round or learning.</div>
+          </div>
+          <div class="skill-card" data-skill="intermediate">
+            <div class="skill-name">🟡 Intermediate (Standard)</div>
+            <div class="skill-desc">Smart discards factoring crib ownership. Defensive pegging: avoids leading 5s or giving away easy 15s/31s. Solid pub-level player.</div>
+          </div>
+          <div class="skill-card" data-skill="expert">
+            <div class="skill-name">🔴 Expert (Sharp)</div>
+            <div class="skill-desc">Full 46-card expected-value calculation for all 15 discard combinations. Empirical crib tables and counter-risk pegging safety.</div>
+          </div>
+          <div class="skill-card" data-skill="master">
+            <div class="skill-name">🟣 Master (Grandmaster)</div>
+            <div class="skill-desc">Combinatorial EV + Board Position "Theory of 26". Card counting and 2-ply minimax lookahead pegging. A formidable challenger.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="setup-section">
+        <div class="options-row">
+          <div>
+            <label class="setup-label">Match Length</label>
+            <div class="btn-group">
+              <button class="btn-toggle active" data-target="length" data-val="121">Full (121 Pts)</button>
+              <button class="btn-toggle" data-target="length" data-val="61">Short (61 Pts)</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="setup-section">
+        <label class="setup-label">Card Distribution Mode</label>
+        <div class="btn-group">
+          <button class="btn-toggle active" data-target="mode" data-val="classic">🎴 Classic Cribbage</button>
+          <button class="btn-toggle" data-target="mode" data-val="draft">🎯 Grid Draft</button>
+        </div>
+        <div class="skill-desc" style="margin-top:10px;">
+          <strong>Grid Draft:</strong> Each player gets <strong>3 private cards</strong>. Nine cards are placed
+          <strong>face-up in a 3×3 grid</strong>. Draft order snakes for 3 rounds:
+          <strong>non-dealer first in rounds 1 &amp; 3; dealer first in round 2</strong>.
+          Each pick is immediately replaced from the deck. After 6 total picks, both players have 6 cards,
+          discard 2 to the Crib, and play proceeds as normal.
+        </div>
+      </div>
+
+      <button class="btn-start" id="btnStartGame">Shuffle & Deal</button>
+    </div>
+
+    <!-- GAME PLAY SCREEN -->
+    <div id="gameScreen">
+      <!-- PEGBOARD -->
+      <div class="pegboard-container">
+        <div class="pegboard-header">
+          <div class="score-badge player">
+            <div class="score-label">You (Gold Pegs)</div>
+            <div class="score-value" id="playerScoreDisplay">0</div>
+            <div class="score-to-go" id="playerToGoDisplay">121 to go</div>
+          </div>
+
+          <div style="text-align: center;">
+            <div style="font-size: 0.75rem; font-weight: 800; color: var(--brass-gold); text-transform: uppercase; letter-spacing: 1px;">Official Cribbage Track</div>
+            <div style="font-size: 0.7rem; color: var(--text-dim);" id="skunkNotice">Skunk Line at 90 pts 🦨</div>
+          </div>
+
+          <div class="score-badge bot">
+            <div class="score-label" id="botBadgeTitle">Bot (Cyan Pegs)</div>
+            <div class="score-value" id="botScoreDisplay">0</div>
+            <div class="score-to-go" id="botToGoDisplay">121 to go</div>
+          </div>
+        </div>
+
+        <div class="board-svg-wrap">
+          <svg id="cribbageSvg" viewBox="0 0 1000 180" preserveAspectRatio="none">
+            <!-- Drawn dynamically via JavaScript -->
+          </svg>
+        </div>
+      </div>
+
+      <!-- TABLE FELT -->
+      <div class="table-felt">
+        <!-- STATUS BANNER -->
+        <div class="game-status-banner">
+          <div class="status-msg" id="statusMessage">Dealing cards...</div>
+          <div class="dealer-indicator" id="dealerBadge">Dealer: You</div>
+        </div>
+
+        <!-- GRID DRAFT (Grid Draft mode only) -->
+        <div class="draft-grid-wrap" id="draftGridWrap">
+          <div class="box-label">🎯 Face-Up Draft Grid</div>
+          <div class="draft-grid" id="draftGridContainer"></div>
+          <div class="draft-status" id="draftStatusText">Draft Round 1 of 3</div>
+        </div>
+
+        <!-- BOT AREA -->
+        <div class="bot-area">
+          <div class="bot-info">
+            <div class="bot-avatar" id="botAvatarIcon">🤖</div>
+            <div class="bot-details">
+              <div class="bot-title" id="botHeaderTitle">Bot (Intermediate)</div>
+              <div class="bot-speech" id="botSpeech">"Let's see your cards!"</div>
+            </div>
+          </div>
+          <div class="bot-cards" id="botCardsContainer">
+            <!-- Bot cards or back faces -->
+          </div>
+        </div>
+
+        <!-- CENTER MAT: STARTER CUT CARD, RUNNING COUNT, CRIB -->
+        <div class="center-mat">
+          <div class="starter-box">
+            <div class="box-label">The Cut (Starter)</div>
+            <div id="starterCardSlot">
+              <div class="card-empty-slot">Deck Cut</div>
+            </div>
+          </div>
+
+          <div class="pegging-arena">
+            <div class="count-display-gauge">
+              <span class="count-title">Pegging Count:</span>
+              <span class="count-number" id="peggingTotal">0</span>
+              <span class="count-max">/ 31</span>
+            </div>
+            <div class="pegging-callout" id="peggingCallout">Waiting for lead...</div>
+            <div class="played-cards-track" id="playedCardsContainer">
+              <!-- Cards in current 31-count cycle -->
+            </div>
+          </div>
+
+          <div class="crib-box">
+            <div class="box-label" id="cribOwnerLabel">The Crib</div>
+            <div id="cribSlot">
+              <div class="card-empty-slot">4 Cards</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PLAYER AREA -->
+        <div class="player-area">
+          <div class="player-cards-row" id="playerCardsContainer">
+            <!-- Player cards -->
+          </div>
+
+          <!-- Coach hint box -->
+          <div class="hint-card" id="coachHintBox">
+            <div class="hint-title">💡 Coach Advice:</div>
+            <div id="coachHintText">Analyzing hand...</div>
+          </div>
+
+          <div class="player-controls-row">
+            <button class="btn-action" id="btnConfirmDiscard" disabled>Confirm Discard (Choose 2)</button>
+            <button class="btn-action btn-go" id="btnSayGo" style="display: none;">Say "Go"</button>
+            <button class="btn-action" id="btnNextShow" style="display: none;">Count Next Hand ➔</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GAME LOG -->
+      <div class="log-card">
+        <div class="log-header">
+          <div class="log-title">📜 Action & Scoring Log</div>
+          <button class="btn-top" id="btnClearLog" style="padding: 2px 8px; font-size: 0.75rem;">Clear</button>
+        </div>
+        <div class="log-feed" id="logFeed">
+          <div class="log-item"><span class="log-time">00:00</span> Welcome to Cribbage Royale! Set difficulty and begin.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div><!-- /#fitWrapper -->
+
+  <!-- HOW TO PLAY / RULES MODAL -->
+  <div class="modal-overlay" id="rulesModal">
+    <div class="modal-box">
+      <div class="modal-title">📖 Cribbage Rules & Scoring Guide</div>
+      <div class="modal-content">
+        <p><strong>Goal:</strong> Be the first player to peg <strong>121 points</strong> (or 61 in short match).</p>
+        
+        <p><strong>1. Deal & The Crib:</strong> Each player is dealt 6 cards. Both choose 2 cards to discard into the <strong>Crib</strong> (belonging to the dealer). Hands now have 4 cards each.</p>
+        
+        <p><strong>2. The Starter Cut:</strong> The non-dealer cuts the deck. If the starter card is a <strong>Jack</strong>, the dealer immediately pegs <strong>2 points ("Two for his heels!")</strong>.</p>
+        
+        <p><strong>3. The Play (Pegging to 31):</strong> Players alternate playing cards face up without exceeding a running count of 31. Points awarded during play:</p>
+        <ul style="margin-left: 20px; display: flex; flex-direction: column; gap: 4px;">
+          <li><strong>15 for 2:</strong> Exactly 15 count scores 2 pts.</li>
+          <li><strong>31 for 2:</strong> Exactly 31 count scores 2 pts.</li>
+          <li><strong>Pairs:</strong> 2 of same rank consecutive = 2 pts. 3 of a kind = 6 pts. 4 of a kind = 12 pts.</li>
+          <li><strong>Runs:</strong> 3 or more consecutive cards in any order = 1 pt per card (e.g. 7-8-6 = 3 pts).</li>
+          <li><strong>Go / Last Card:</strong> If you cannot play under 31, say "Go". Player who plays the last legal card pegs 1 pt (unless 31 was scored). Then count resets to 0.</li>
+        </ul>
+
+        <p><strong>4. The Show (Counting):</strong> Non-dealer counts first, then dealer counts hand, then dealer counts the crib. All 4 cards plus the starter cut are evaluated:</p>
+        <ul style="margin-left: 20px; display: flex; flex-direction: column; gap: 4px;">
+          <li><strong>15s:</strong> 2 pts for every combination of cards totaling 15.</li>
+          <li><strong>Pairs:</strong> 2 pts per pair (Jack & Queen do NOT pair).</li>
+          <li><strong>Runs:</strong> 1 pt per card in sequence (duplicates multiply, e.g. double run of 3 = 8 pts).</li>
+          <li><strong>Flush:</strong> 4 cards in hand same suit = 4 pts (+1 if starter matches). In the crib, all 5 cards MUST match for 5 pts (4-card flush in crib scores 0!).</li>
+          <li><strong>His Nobs:</strong> Jack in hand/crib matching the starter card's suit = 1 pt.</li>
+        </ul>
+
+        <p><strong>🎯 Grid Draft Mode:</strong> Each player receives <strong>3 private cards</strong>, then drafts 3 more from a <strong>face-up 3×3 grid</strong> in snake order (non-dealer first in rounds 1 &amp; 3; dealer first in round 2). Every drafted card is immediately replaced from the deck. Once both players hold six cards, discards, the cut, pegging, and the Show proceed exactly as in Classic Cribbage.</p>
+
+        <p><strong>Skunking:</strong> Winning before your opponent reaches 90 points (in a 121 game) is a Skunk! Reaching 121 before they reach 60 is a Double Skunk! 🦨</p>
+      </div>
+      <button class="btn-modal" id="btnCloseRules">Got It</button>
+    </div>
+  </div>
+
+  <!-- SHOW / COUNTING HAND MODAL -->
+  <div class="modal-overlay" id="showModal">
+    <div class="modal-box">
+      <div class="modal-title" id="showModalTitle">Scoring The Show</div>
+      <div class="modal-content">
+        <div id="showOwnerDescription">Counting Non-Dealer's Hand</div>
+        <div class="modal-cards-row" id="showCardsRow">
+          <!-- 4 hand cards + starter -->
+        </div>
+        <div class="scoring-breakdown-list" id="showBreakdownList">
+          <!-- Items -->
+        </div>
+      </div>
+      <div id="manualScoreHelp" style="display:none; text-align:center; color:var(--text-muted); font-size:.84rem; line-height:1.45;">
+        Click a scoring combination in your cards. Valid combinations score immediately. Keep selecting combinations until you are finished.
+      </div>
+      <button class="btn-modal" id="btnContinueShow">Done Scoring</button>
+    </div>
+  </div>
+
+  <!-- GAME OVER MODAL -->
+  <div class="modal-overlay" id="gameOverModal">
+    <div class="modal-box" style="text-align: center; align-items: center;">
+      <div class="modal-title" id="gameOverTitle">🏆 Victory!</div>
+      <div class="modal-content" style="align-items: center;">
+        <div style="font-size: 3rem;" id="gameOverEmoji">🎉</div>
+        <div style="font-size: 1.3rem; font-weight: 800; color: #fff;" id="gameOverMsg">You reached 121 points first!</div>
+        <div id="skunkResultBadge" style="font-weight: 800; font-size: 1rem; color: var(--brass-bright); margin: 6px 0;"></div>
+        <div class="scoring-breakdown-list" style="width: 100%; text-align: left;" id="matchStatsList">
+          <!-- Stats -->
+        </div>
+      </div>
+      <button class="btn-modal" id="btnPlayAgain" style="align-self: center;">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    /* ==================== VIEW TOGGLE (desktop/mobile) ==================== */
+    (function(){
+      function apply(mode){
+        document.body.classList.toggle('force-mobile', mode==='mobile');
+        document.body.classList.toggle('force-desktop', mode==='desktop');
+        var btn = document.getElementById('viewToggleBtn');
+        if(btn) btn.textContent = mode==='mobile' ? '🖥️ DESKTOP VIEW' : '📱 MOBILE VIEW';
+        try{ localStorage.setItem('cribbageView', mode); }catch(e){}
+      }
+      window.__viewMode = 'desktop';
+      try{
+        var saved = localStorage.getItem('cribbageView');
+        if(saved){ window.__viewMode = saved; }
+        else if(window.matchMedia && window.matchMedia('(max-width:700px)').matches){ window.__viewMode = 'mobile'; }
+      }catch(e){}
+      window.toggleDeviceView = function(){
+        window.__viewMode = (window.__viewMode === 'mobile') ? 'desktop' : 'mobile';
+        apply(window.__viewMode);
+      };
+      document.addEventListener('DOMContentLoaded', function(){ apply(window.__viewMode); });
+    })();
+    /* =========================================================
+       AUDIO ENGINE (Web Audio API)
+       ========================================================= */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      toggle() {
+        this.enabled = !this.enabled;
+        return this.enabled;
+      }
+      playCardSnap() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.06);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.07);
+      }
+      playPegMove() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(780, now + 0.08);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.09);
+      }
+      playScoreChime() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          const now = this.ctx.currentTime + idx * 0.07;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.24);
+        });
+      }
+      playHeelsFanfare() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const chords = [440, 554.37, 659.25, 880];
+        chords.forEach((f, i) => {
+          const now = this.ctx.currentTime + i * 0.09;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, now);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.32);
+        });
+      }
+      playGoBuzz() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.setValueAtTime(120, now + 0.1);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.22);
+      }
+      playVictory() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const melody = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5];
+        melody.forEach((freq, idx) => {
+          const now = this.ctx.currentTime + idx * 0.14;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + (idx === melody.length - 1 ? 0.6 : 0.2));
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + (idx === melody.length - 1 ? 0.65 : 0.25));
+        });
+      }
+    }
+    const audio = new SoundEngine();
+
+    /* =========================================================
+       CONFETTI CANNON
+       ========================================================= */
+    class ConfettiEffect {
+      constructor() {
+        this.canvas = document.getElementById('confettiCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.particles = [];
+        this.animating = false;
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+      }
+      resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+      }
+      launch() {
+        this.particles = [];
+        const colors = ['#d4af37', '#f59e0b', '#38bdf8', '#10b981', '#ef4444', '#f3cf5a', '#ffffff'];
+        for (let i = 0; i < 140; i++) {
+          this.particles.push({
+            x: this.canvas.width * 0.5,
+            y: this.canvas.height * 0.4,
+            vx: (Math.random() - 0.5) * 18,
+            vy: (Math.random() - 0.8) * 16,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            size: Math.random() * 8 + 4,
+            rot: Math.random() * 360,
+            vRot: (Math.random() - 0.5) * 12,
+            life: 1,
+            decay: Math.random() * 0.008 + 0.006
+          });
+        }
+        if (!this.animating) {
+          this.animating = true;
+          this.loop();
+        }
+      }
+      loop() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        let active = 0;
+        for (let p of this.particles) {
+          if (p.life > 0) {
+            active++;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.35; // gravity
+            p.rot += p.vRot;
+            p.life -= p.decay;
+
+            this.ctx.save();
+            this.ctx.translate(p.x, p.y);
+            this.ctx.rotate((p.rot * Math.PI) / 180);
+            this.ctx.fillStyle = p.color;
+            this.ctx.globalAlpha = Math.max(0, p.life);
+            this.ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+            this.ctx.restore();
+          }
+        }
+        if (active > 0) {
+          requestAnimationFrame(() => this.loop());
+        } else {
+          this.animating = false;
+          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+      }
+    }
+    const confetti = new ConfettiEffect();
+
+    /* =========================================================
+       CARD DOMAIN & DECK
+       ========================================================= */
+    const SUITS = [
+      { name: 'Clubs', symbol: '♣', color: 'black', id: 0 },
+      { name: 'Diamonds', symbol: '♦', color: 'red', id: 1 },
+      { name: 'Hearts', symbol: '♥', color: 'red', id: 2 },
+      { name: 'Spades', symbol: '♠', color: 'black', id: 3 }
+    ];
+    const RANK_NAMES = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+    class Card {
+      constructor(rank, suit) {
+        this.rank = rank; // 1..13
+        this.suit = suit; // 0..3
+        this.suitObj = SUITS[suit];
+        this.value = Math.min(rank, 10);
+        this.name = `${RANK_NAMES[rank]}${this.suitObj.symbol}`;
+        this.id = (rank - 1) * 4 + suit;
+      }
+    }
+
+    function createDeck() {
+      const deck = [];
+      for (let r = 1; r <= 13; r++) {
+        for (let s = 0; s <= 3; s++) {
+          deck.push(new Card(r, s));
+        }
+      }
+      return deck;
+    }
+
+    function shuffleDeck(deck) {
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+      return deck;
+    }
+
+    /* =========================================================
+       100% ACCURATE CRIBBAGE SCORING ENGINE
+       ========================================================= */
+    function scoreHand(handCards, starter, isCrib = false) {
+      const cards = [...handCards, starter];
+      let total = 0;
+      const breakdown = {
+        fifteens: [],
+        pairs: [],
+        runs: [],
+        flush: null,
+        nobs: null,
+        total: 0
+      };
+
+      // 1. FIFTEENS (All non-empty subsets summing to 15)
+      const n = cards.length;
+      for (let mask = 1; mask < (1 << n); mask++) {
+        let sum = 0;
+        const subset = [];
+        for (let i = 0; i < n; i++) {
+          if (mask & (1 << i)) {
+            sum += cards[i].value;
+            subset.push(cards[i]);
+          }
+        }
+        if (sum === 15) {
+          total += 2;
+          breakdown.fifteens.push(subset);
+        }
+      }
+
+      // 2. PAIRS
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+          if (cards[i].rank === cards[j].rank) {
+            total += 2;
+            breakdown.pairs.push([cards[i], cards[j]]);
+          }
+        }
+      }
+
+      // 3. RUNS (Sequences of 3 or more consecutive ranks)
+      const counts = new Array(14).fill(0);
+      cards.forEach(c => counts[c.rank]++);
+
+      let r = 1;
+      while (r <= 11) {
+        if (counts[r] > 0) {
+          let runLength = 0;
+          let multiplier = 1;
+          while (r + runLength <= 13 && counts[r + runLength] > 0) {
+            multiplier *= counts[r + runLength];
+            runLength++;
+          }
+          if (runLength >= 3) {
+            const pts = runLength * multiplier;
+            total += pts;
+            breakdown.runs.push({
+              startRank: r,
+              length: runLength,
+              multiplier: multiplier,
+              points: pts
+            });
+            r += runLength;
+            continue;
+          }
+        }
+        r++;
+      }
+
+      // 4. FLUSH
+      const handSuits = handCards.map(c => c.suit);
+      const allHandSame = handSuits.every(s => s === handSuits[0]);
+
+      if (!isCrib) {
+        if (allHandSame) {
+          if (starter.suit === handSuits[0]) {
+            total += 5;
+            breakdown.flush = { points: 5, desc: "5-card flush (Hand + Starter)" };
+          } else {
+            total += 4;
+            breakdown.flush = { points: 4, desc: "4-card flush in hand" };
+          }
+        }
+      } else {
+        // Crib requires all 5 cards to share same suit
+        if (allHandSame && starter.suit === handSuits[0]) {
+          total += 5;
+          breakdown.flush = { points: 5, desc: "5-card flush in crib (All 5 cards)" };
+        }
+      }
+
+      // 5. HIS NOBS (Jack in hand or crib with same suit as starter)
+      for (let c of handCards) {
+        if (c.rank === 11 && c.suit === starter.suit) {
+          total += 1;
+          breakdown.nobs = { points: 1, card: c };
+          break;
+        }
+      }
+
+      breakdown.total = total;
+      return breakdown;
+    }
+
+    function scorePeggingPlay(playHistory, currentRunningTotal) {
+      const n = playHistory.length;
+      if (n === 0) return { points: 0, reasons: [] };
+
+      let points = 0;
+      const reasons = [];
+
+      // 15 or 31
+      if (currentRunningTotal === 15) {
+        points += 2;
+        reasons.push("15 for 2");
+      } else if (currentRunningTotal === 31) {
+        points += 2;
+        reasons.push("31 for 2");
+      }
+
+      // Pairs / 3-of-a-kind / 4-of-a-kind
+      const lastRank = playHistory[n - 1].rank;
+      let matchCount = 0;
+      for (let i = n - 2; i >= 0; i--) {
+        if (playHistory[i].rank === lastRank) {
+          matchCount++;
+        } else {
+          break;
+        }
+      }
+      if (matchCount === 1) {
+        points += 2;
+        reasons.push(`Pair of ${RANK_NAMES[lastRank]}s for 2`);
+      } else if (matchCount === 2) {
+        points += 6;
+        reasons.push(`3 of a kind (${RANK_NAMES[lastRank]}s) for 6`);
+      } else if (matchCount === 3) {
+        points += 12;
+        reasons.push(`4 of a kind (${RANK_NAMES[lastRank]}s) for 12`);
+      }
+
+      // Runs: check backwards from length n down to 3
+      for (let k = n; k >= 3; k--) {
+        const sub = playHistory.slice(n - k).map(c => c.rank);
+        const unique = new Set(sub);
+        if (unique.size === k) {
+          const min = Math.min(...sub);
+          const max = Math.max(...sub);
+          if (max - min === k - 1) {
+            points += k;
+            reasons.push(`Run of ${k} for ${k}`);
+            break; // Award only longest valid run
+          }
+        }
+      }
+
+      return { points, reasons };
+    }
+
+    /* =========================================================
+       EMPIRICAL CRIB DISCARD EV & AI ENGINE
+       ========================================================= */
+    function getCribDiscardEV(c1, c2) {
+      // Base average value contributed by any 2 cards to a crib
+      let base = 4.2;
+      
+      // Pairs
+      if (c1.rank === c2.rank) {
+        if (c1.rank === 5) base += 4.8;
+        else if (c1.rank >= 2 && c1.rank <= 3) base += 2.6;
+        else if (c1.rank >= 7 && c1.rank <= 8) base += 2.8;
+        else base += 2.0;
+      }
+      // Sums to 15
+      if (c1.value + c2.value === 15) {
+        base += 2.6;
+      }
+      // Consecutive rank runs
+      const diff = Math.abs(c1.rank - c2.rank);
+      if (diff === 1) {
+        if ((c1.rank === 7 && c2.rank === 8) || (c1.rank === 8 && c2.rank === 7)) base += 2.5;
+        else if ((c1.rank === 4 && c2.rank === 5) || (c1.rank === 5 && c2.rank === 4)) base += 2.4;
+        else base += 1.4;
+      } else if (diff === 2) {
+        base += 0.7;
+      }
+      // Presence of 5
+      if (c1.rank === 5 || c2.rank === 5) {
+        base += 2.2;
+      }
+      // Suited
+      if (c1.suit === c2.suit) {
+        base += 0.4;
+      }
+      // Balk cards (K-10, K-A, Q-2, etc. have very poor synergy)
+      if ((c1.rank === 13 && c2.rank === 1) || (c1.rank === 1 && c2.rank === 13)) base -= 1.4;
+      if ((c1.rank === 13 && c2.rank === 2) || (c1.rank === 2 && c2.rank === 13)) base -= 1.3;
+      if ((c1.rank === 10 && c2.rank === 2) || (c1.rank === 2 && c2.rank === 10)) base -= 1.1;
+
+      return Math.max(1.5, base);
+    }
+
+    function getSubsets(arr, k) {
+      if (k === 0) return [[]];
+      if (arr.length === 0) return [];
+      const head = arr[0];
+      const tail = arr.slice(1);
+      const withHead = getSubsets(tail, k - 1).map(s => [head, ...s]);
+      const withoutHead = getSubsets(tail, k);
+      return [...withHead, ...withoutHead];
+    }
+
+    // BOT DISCARD DECISION
+    function chooseBotDiscard(sixCards, isDealer, skillLevel, boardPosition) {
+      const allHands = getSubsets(sixCards, 4); // 15 combinations
+
+      // LEVEL 1: BEGINNER (Greedy static hand score, ignores crib)
+      if (skillLevel === 'beginner') {
+        let bestScore = -1;
+        let bestHand = allHands[0];
+        for (let hand of allHands) {
+          // Dummy starter null
+          const dummyStarter = new Card(1, 0); // Ace of Clubs neutral
+          const s = scoreHand(hand, dummyStarter, false).total;
+          if (s > bestScore) {
+            bestScore = s;
+            bestHand = hand;
+          }
+        }
+        const handIds = new Set(bestHand.map(c => c.id));
+        const discards = sixCards.filter(c => !handIds.has(c.id));
+        return { keep: bestHand, discard: discards };
+      }
+
+      // LEVEL 2: INTERMEDIATE (Static hand score + crib synergy heuristic)
+      if (skillLevel === 'intermediate') {
+        let bestNet = -999;
+        let bestHand = allHands[0];
+        for (let hand of allHands) {
+          const dummyStarter = new Card(1, 0);
+          const handRaw = scoreHand(hand, dummyStarter, false).total;
+          const handIds = new Set(hand.map(c => c.id));
+          const discards = sixCards.filter(c => !handIds.has(c.id));
+          const cribEV = getCribDiscardEV(discards[0], discards[1]);
+          const net = isDealer ? (handRaw + cribEV) : (handRaw - cribEV);
+          if (net > bestNet) {
+            bestNet = net;
+            bestHand = hand;
+          }
+        }
+        const handIds = new Set(bestHand.map(c => c.id));
+        const discards = sixCards.filter(c => !handIds.has(c.id));
+        return { keep: bestHand, discard: discards };
+      }
+
+      // LEVEL 3 (EXPERT) & LEVEL 4 (MASTER): Full 46-cut Combinatorial EV
+      const fullDeck = createDeck();
+      const seenIds = new Set(sixCards.map(c => c.id));
+      const remainingDeck = fullDeck.filter(c => !seenIds.has(c.id)); // 46 cards
+
+      let bestEV = -9999;
+      let bestChoice = { keep: allHands[0], discard: [] };
+
+      // Theory of 26 modulation for Master
+      const isMaster = skillLevel === 'master';
+      const isBehind = isMaster && (boardPosition.botScore < boardPosition.targetHole);
+
+      for (let hand of allHands) {
+        const handIds = new Set(hand.map(c => c.id));
+        const discards = sixCards.filter(c => !handIds.has(c.id));
+
+        // Mean hand score over 46 unseen cut cards
+        let sumScore = 0;
+        let maxSeen = 0;
+        for (let cutCard of remainingDeck) {
+          const s = scoreHand(hand, cutCard, false).total;
+          sumScore += s;
+          if (s > maxSeen) maxSeen = s;
+        }
+        let evHand = sumScore / remainingDeck.length;
+
+        // If Master is behind, give bonus to high upside hands
+        if (isBehind) {
+          evHand = (evHand * 0.8) + (maxSeen * 0.2);
+        }
+
+        const cribEV = getCribDiscardEV(discards[0], discards[1]);
+        const netEV = isDealer ? (evHand + cribEV) : (evHand - cribEV);
+
+        if (netEV > bestEV) {
+          bestEV = netEV;
+          bestChoice = { keep: hand, discard: discards, ev: netEV };
+        }
+      }
+
+      return bestChoice;
+    }
+
+    // BOT PEGGING DECISION
+    function chooseBotPegPlay(botHand, playHistory, currentTotal, skillLevel, boardPosition) {
+      const legal = botHand.filter(c => c.value + currentTotal <= 31);
+      if (legal.length === 0) return null; // "Go"
+
+      // LEVEL 1: Random or lowest card
+      if (skillLevel === 'beginner') {
+        return legal[Math.floor(Math.random() * legal.length)];
+      }
+
+      // LEVEL 2: INTERMEDIATE (Avoids leading 5 or 21, plays 15/31 if possible)
+      if (skillLevel === 'intermediate') {
+        // If can make 15 or 31, do it!
+        for (let c of legal) {
+          if (currentTotal + c.value === 15 || currentTotal + c.value === 31) return c;
+        }
+        // If leading (currentTotal === 0), avoid leading 5
+        if (currentTotal === 0) {
+          const safeLeads = legal.filter(c => c.rank !== 5 && c.value !== 10);
+          if (safeLeads.length > 0) return safeLeads[0];
+        }
+        // Avoid leaving count at 21 (gives away 10 for 31)
+        const non21 = legal.filter(c => currentTotal + c.value !== 21);
+        if (non21.length > 0) return non21[0];
+        return legal[0];
+      }
+
+      // LEVEL 3 (EXPERT) & LEVEL 4 (MASTER): Safety counter-risk evaluation
+      let bestMove = legal[0];
+      let bestUtility = -9999;
+
+      for (let card of legal) {
+        const nextTotal = currentTotal + card.value;
+        const simulatedHist = [...playHistory, card];
+        const immediate = scorePeggingPlay(simulatedHist, nextTotal).points;
+
+        let riskPenalty = 0;
+        // Opponent counter-points risk
+        if (nextTotal === 5) riskPenalty += 2.0; // Opponent easily plays 10 for 15
+        if (nextTotal === 21) riskPenalty += 2.2; // Opponent easily plays 10 for 31
+        if (nextTotal === 11) riskPenalty += 1.2; // Opponent plays 4 for 15
+
+        // Check if pairing gives trap
+        if (playHistory.length > 0 && playHistory[playHistory.length - 1].rank === card.rank) {
+          // If we have yet another card of this rank in hand, pair is safe (we can triple!)
+          const matchingInHand = botHand.filter(c => c.rank === card.rank).length;
+          if (matchingInHand >= 2) {
+            riskPenalty -= 1.5; // Encouraged trap!
+          } else {
+            riskPenalty += 1.0; // Opponent might triple
+          }
+        }
+
+        // Master endgame boost: If close to winning, maximize immediate points
+        let immediateWeight = 1.0;
+        if (skillLevel === 'master' && boardPosition.botScore >= 115) {
+          immediateWeight = 2.5;
+        }
+
+        const utility = (immediate * immediateWeight) - riskPenalty;
+        if (utility > bestUtility) {
+          bestUtility = utility;
+          bestMove = card;
+        }
+      }
+
+      return bestMove;
+    }
+
+    /* =========================================================
+       GAME STATE & CONTROLLER
+       ========================================================= */
+    const STATE = {
+      skillLevel: 'beginner',
+      matchLength: 121,
+      coachMode: false,
+
+      gameMode: 'classic',
+      draftGrid: [],
+      draftPickIndex: 0,
+      draftOrder: [],
+      playerDraftedCards: [],
+      botDraftedCards: [],
+
+      // Scores
+      playerScore: 0,
+      playerFrontPeg: 0,
+      playerBackPeg: 0,
+      botScore: 0,
+      botFrontPeg: 0,
+      botBackPeg: 0,
+
+      // Match info
+      roundNumber: 1,
+      dealer: 'player', // 'player' or 'bot'
+      phase: 'setup', // 'setup', 'discard', 'cut', 'pegging', 'show_non_dealer', 'show_dealer', 'show_crib', 'game_over'
+
+      // Cards
+      deck: [],
+      playerDealtHand: [],
+      botDealtHand: [],
+      playerHand: [],
+      botHand: [],
+      crib: [],
+      starterCard: null,
+
+      // Selected for discard
+      playerSelectedDiscards: [],
+
+      // Pegging State
+      peggingHistory: [],
+      peggingCycleHistory: [],
+      peggingTotal: 0,
+      turn: 'non_dealer', // 'player' or 'bot'
+      playerSaidGo: false,
+      botSaidGo: false,
+      lastPlayerWhoPlayed: null,
+
+      // Stats
+      // Manual Show scoring state
+      showSelectedIds: [],
+      showClaimedKeys: new Set(),
+      showManualScore: 0,
+      showPendingTotal: 0,
+      showScoringUnits: [],
+
+      stats: {
+        playerPeggingPts: 0,
+        botPeggingPts: 0,
+        playerHandPts: 0,
+        botHandPts: 0,
+        playerCribPts: 0,
+        botCribPts: 0,
+        maxHandPlayer: 0,
+        maxHandBot: 0
+      }
+    };
+
+    /* =========================================================
+       DOM ELEMENTS
+       ========================================================= */
+    const dom = {
+      setupScreen: document.getElementById('setupScreen'),
+      gameScreen: document.getElementById('gameScreen'),
+      statusMessage: document.getElementById('statusMessage'),
+      dealerBadge: document.getElementById('dealerBadge'),
+      playerScoreDisplay: document.getElementById('playerScoreDisplay'),
+      playerToGoDisplay: document.getElementById('playerToGoDisplay'),
+      botScoreDisplay: document.getElementById('botScoreDisplay'),
+      botToGoDisplay: document.getElementById('botToGoDisplay'),
+      botBadgeTitle: document.getElementById('botBadgeTitle'),
+      botHeaderTitle: document.getElementById('botHeaderTitle'),
+      botSpeech: document.getElementById('botSpeech'),
+      botCardsContainer: document.getElementById('botCardsContainer'),
+      playerCardsContainer: document.getElementById('playerCardsContainer'),
+      starterCardSlot: document.getElementById('starterCardSlot'),
+      cribSlot: document.getElementById('cribSlot'),
+      cribOwnerLabel: document.getElementById('cribOwnerLabel'),
+      peggingTotal: document.getElementById('peggingTotal'),
+      peggingCallout: document.getElementById('peggingCallout'),
+      playedCardsContainer: document.getElementById('playedCardsContainer'),
+      btnConfirmDiscard: document.getElementById('btnConfirmDiscard'),
+      btnSayGo: document.getElementById('btnSayGo'),
+      btnNextShow: document.getElementById('btnNextShow'),
+      coachHintBox: document.getElementById('coachHintBox'),
+      coachHintText: document.getElementById('coachHintText'),
+      logFeed: document.getElementById('logFeed'),
+      cribbageSvg: document.getElementById('cribbageSvg'),
+      skunkNotice: document.getElementById('skunkNotice'),
+      draftGridWrap: document.getElementById('draftGridWrap'),
+      draftGridContainer: document.getElementById('draftGridContainer'),
+      draftStatusText: document.getElementById('draftStatusText'),
+
+      // Modals
+      rulesModal: document.getElementById('rulesModal'),
+      showModal: document.getElementById('showModal'),
+      showModalTitle: document.getElementById('showModalTitle'),
+      showOwnerDescription: document.getElementById('showOwnerDescription'),
+      showCardsRow: document.getElementById('showCardsRow'),
+      showBreakdownList: document.getElementById('showBreakdownList'),
+      manualScoreHelp: document.getElementById('manualScoreHelp'),
+      btnContinueShow: document.getElementById('btnContinueShow'),
+
+      gameOverModal: document.getElementById('gameOverModal'),
+      gameOverTitle: document.getElementById('gameOverTitle'),
+      gameOverEmoji: document.getElementById('gameOverEmoji'),
+      gameOverMsg: document.getElementById('gameOverMsg'),
+      skunkResultBadge: document.getElementById('skunkResultBadge'),
+      matchStatsList: document.getElementById('matchStatsList'),
+      btnPlayAgain: document.getElementById('btnPlayAgain'),
+
+      // Top buttons
+      btnHowToPlay: document.getElementById('btnHowToPlay'),
+      btnCloseRules: document.getElementById('btnCloseRules'),
+      btnCoachToggle: document.getElementById('btnCoachToggle'),
+      btnSoundToggle: document.getElementById('btnSoundToggle'),
+      btnNewGame: document.getElementById('btnNewGame'),
+      btnClearLog: document.getElementById('btnClearLog'),
+      btnStartGame: document.getElementById('btnStartGame')
+    };
+
+    /* =========================================================
+       RENDER SVG PEGBOARD
+       ========================================================= */
+    function initPegboardSvg() {
+      const svg = dom.cribbageSvg;
+      svg.innerHTML = '';
+      const totalHoles = STATE.matchLength;
+      const NS = 'http://www.w3.org/2000/svg';
+      const defs = document.createElementNS(NS, 'defs');
+      defs.innerHTML = `
+        <linearGradient id="boardGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#8b5a2b"/><stop offset="0.5" stop-color="#5b3519"/><stop offset="1" stop-color="#3a200f"/>
+        </linearGradient>
+        <radialGradient id="holeGrad"><stop offset="0" stop-color="#050403"/><stop offset="1" stop-color="#211207"/></radialGradient>
+        <filter id="pegGlow"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      `;
+      svg.appendChild(defs);
+
+      const bg = document.createElementNS(NS,'rect');
+      bg.setAttribute('x','8'); bg.setAttribute('y','8'); bg.setAttribute('width','984'); bg.setAttribute('height','164');
+      bg.setAttribute('rx','22'); bg.setAttribute('fill','url(#boardGrad)'); bg.setAttribute('stroke','#c28a49'); bg.setAttribute('stroke-width','3');
+      svg.appendChild(bg);
+
+      const inner = document.createElementNS(NS,'rect');
+      inner.setAttribute('x','20'); inner.setAttribute('y','20'); inner.setAttribute('width','960'); inner.setAttribute('height','140');
+      inner.setAttribute('rx','16'); inner.setAttribute('fill','none'); inner.setAttribute('stroke','#d29b58'); inner.setAttribute('stroke-opacity','.3');
+      svg.appendChild(inner);
+
+      const title = document.createElementNS(NS,'text');
+      title.setAttribute('x','500'); title.setAttribute('y','30'); title.setAttribute('text-anchor','middle');
+      title.setAttribute('font-size','11'); title.setAttribute('font-weight','900'); title.setAttribute('letter-spacing','2');
+      title.setAttribute('fill','#f7dfaa'); title.textContent='CRIBBAGE TRACK • 1–' + totalHoles;
+      svg.appendChild(title);
+
+      const startX=55, endX=945, step=(endX-startX)/59;
+      STATE.holeCoordsPlayer=[]; STATE.holeCoordsBot=[];
+      for(let i=1;i<=60;i++){
+        const x=startX+(i-1)*step;
+        STATE.holeCoordsPlayer[i]={x,y:70}; STATE.holeCoordsBot[i]={x,y:70};
+      }
+      for(let i=61;i<=120;i++){
+        const x=endX-(i-61)*step;
+        STATE.holeCoordsPlayer[i]={x,y:130}; STATE.holeCoordsBot[i]={x,y:130};
+      }
+      STATE.holeCoordsPlayer[121]={x:28,y:70}; STATE.holeCoordsBot[121]={x:28,y:130};
+      STATE.holeCoordsPlayer[0]={x:40,y:70}; STATE.holeCoordsBot[0]={x:40,y:130};
+
+      const label=(txt,x,y,color,size=8,anchor='middle')=>{
+        const t=document.createElementNS(NS,'text'); t.setAttribute('x',x); t.setAttribute('y',y); t.setAttribute('text-anchor',anchor);
+        t.setAttribute('font-size',size); t.setAttribute('font-weight','900'); t.setAttribute('fill',color); t.textContent=txt; svg.appendChild(t);
+      };
+      label('YOU',27,64,'#f5c542',9,'start'); label('BOT',27,124,'#67d9ff',9,'start');
+      label('1 → 60',500,50,'#ead09a',8); label('120 ← 61',500,151,'#ead09a',8);
+
+      const holes=document.createElementNS(NS,'g');
+      for(let h=1;h<=totalHoles;h++){
+        const c=STATE.holeCoordsPlayer[h];
+        const r=(h%5===0)?4.2:3.1;
+        const q=document.createElementNS(NS,'circle'); q.setAttribute('cx',c.x); q.setAttribute('cy',c.y); q.setAttribute('r',r);
+        q.setAttribute('fill','url(#holeGrad)'); q.setAttribute('stroke','#b77b3f'); q.setAttribute('stroke-width',h%5===0?'1.1':'.7'); holes.appendChild(q);
+        const c2=STATE.holeCoordsBot[h];
+        const q2=document.createElementNS(NS,'circle'); q2.setAttribute('cx',c2.x); q2.setAttribute('cy',c2.y); q2.setAttribute('r',r);
+        q2.setAttribute('fill','url(#holeGrad)'); q2.setAttribute('stroke','#b77b3f'); q2.setAttribute('stroke-width',h%5===0?'1.1':'.7'); holes.appendChild(q2);
+        if(h%5===0 || h===1){
+          const y=h<=60?60:143;
+          const t=document.createElementNS(NS,'text'); t.setAttribute('x',c.x); t.setAttribute('y',y); t.setAttribute('text-anchor','middle');
+          t.setAttribute('font-size',h%10===0?'7':'6'); t.setAttribute('font-weight','700'); t.setAttribute('fill',h%10===0?'#f0d08d':'#c09152'); t.textContent=h; holes.appendChild(t);
+        }
+      }
+
+      // Simple turnaround marker between the two lanes.
+      const turn=document.createElementNS(NS,'path');
+      turn.setAttribute('d','M 945 70 Q 970 100 945 130'); turn.setAttribute('fill','none'); turn.setAttribute('stroke','#e0b66f'); turn.setAttribute('stroke-width','2');
+      turn.setAttribute('stroke-linecap','round'); holes.appendChild(turn);
+      const arrow=document.createElementNS(NS,'text'); arrow.setAttribute('x','960'); arrow.setAttribute('y','106'); arrow.setAttribute('font-size','12'); arrow.setAttribute('fill','#e0b66f'); arrow.textContent='↙'; holes.appendChild(arrow);
+
+      const skunkHole=STATE.matchLength===121?90:30;
+      const skunkX=(skunkHole<=60)?startX+(skunkHole-1)*step:endX-(skunkHole-61)*step;
+      const sy1=skunkHole<=60?42:102, sy2=skunkHole<=60?86:146;
+      const line=document.createElementNS(NS,'line'); line.setAttribute('x1',skunkX); line.setAttribute('y1',sy1); line.setAttribute('x2',skunkX); line.setAttribute('y2',sy2);
+      line.setAttribute('stroke','#ef6b5b'); line.setAttribute('stroke-width','2'); line.setAttribute('stroke-dasharray','4,3'); holes.appendChild(line);
+      label('SKUNK '+skunkHole,skunkX,skunkHole<=60?40:100,'#ff8b7d',7);
+
+      [['player',STATE.holeCoordsPlayer[121],'#f5c542'],['bot',STATE.holeCoordsBot[121],'#67d9ff']].forEach(([who,c,color])=>{
+        const q=document.createElementNS(NS,'circle'); q.setAttribute('cx',c.x); q.setAttribute('cy',c.y); q.setAttribute('r','8'); q.setAttribute('fill','#1a0d05'); q.setAttribute('stroke',color); q.setAttribute('stroke-width','2'); holes.appendChild(q);
+        const t=document.createElementNS(NS,'text'); t.setAttribute('x',c.x); t.setAttribute('y',c.y+3); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','5.5'); t.setAttribute('font-weight','900'); t.setAttribute('fill',color); t.textContent='WIN'; holes.appendChild(t);
+      });
+      svg.appendChild(holes);
+      const legend=document.createElementNS(NS,'text'); legend.setAttribute('x','500'); legend.setAttribute('y','166'); legend.setAttribute('text-anchor','middle'); legend.setAttribute('font-size','6.5'); legend.setAttribute('fill','#b98a4e');
+      legend.textContent='Front peg = current score   •   Rear peg = previous score'; svg.appendChild(legend);
+      const pegs=document.createElementNS(NS,'g'); pegs.setAttribute('id','pegsGroup'); svg.appendChild(pegs); updatePegsGraphics();
+    }
+
+    function updatePegsGraphics() {
+      const pegsGroup = document.getElementById('pegsGroup');
+      if (!pegsGroup) return;
+      pegsGroup.innerHTML = '';
+
+      // Player pegs (Gold)
+      const pFrontHole = Math.min(STATE.matchLength, STATE.playerFrontPeg);
+      const pBackHole = Math.min(STATE.matchLength, STATE.playerBackPeg);
+
+      if (pBackHole > 0 && pBackHole !== pFrontHole) {
+        const cpb = STATE.holeCoordsPlayer[pBackHole];
+        if (cpb) {
+          const peg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          peg.setAttribute('cx', cpb.x);
+          peg.setAttribute('cy', cpb.y);
+          peg.setAttribute('r', '4.5');
+          peg.setAttribute('fill', '#b45309');
+          peg.setAttribute('stroke', '#f59e0b');
+          peg.setAttribute('stroke-width', '1.5');
+          pegsGroup.appendChild(peg);
+        }
+      }
+
+      if (pFrontHole > 0) {
+        const cpf = STATE.holeCoordsPlayer[pFrontHole];
+        if (cpf) {
+          const peg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          peg.setAttribute('cx', cpf.x);
+          peg.setAttribute('cy', cpf.y);
+          peg.setAttribute('r', '5.5');
+          peg.setAttribute('fill', '#fbbf24');
+          peg.setAttribute('stroke', '#ffffff');
+          peg.setAttribute('stroke-width', '2');
+          peg.setAttribute('filter', 'url(#pegGlow)');
+          pegsGroup.appendChild(peg);
+        }
+      }
+
+      // Bot pegs (Cyan)
+      const bFrontHole = Math.min(STATE.matchLength, STATE.botFrontPeg);
+      const bBackHole = Math.min(STATE.matchLength, STATE.botBackPeg);
+
+      if (bBackHole > 0 && bBackHole !== bFrontHole) {
+        const cbb = STATE.holeCoordsBot[bBackHole];
+        if (cbb) {
+          const peg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          peg.setAttribute('cx', cbb.x);
+          peg.setAttribute('cy', cbb.y);
+          peg.setAttribute('r', '4.5');
+          peg.setAttribute('fill', '#0284c7');
+          peg.setAttribute('stroke', '#38bdf8');
+          peg.setAttribute('stroke-width', '1.5');
+          pegsGroup.appendChild(peg);
+        }
+      }
+
+      if (bFrontHole > 0) {
+        const cbf = STATE.holeCoordsBot[bFrontHole];
+        if (cbf) {
+          const peg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          peg.setAttribute('cx', cbf.x);
+          peg.setAttribute('cy', cbf.y);
+          peg.setAttribute('r', '5.5');
+          peg.setAttribute('fill', '#38bdf8');
+          peg.setAttribute('stroke', '#ffffff');
+          peg.setAttribute('stroke-width', '2');
+          peg.setAttribute('filter', 'url(#pegGlow)');
+          pegsGroup.appendChild(peg);
+        }
+      }
+    }
+
+    /* =========================================================
+       PEGGING POINTS & SCORE ANIMATION
+       ========================================================= */
+    function addPoints(who, pts, reason) {
+      if (pts <= 0) return;
+
+      audio.playPegMove();
+      if (pts >= 2) audio.playScoreChime();
+
+      if (who === 'player') {
+        STATE.playerBackPeg = STATE.playerFrontPeg;
+        STATE.playerFrontPeg = Math.min(STATE.matchLength, STATE.playerScore + pts);
+        STATE.playerScore = STATE.playerFrontPeg;
+        dom.playerScoreDisplay.textContent = STATE.playerScore;
+        const toGo = Math.max(0, STATE.matchLength - STATE.playerScore);
+        dom.playerToGoDisplay.textContent = `${toGo} to go`;
+        logMessage(`Player scores +${pts} pts: ${reason}`, 'player-pts');
+        showFloatingScore(pts, 'player');
+      } else {
+        STATE.botBackPeg = STATE.botFrontPeg;
+        STATE.botFrontPeg = Math.min(STATE.matchLength, STATE.botScore + pts);
+        STATE.botScore = STATE.botFrontPeg;
+        dom.botScoreDisplay.textContent = STATE.botScore;
+        const toGo = Math.max(0, STATE.matchLength - STATE.botScore);
+        dom.botToGoDisplay.textContent = `${toGo} to go`;
+        logMessage(`Bot scores +${pts} pts: ${reason}`, 'bot-pts');
+        showFloatingScore(pts, 'bot');
+      }
+
+      updatePegsGraphics();
+
+      // Check immediate win!
+      if (STATE.playerScore >= STATE.matchLength || STATE.botScore >= STATE.matchLength) {
+        triggerGameOver();
+        return true;
+      }
+      return false;
+    }
+
+    function showFloatingScore(pts, who) {
+      const banner = dom.statusMessage;
+      const popup = document.createElement('div');
+      popup.className = 'score-popup';
+      popup.textContent = `+${pts}`;
+      popup.style.left = (who === 'player') ? '15%' : '75%';
+      popup.style.top = '40px';
+      popup.style.color = (who === 'player') ? 'var(--player-color)' : 'var(--bot-color)';
+      dom.gameScreen.appendChild(popup);
+      setTimeout(() => popup.remove(), 1400);
+    }
+
+    function logMessage(msg, type = '') {
+      const item = document.createElement('div');
+      item.className = `log-item ${type}`;
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+      item.innerHTML = `<span class="log-time">${timeStr}</span> ${msg}`;
+      dom.logFeed.appendChild(item);
+      dom.logFeed.scrollTop = dom.logFeed.scrollHeight;
+    }
+
+    /* =========================================================
+       CARD RENDERING HELPERS
+       ========================================================= */
+    function renderCardHtml(card, selectable = false, selected = false, disabled = false) {
+      const colorClass = card.suitObj.color === 'red' ? 'red-suit' : 'black-suit';
+      const selClass = selected ? 'selected' : '';
+      const disClass = disabled ? 'disabled' : '';
+      const rankStr = RANK_NAMES[card.rank];
+      const suitStr = card.suitObj.symbol;
+
+      return `
+        <div class="card-item ${colorClass} ${selClass} ${disClass}" data-card-id="${card.id}">
+          <div class="card-corner top">
+            <span class="card-rank">${rankStr}</span>
+            <span class="card-suit-sm">${suitStr}</span>
+          </div>
+          <div class="card-center-symbol">${suitStr}</div>
+          <div class="card-corner bottom">
+            <span class="card-rank">${rankStr}</span>
+            <span class="card-suit-sm">${suitStr}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCardBackHtml() {
+      return `
+        <div class="card-item card-back">
+          <div class="card-back-pattern">♠</div>
+        </div>
+      `;
+    }
+
+    /* =========================================================
+       GAME FLOW CONTROLLER
+       ========================================================= */
+    function startNewGame() {
+      // Read setup options
+      const activeSkill = document.querySelector('.skill-card.active');
+      STATE.skillLevel = activeSkill ? activeSkill.getAttribute('data-skill') : 'beginner';
+
+      const activeLen = document.querySelector('.btn-toggle[data-target="length"].active');
+      STATE.matchLength = activeLen ? parseInt(activeLen.getAttribute('data-val')) : 121;
+
+      const activeMode = document.querySelector('.btn-toggle[data-target="mode"].active');
+      STATE.gameMode = activeMode ? activeMode.getAttribute('data-val') : 'classic';
+
+      // Reset scores & stats
+      STATE.playerScore = 0;
+      STATE.playerFrontPeg = 0;
+      STATE.playerBackPeg = 0;
+      STATE.botScore = 0;
+      STATE.botFrontPeg = 0;
+      STATE.botBackPeg = 0;
+      STATE.roundNumber = 1;
+
+      STATE.stats = {
+        playerPeggingPts: 0,
+        botPeggingPts: 0,
+        playerHandPts: 0,
+        botHandPts: 0,
+        playerCribPts: 0,
+        botCribPts: 0,
+        maxHandPlayer: 0,
+        maxHandBot: 0
+      };
+
+      dom.playerScoreDisplay.textContent = '0';
+      dom.playerToGoDisplay.textContent = `${STATE.matchLength} to go`;
+      dom.botScoreDisplay.textContent = '0';
+      dom.botToGoDisplay.textContent = `${STATE.matchLength} to go`;
+
+      // Update headers
+      const skillNameMap = {
+        beginner: '🟢 Beginner (Casual)',
+        intermediate: '🟡 Intermediate (Standard)',
+        expert: '🔴 Expert (Sharp)',
+        master: '🟣 Master (Grandmaster)'
+      };
+      dom.botHeaderTitle.textContent = `Bot (${skillNameMap[STATE.skillLevel]})`;
+      dom.botBadgeTitle.textContent = `Bot (${STATE.skillLevel.toUpperCase()})`;
+      dom.skunkNotice.textContent = `Skunk Line at ${STATE.matchLength === 121 ? 90 : 30} pts 🦨`;
+
+      // Randomize the first dealer every new game.
+      STATE.dealer = Math.random() < 0.5 ? 'player' : 'bot';
+      logMessage(`Random first deal: ${STATE.dealer === 'player' ? 'You' : 'Bot'} deal first and own the first crib.`, 'highlight');
+
+      dom.setupScreen.style.display = 'none';
+      dom.gameScreen.style.display = 'flex';
+      document.body.classList.add('in-game');
+
+      initPegboardSvg();
+      startRound();
+    }
+
+    function startRound() {
+      logMessage(`--- Round ${STATE.roundNumber} Begins ---`, 'highlight');
+      STATE.deck = shuffleDeck(createDeck());
+      STATE.playerSelectedDiscards = [];
+      STATE.peggingHistory = [];
+      STATE.peggingCycleHistory = [];
+      STATE.peggingTotal = 0;
+      STATE.playerSaidGo = false;
+      STATE.botSaidGo = false;
+      STATE.lastPlayerWhoPlayed = null;
+      STATE.starterCard = null;
+      STATE.crib = [];
+
+      dom.peggingTotal.textContent = '0';
+      dom.peggingCallout.textContent = 'Discard 2 cards into the Crib';
+      dom.playedCardsContainer.innerHTML = '';
+      dom.starterCardSlot.innerHTML = '<div class="card-empty-slot">Cut Deck</div>';
+
+      // Update dealer badge & crib owner label
+      if (STATE.dealer === 'player') {
+        dom.dealerBadge.textContent = 'Dealer: You (Your Crib)';
+        dom.cribOwnerLabel.textContent = 'Your Crib';
+        dom.statusMessage.textContent = 'Discard 2 cards into your Crib';
+        dom.botSpeech.textContent = '"Good luck, let us see the discards."';
+      } else {
+        dom.dealerBadge.textContent = "Dealer: Bot (Bot's Crib)";
+        dom.cribOwnerLabel.textContent = "Bot's Crib";
+        dom.statusMessage.textContent = "Discard 2 cards into Bot's Crib";
+        dom.botSpeech.textContent = '"I will take those crib cards thank you!"';
+      }
+
+      audio.playCardSnap();
+
+      if (STATE.gameMode === 'draft') {
+        STATE.playerDealtHand = STATE.deck.splice(0, 3);
+        STATE.botDealtHand = STATE.deck.splice(0, 3);
+        STATE.playerHand = [...STATE.playerDealtHand].sort((a, b) => a.rank - b.rank);
+        STATE.botHand = [...STATE.botDealtHand];
+        renderBotCardBacks(3);
+        renderPlayerCards();
+        startDraftPhase();
+      } else {
+        STATE.playerDealtHand = STATE.deck.splice(0, 6);
+        STATE.botDealtHand = STATE.deck.splice(0, 6);
+        STATE.playerHand = [...STATE.playerDealtHand].sort((a, b) => a.rank - b.rank);
+        STATE.botHand = [...STATE.botDealtHand];
+        renderBotCardBacks(6);
+        renderPlayerCards();
+        enterDiscardPhase();
+      }
+    }
+
+    function enterDiscardPhase() {
+      STATE.playerHand.sort((a, b) => a.rank - b.rank);
+      renderPlayerCards();
+      renderBotCardBacks(6);
+
+      const botPos = { botScore: STATE.botScore, targetHole: STATE.matchLength * 0.5 };
+      const botChoice = chooseBotDiscard(
+        STATE.botDealtHand, STATE.dealer === 'bot', STATE.skillLevel, botPos
+      );
+      STATE.botCribDiscards = botChoice.discard;
+      STATE.botHand = botChoice.keep;
+
+      STATE.phase = 'discard';
+      dom.btnConfirmDiscard.style.display = 'inline-block';
+      dom.btnConfirmDiscard.disabled = true;
+      dom.btnConfirmDiscard.textContent = 'Confirm Discards (Select 2)';
+      dom.btnSayGo.style.display = 'none';
+      dom.btnNextShow.style.display = 'none';
+      dom.statusMessage.textContent = STATE.dealer === 'player'
+        ? 'Discard 2 cards into your Crib'
+        : "Discard 2 cards into Bot's Crib";
+      updateCoachHint();
+    }
+
+    function draftOrderFor(dealer) {
+      const nonDealer = dealer === 'player' ? 'bot' : 'player';
+      return [nonDealer, dealer, dealer, nonDealer, nonDealer, dealer];
+    }
+
+    function startDraftPhase() {
+      STATE.phase = 'draft';
+      STATE.draftGrid = [];
+      for (let i = 0; i < 9; i++) STATE.draftGrid.push(STATE.deck.pop());
+      STATE.draftPickIndex = 0;
+      STATE.playerDraftedCards = [];
+      STATE.botDraftedCards = [];
+      STATE.draftOrder = draftOrderFor(STATE.dealer);
+      dom.draftGridWrap.style.display = 'flex';
+      dom.peggingCallout.textContent = 'Draft phase: choose a face-up card from the grid.';
+      logMessage('Grid Draft: 3 private cards dealt to each player; 9 cards laid face-up.', 'highlight');
+      processDraftTurn();
+    }
+
+    function processDraftTurn() {
+      if (STATE.draftPickIndex >= STATE.draftOrder.length) {
+        finishDraftPhase();
+        return;
+      }
+      const picker = STATE.draftOrder[STATE.draftPickIndex];
+      const roundNum = Math.floor(STATE.draftPickIndex / 2) + 1;
+      dom.draftStatusText.textContent =
+        `Draft Round ${roundNum} of 3 — ${picker === 'player' ? '⭐ Your pick!' : '🤖 Bot is picking...'}`;
+      renderDraftGrid(picker === 'player');
+
+      if (picker === 'bot') {
+        dom.statusMessage.textContent = 'Bot is studying the grid...';
+        setTimeout(() => botDraftPick(), 700);
+      } else {
+        dom.statusMessage.textContent = 'Your pick! Choose any face-up card from the grid.';
+      }
+    }
+
+    function renderDraftGrid(allowPlayerPick) {
+      dom.draftGridContainer.innerHTML = '';
+      STATE.draftGrid.forEach(card => {
+        dom.draftGridContainer.innerHTML += renderCardHtml(card, allowPlayerPick, false, !allowPlayerPick);
+      });
+      dom.draftGridContainer.querySelectorAll('.card-item').forEach(elem => {
+        elem.addEventListener('click', () => {
+          if (!allowPlayerPick || STATE.phase !== 'draft') return;
+          const idx = STATE.draftGrid.findIndex(
+            c => c.id === parseInt(elem.getAttribute('data-card-id'), 10)
+          );
+          if (idx >= 0) executeDraftPick('player', idx);
+        });
+      });
+    }
+
+    function executeDraftPick(who, idx) {
+      if (STATE.phase !== 'draft') return;
+      const card = STATE.draftGrid[idx];
+      if (!card) return;
+
+      STATE.draftGrid[idx] = STATE.deck.pop();
+
+      if (who === 'player') {
+        STATE.playerHand.push(card);
+        STATE.playerHand.sort((a, b) => a.rank - b.rank);
+        STATE.playerDraftedCards.push(card);
+        STATE.playerDealtHand = [...STATE.playerHand];
+        renderPlayerCards();
+      } else {
+        STATE.botHand.push(card);
+        STATE.botHand.sort((a, b) => a.rank - b.rank);
+        STATE.botDraftedCards.push(card);
+        STATE.botDealtHand = [...STATE.botHand];
+        renderBotDraftHand();
+      }
+
+      audio.playCardSnap();
+      logMessage(`${who === 'player' ? 'You draft' : 'Bot drafts'} ${card.name} from the grid.`);
+      STATE.draftPickIndex++;
+      processDraftTurn();
+    }
+
+    function draftCardHeuristic(hand, card) {
+      let score = card.value * 0.05;
+      if (card.rank === 5) score += 1.5;
+      for (const h of hand) {
+        if (h.rank === card.rank) score += 3.0;
+        if (Math.abs(h.rank - card.rank) === 1) score += 2.0;
+        if (Math.abs(h.rank - card.rank) === 2) score += 0.8;
+        if (h.value + card.value === 15) score += 2.5;
+        if (h.suit === card.suit) score += 0.5;
+      }
+      return score;
+    }
+
+    function botDraftPick() {
+      if (STATE.phase !== 'draft' || STATE.draftPickIndex >= STATE.draftOrder.length) return;
+      const botIsDealer = STATE.dealer === 'bot';
+      const botPos = { botScore: STATE.botScore, targetHole: STATE.matchLength * 0.5 };
+      let chosen;
+
+      if (STATE.skillLevel === 'beginner') {
+        chosen = STATE.draftGrid[Math.floor(Math.random() * STATE.draftGrid.length)];
+      } else if (STATE.botHand.length === 5) {
+        let bestEv = -Infinity;
+        chosen = STATE.draftGrid[0];
+        for (const c of STATE.draftGrid) {
+          const res = chooseBotDiscard([...STATE.botHand, c], botIsDealer, STATE.skillLevel, botPos);
+          if (res.ev > bestEv) {
+            bestEv = res.ev;
+            chosen = c;
+          }
+        }
+      } else {
+        let bestScore = -Infinity;
+        chosen = STATE.draftGrid[0];
+        for (const c of STATE.draftGrid) {
+          const s = draftCardHeuristic(STATE.botHand, c);
+          if (s > bestScore) {
+            bestScore = s;
+            chosen = c;
+          }
+        }
+      }
+
+      executeDraftPick('bot', STATE.draftGrid.findIndex(c => c.id === chosen.id));
+    }
+
+    function finishDraftPhase() {
+      dom.draftGridWrap.style.display = 'none';
+      logMessage('Draft complete! Both players hold 6 cards. Discard 2 to the Crib.', 'highlight');
+      enterDiscardPhase();
+    }
+
+    function renderBotCardBacks(count) {
+      dom.botCardsContainer.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        dom.botCardsContainer.innerHTML += renderCardBackHtml();
+      }
+    }
+
+    // In Grid Draft, the bot's original 3 private cards stay hidden, while every
+    // card the bot drafts from the face-up grid is visible to the player.
+    function renderBotDraftHand() {
+      dom.botCardsContainer.innerHTML = '';
+      const privateCount = Math.max(0, STATE.botHand.length - STATE.botDraftedCards.length);
+      for (let i = 0; i < privateCount; i++) {
+        dom.botCardsContainer.innerHTML += renderCardBackHtml();
+      }
+      STATE.botDraftedCards.forEach(card => {
+        dom.botCardsContainer.innerHTML += renderCardHtml(card, false, false, false);
+      });
+    }
+
+    function renderPlayerCards() {
+      dom.playerCardsContainer.innerHTML = '';
+      STATE.playerHand.forEach(card => {
+        const isSelected = STATE.playerSelectedDiscards.some(c => c.id === card.id);
+        const isDisabled = (STATE.phase === 'pegging') && (card.value + STATE.peggingTotal > 31);
+        dom.playerCardsContainer.innerHTML += renderCardHtml(card, true, isSelected, isDisabled);
+      });
+
+      // Attach click listeners to player cards
+      const cardElems = dom.playerCardsContainer.querySelectorAll('.card-item');
+      cardElems.forEach(elem => {
+        elem.addEventListener('click', () => {
+          const cardId = parseInt(elem.getAttribute('data-card-id'));
+          handlePlayerCardClick(cardId);
+        });
+      });
+    }
+
+    function handlePlayerCardClick(cardId) {
+      const card = STATE.playerHand.find(c => c.id === cardId);
+      if (!card) return;
+
+      if (STATE.phase === 'discard') {
+        // Discard selection phase
+        const idx = STATE.playerSelectedDiscards.findIndex(c => c.id === cardId);
+        if (idx >= 0) {
+          STATE.playerSelectedDiscards.splice(idx, 1);
+          audio.playCardSnap();
+        } else {
+          if (STATE.playerSelectedDiscards.length < 2) {
+            STATE.playerSelectedDiscards.push(card);
+            audio.playCardSnap();
+          }
+        }
+        renderPlayerCards();
+
+        if (STATE.playerSelectedDiscards.length === 2) {
+          dom.btnConfirmDiscard.disabled = false;
+          dom.btnConfirmDiscard.textContent = 'Toss 2 Cards to Crib';
+        } else {
+          dom.btnConfirmDiscard.disabled = true;
+          dom.btnConfirmDiscard.textContent = `Select ${2 - STATE.playerSelectedDiscards.length} more card(s)`;
+        }
+      } else if (STATE.phase === 'pegging') {
+        // Pegging play phase
+        if (STATE.turn !== 'player') return;
+
+        if (card.value + STATE.peggingTotal > 31) {
+          audio.playGoBuzz();
+          dom.peggingCallout.textContent = `Cannot play ${card.name}: exceeds 31!`;
+          return;
+        }
+
+        executePeggingPlay('player', card);
+      }
+    }
+
+    // CONFIRM DISCARDS
+    dom.btnConfirmDiscard.addEventListener('click', () => {
+      if (STATE.playerSelectedDiscards.length !== 2) return;
+
+      // Remove discards from player hand
+      const discardIds = new Set(STATE.playerSelectedDiscards.map(c => c.id));
+      STATE.playerHand = STATE.playerHand.filter(c => !discardIds.has(c.id));
+
+      // Build the Crib (2 player discards + 2 bot discards)
+      STATE.crib = [...STATE.playerSelectedDiscards, ...STATE.botCribDiscards];
+
+      logMessage(`Player discarded 2 cards to ${STATE.dealer === 'player' ? "Player's" : "Bot's"} crib.`);
+      logMessage(`Bot discarded 2 cards to crib.`);
+
+      // Render Crib stack
+      dom.cribSlot.innerHTML = renderCardBackHtml();
+      dom.btnConfirmDiscard.style.display = 'none';
+
+      renderPlayerCards();
+      renderBotCardBacks(4);
+
+      // CUT FOR STARTER CARD
+      executeStarterCut();
+    });
+
+    function executeStarterCut() {
+      STATE.phase = 'cut';
+      dom.statusMessage.textContent = 'Cutting deck for the starter card...';
+
+      setTimeout(() => {
+        // Cut top card of remaining deck
+        STATE.starterCard = STATE.deck.pop();
+        audio.playCardSnap();
+
+        dom.starterCardSlot.innerHTML = renderCardHtml(STATE.starterCard, false, false, false);
+        logMessage(`The Starter Cut is ${STATE.starterCard.name}`, 'highlight');
+
+        // Check for "His Heels" (Jack as starter gives dealer 2 pts immediately)
+        if (STATE.starterCard.rank === 11) {
+          audio.playHeelsFanfare();
+          dom.statusMessage.textContent = `Starter is a Jack! Two for his heels to ${STATE.dealer === 'player' ? 'You' : 'Bot'}!`;
+          dom.peggingCallout.textContent = 'Two for his heels! (+2 pts)';
+          const won = addPoints(STATE.dealer, 2, 'Two for his heels (Jack cut)');
+          if (won) return;
+        }
+
+        // Proceed to Pegging Phase
+        setTimeout(() => startPeggingPhase(), 1200);
+      }, 700);
+    }
+
+    /* =========================================================
+       PEGGING PHASE (THE PLAY)
+       ========================================================= */
+    function startPeggingPhase() {
+      STATE.phase = 'pegging';
+      STATE.peggingTotal = 0;
+      STATE.peggingCycleHistory = [];
+      STATE.peggingHistory = [];
+      STATE.playerSaidGo = false;
+      STATE.botSaidGo = false;
+      STATE.lastPlayerWhoPlayed = null;
+
+      // Non-dealer leads first
+      STATE.turn = (STATE.dealer === 'player') ? 'bot' : 'player';
+
+      dom.statusMessage.textContent = `Pegging Phase: ${STATE.turn === 'player' ? 'Your lead!' : "Bot's lead!"}`;
+      dom.peggingTotal.textContent = '0';
+      dom.peggingCallout.textContent = `${STATE.turn === 'player' ? 'Lead any card' : 'Bot is leading...'}`;
+      dom.playedCardsContainer.innerHTML = '';
+
+      renderPlayerCards();
+
+      if (STATE.turn === 'bot') {
+        setTimeout(() => botPeggingTurn(), 1000);
+      } else {
+        checkPlayerLegalPlays();
+      }
+    }
+
+    function checkPlayerLegalPlays() {
+      const legal = STATE.playerHand.filter(c => c.value + STATE.peggingTotal <= 31);
+      if (legal.length === 0 && STATE.playerHand.length > 0) {
+        // Must say Go
+        dom.btnSayGo.style.display = 'inline-block';
+        dom.peggingCallout.textContent = 'No legal plays under 31. Say "Go"!';
+      } else {
+        dom.btnSayGo.style.display = 'none';
+      }
+      renderPlayerCards();
+    }
+
+    dom.btnSayGo.addEventListener('click', () => {
+      const hasLegal = STATE.playerHand.some(c => c.value + STATE.peggingTotal <= 31);
+      if (STATE.phase !== 'pegging' || STATE.turn !== 'player' || hasLegal) return;
+      audio.playGoBuzz();
+      STATE.playerSaidGo = true;
+      logMessage('Player says "Go".');
+      dom.btnSayGo.style.display = 'none';
+      dom.peggingCallout.textContent = 'You called Go.';
+
+      handleGoCalled('player');
+    });
+
+    function executePeggingPlay(who, card) {
+      audio.playCardSnap();
+
+      if (who === 'player') {
+        // Remove from player hand
+        const idx = STATE.playerHand.findIndex(c => c.id === card.id);
+        STATE.playerHand.splice(idx, 1);
+        renderPlayerCards();
+      } else {
+        // Remove from bot hand
+        const idx = STATE.botHand.findIndex(c => c.id === card.id);
+        STATE.botHand.splice(idx, 1);
+        renderBotCardBacks(STATE.botHand.length);
+      }
+
+      STATE.peggingTotal += card.value;
+      STATE.peggingCycleHistory.push(card);
+      STATE.peggingHistory.push({ who, card });
+      STATE.lastPlayerWhoPlayed = who;
+
+      dom.peggingTotal.textContent = STATE.peggingTotal;
+
+      // Add to table
+      const playedItem = document.createElement('div');
+      playedItem.innerHTML = renderCardHtml(card, false, false, false);
+      dom.playedCardsContainer.appendChild(playedItem);
+
+      // Score this play
+      const evalResult = scorePeggingPlay(STATE.peggingCycleHistory, STATE.peggingTotal);
+      if (evalResult.points > 0) {
+        const reasonStr = evalResult.reasons.join(', ');
+        dom.peggingCallout.textContent = `${who === 'player' ? 'You' : 'Bot'}: ${reasonStr}!`;
+        if (who === 'player') STATE.stats.playerPeggingPts += evalResult.points;
+        else STATE.stats.botPeggingPts += evalResult.points;
+        const won = addPoints(who, evalResult.points, `${reasonStr} (Pegging)`);
+        if (won) return;
+      } else {
+        dom.peggingCallout.textContent = `${who === 'player' ? 'You' : 'Bot'} played ${card.name}. Total: ${STATE.peggingTotal}`;
+      }
+
+      // Check if 31 exactly
+      if (STATE.peggingTotal === 31) {
+        // 31 reached: points already scored in scorePeggingPlay, now reset count
+        setTimeout(() => resetPeggingCount(who === 'player' ? 'bot' : 'player'), 1200);
+        return;
+      }
+
+      // Check next turn
+      advancePeggingTurn(who);
+    }
+
+    function advancePeggingTurn(previousWho) {
+      const nextWho = (previousWho === 'player') ? 'bot' : 'player';
+
+      // Check if both hands are completely empty
+      if (STATE.playerHand.length === 0 && STATE.botHand.length === 0) {
+        // Award 1 point for last card if count wasn't 31
+        if (STATE.peggingTotal < 31 && STATE.lastPlayerWhoPlayed) {
+          logMessage(`${STATE.lastPlayerWhoPlayed === 'player' ? 'Player' : 'Bot'} scores 1 pt for Last Card.`);
+          if (STATE.lastPlayerWhoPlayed === 'player') STATE.stats.playerPeggingPts += 1;
+          else STATE.stats.botPeggingPts += 1;
+          const won = addPoints(STATE.lastPlayerWhoPlayed, 1, '1 for Last Card');
+          if (won) return;
+        }
+        setTimeout(() => startShowPhase(), 1200);
+        return;
+      }
+
+      // Check if next player can play
+      const nextHand = (nextWho === 'player') ? STATE.playerHand : STATE.botHand;
+      const canNextPlay = nextHand.some(c => c.value + STATE.peggingTotal <= 31);
+
+      if (canNextPlay) {
+        STATE.turn = nextWho;
+        dom.statusMessage.textContent = `Count: ${STATE.peggingTotal}. ${nextWho === 'player' ? 'Your turn!' : "Bot's turn!"}`;
+        if (nextWho === 'bot') {
+          setTimeout(() => botPeggingTurn(), 900);
+        } else {
+          checkPlayerLegalPlays();
+        }
+      } else {
+        // Next player cannot play. Do they say Go or have no cards?
+        if (nextWho === 'player') {
+          STATE.turn = 'player';
+          dom.statusMessage.textContent = `Count: ${STATE.peggingTotal}. You have no legal cards!`;
+          dom.btnSayGo.style.display = 'inline-block';
+        } else {
+          // Bot calls Go
+          logMessage('Bot says "Go".');
+          dom.botSpeech.textContent = '"Go!"';
+          audio.playGoBuzz();
+          handleGoCalled('bot');
+        }
+      }
+    }
+
+    function handleGoCalled(whoCalledGo) {
+      const other = (whoCalledGo === 'player') ? 'bot' : 'player';
+      const otherHand = (other === 'player') ? STATE.playerHand : STATE.botHand;
+      const canOtherPlay = otherHand.some(c => c.value + STATE.peggingTotal <= 31);
+
+      if (canOtherPlay) {
+        // Other player must play as many cards as possible
+        STATE.turn = other;
+        dom.statusMessage.textContent = `${whoCalledGo === 'player' ? 'You' : 'Bot'} called Go. ${other === 'player' ? 'Play any cards you can!' : 'Bot continues play...'}`;
+        if (other === 'bot') {
+          setTimeout(() => botPeggingTurn(), 900);
+        } else {
+          checkPlayerLegalPlays();
+        }
+      } else {
+        // Neither can play: 1 point for Go / last card to lastPlayerWhoPlayed
+        if (STATE.peggingTotal < 31 && STATE.lastPlayerWhoPlayed) {
+          logMessage(`${STATE.lastPlayerWhoPlayed === 'player' ? 'Player' : 'Bot'} scores 1 pt for Go.`);
+          if (STATE.lastPlayerWhoPlayed === 'player') STATE.stats.playerPeggingPts += 1;
+          else STATE.stats.botPeggingPts += 1;
+          const won = addPoints(STATE.lastPlayerWhoPlayed, 1, '1 for Go');
+          if (won) return;
+        }
+
+        // Restart count to 0. Next leader is the opponent of lastPlayerWhoPlayed, if they have cards; else whoever has cards.
+        let nextLeader = (STATE.lastPlayerWhoPlayed === 'player') ? 'bot' : 'player';
+        const pCards = STATE.playerHand.length;
+        const bCards = STATE.botHand.length;
+
+        if (pCards === 0 && bCards === 0) {
+          setTimeout(() => startShowPhase(), 1200);
+          return;
+        }
+
+        if (nextLeader === 'player' && pCards === 0) nextLeader = 'bot';
+        if (nextLeader === 'bot' && bCards === 0) nextLeader = 'player';
+
+        setTimeout(() => resetPeggingCount(nextLeader), 1200);
+      }
+    }
+
+    function resetPeggingCount(nextLeader) {
+      STATE.peggingTotal = 0;
+      STATE.peggingCycleHistory = [];
+      STATE.playerSaidGo = false;
+      STATE.botSaidGo = false;
+      STATE.turn = nextLeader;
+
+      dom.peggingTotal.textContent = '0';
+      dom.peggingCallout.textContent = `Count reset to 0. ${nextLeader === 'player' ? 'Your lead!' : "Bot's lead!"}`;
+      dom.playedCardsContainer.innerHTML = '';
+      dom.btnSayGo.style.display = 'none';
+
+      dom.statusMessage.textContent = `New Count: ${nextLeader === 'player' ? 'Your lead!' : "Bot's lead!"}`;
+
+      if (nextLeader === 'bot') {
+        setTimeout(() => botPeggingTurn(), 900);
+      } else {
+        checkPlayerLegalPlays();
+      }
+    }
+
+    function botPeggingTurn() {
+      if (STATE.phase !== 'pegging' || STATE.turn !== 'bot') return;
+
+      const botPos = { botScore: STATE.botScore, targetHole: STATE.matchLength * 0.5 };
+      const chosenCard = chooseBotPegPlay(STATE.botHand, STATE.peggingCycleHistory, STATE.peggingTotal, STATE.skillLevel, botPos);
+
+      if (chosenCard) {
+        dom.botSpeech.textContent = `"Playing ${chosenCard.name}."`;
+        executePeggingPlay('bot', chosenCard);
+      } else {
+        // Bot calls Go
+        logMessage('Bot says "Go".');
+        dom.botSpeech.textContent = '"Go!"';
+        audio.playGoBuzz();
+        handleGoCalled('bot');
+      }
+    }
+
+    /* =========================================================
+       THE SHOW (HAND & CRIB COUNTING)
+       ========================================================= */
+    function startShowPhase() {
+      STATE.phase = 'show_non_dealer';
+      dom.statusMessage.textContent = 'The Play is finished. Counting hands in official order...';
+      dom.peggingCallout.textContent = 'Proceeding to The Show!';
+      dom.btnSayGo.style.display = 'none';
+
+      // Restore the 4 cards originally kept for each hand
+      // Note: During pegging, playerHand and botHand became empty, so we reconstruct from dealt - discards:
+      // Player hand: STATE.playerDealtHand minus STATE.playerSelectedDiscards
+      const pDiscardIds = new Set(STATE.playerSelectedDiscards.map(c => c.id));
+      STATE.playerHandShow = STATE.playerDealtHand.filter(c => !pDiscardIds.has(c.id));
+
+      const bDiscardIds = new Set(STATE.botCribDiscards.map(c => c.id));
+      STATE.botHandShow = STATE.botDealtHand.filter(c => !bDiscardIds.has(c.id));
+
+      setTimeout(() => countShowStep(1), 1000);
+    }
+
+    function countShowStep(step) {
+      // Step 1: Non-dealer's hand
+      // Step 2: Dealer's hand
+      // Step 3: Dealer's crib
+      const nonDealer = (STATE.dealer === 'player') ? 'bot' : 'player';
+      const dealer = STATE.dealer;
+
+      if (step === 1) {
+        STATE.currentShowStep = 1;
+        const hand = (nonDealer === 'player') ? STATE.playerHandShow : STATE.botHandShow;
+        displayHandScoringModal(nonDealer, hand, false, `1. Non-Dealer Hand (${nonDealer === 'player' ? 'You' : 'Bot'})`, () => {
+          if (STATE.playerScore >= STATE.matchLength || STATE.botScore >= STATE.matchLength) {
+            triggerGameOver();
+            return;
+          }
+          countShowStep(2);
+        });
+      } else if (step === 2) {
+        STATE.currentShowStep = 2;
+        const hand = (dealer === 'player') ? STATE.playerHandShow : STATE.botHandShow;
+        displayHandScoringModal(dealer, hand, false, `2. Dealer Hand (${dealer === 'player' ? 'You' : 'Bot'})`, () => {
+          if (STATE.playerScore >= STATE.matchLength || STATE.botScore >= STATE.matchLength) {
+            triggerGameOver();
+            return;
+          }
+          countShowStep(3);
+        });
+      } else if (step === 3) {
+        STATE.currentShowStep = 3;
+        displayHandScoringModal(dealer, STATE.crib, true, `3. Dealer's Crib (${dealer === 'player' ? 'Your Crib' : "Bot's Crib"})`, () => {
+          if (STATE.playerScore >= STATE.matchLength || STATE.botScore >= STATE.matchLength) {
+            triggerGameOver();
+            return;
+          }
+          // Round complete, prepare next round
+          endRound();
+        });
+      }
+    }
+
+    function buildManualScoringUnits(cards, starter, isCrib) {
+      const all = [...cards, starter];
+      const units = [];
+      const seen = new Set();
+
+      const keyFor = arr => arr.map(c=>c.id).sort().join('|');
+      const addUnit = (ids, points, label, kind) => {
+        const key = kind + ':' + ids.map(id=>id).sort().join('|');
+        if(!seen.has(key)) {
+          seen.add(key);
+          units.push({key, ids:[...ids].sort(), points, label, kind});
+        }
+      };
+
+      // Fifteens
+      for(let mask=1; mask<(1<<all.length); mask++){
+        const chosen=[];
+        let sum=0;
+        for(let i=0;i<all.length;i++) if(mask&(1<<i)){ chosen.push(all[i]); sum+=all[i].value; }
+        if(sum===15) addUnit(chosen.map(c=>c.id),2,'15 for 2','fifteen');
+      }
+
+      // Pairs / triples / quads: each pair is an independent 2-point scoring combination.
+      for(let i=0;i<all.length;i++) for(let j=i+1;j<all.length;j++){
+        if(all[i].rank===all[j].rank) addUnit([all[i].id,all[j].id],2,'Pair for 2','pair');
+      }
+
+      // Runs: one card from each rank in every contiguous run.
+      const ranks=[...new Set(all.map(c=>c.rank))].sort((a,b)=>a-b);
+      for(let i=0;i<ranks.length;i++){
+        let j=i;
+        while(j+1<ranks.length && ranks[j+1]===ranks[j]+1) j++;
+        const len=j-i+1;
+        if(len>=3){
+          const choices=ranks.slice(i,j+1).map(r=>all.filter(c=>c.rank===r));
+          const walk=(idx,picked)=>{
+            if(idx===choices.length){
+              addUnit(picked.map(c=>c.id),len,`Run of ${len}`,'run');
+              return;
+            }
+            choices[idx].forEach(c=>walk(idx+1,[...picked,c]));
+          };
+          walk(0,[]);
+        }
+        i=j;
+      }
+
+      // Flush
+      const handSame=cards.length>0 && cards.every(c=>c.suit===cards[0].suit);
+      if(!isCrib && handSame){
+        if(starter.suit===cards[0].suit) addUnit(all.map(c=>c.id),5,'5-card flush','flush');
+        else addUnit(cards.map(c=>c.id),4,'4-card flush','flush');
+      }
+      if(isCrib && handSame && starter.suit===cards[0].suit){
+        addUnit(all.map(c=>c.id),5,'5-card flush in crib','flush');
+      }
+
+      // His nobs
+      cards.forEach(c=>{
+        if(c.rank===11 && c.suit===starter.suit) addUnit([c.id],1,'His Nobs','nobs');
+      });
+      return units;
+    }
+
+    function renderManualScoringModal(who, cards, isCrib, title, onContinue) {
+      STATE.showSelectedIds=[];
+      STATE.showClaimedKeys=new Set();
+      STATE.showManualScore=0;
+      STATE.showScoringUnits=buildManualScoringUnits(cards, STATE.starterCard, isCrib);
+
+      dom.showModalTitle.textContent=title;
+      dom.showOwnerDescription.textContent=`${who==='player'?'Your':"Bot's"} ${isCrib?'Crib':'Hand'} + Starter (${STATE.starterCard.name})`;
+
+      dom.manualScoreHelp.style.display='block';
+      dom.manualScoreHelp.textContent=who==='player' ? 'Click a scoring combination in your cards. Valid combinations score immediately. Keep selecting combinations until you are finished.' : 'Here is exactly how the Bot scored this hand or crib:';
+      dom.btnContinueShow.textContent=who==='player'?'Done Scoring':'Continue';
+
+      const render=()=>{
+        dom.showCardsRow.innerHTML='';
+        [...cards,STATE.starterCard].forEach((c,idx)=>{
+          const wrap=document.createElement('div');
+          wrap.className='show-score-card-wrap';
+          wrap.innerHTML=renderCardHtml(c,true,STATE.showSelectedIds.includes(c.id),false);
+          const el=wrap.firstElementChild;
+          el.addEventListener('click',()=>{
+            if(who!=='player') return;
+            const pos=STATE.showSelectedIds.indexOf(c.id);
+            if(pos>=0) STATE.showSelectedIds.splice(pos,1);
+            else STATE.showSelectedIds.push(c.id);
+
+            // As soon as the selected cards form one valid scoring combination,
+            // score it immediately and clear the selection for the next combination.
+            const selected=STATE.showSelectedIds.slice().sort();
+            const match=STATE.showScoringUnits
+              .filter(u=>!STATE.showClaimedKeys.has(u.key))
+              .filter(u=>u.ids.length===selected.length && u.ids.every(id=>selected.includes(id)));
+
+            if(match.length){
+              const unit=match[0];
+              STATE.showClaimedKeys.add(unit.key);
+              STATE.showManualScore+=unit.points;
+              logMessage(`You score +${unit.points}: ${unit.label}.`,'player-pts');
+              audio.playScoreChime();
+              STATE.showSelectedIds=[];
+            }
+            render();
+          });
+          if(idx===cards.length) wrap.style.borderLeft='2px solid var(--brass-gold)';
+          dom.showCardsRow.appendChild(wrap);
+        });
+
+        const selected=STATE.showSelectedIds.slice().sort();
+        const available=STATE.showScoringUnits.filter(u=>!STATE.showClaimedKeys.has(u.key));
+        const match=available.filter(u=>u.ids.length===selected.length && u.ids.every(id=>selected.includes(id)));
+        dom.showBreakdownList.innerHTML='';
+
+        if(who==='player'){
+          const prompt=document.createElement('div');
+          prompt.className='score-breakdown-item';
+          prompt.innerHTML=`<span>${selected.length ? 'Selected: '+selected.length+' card(s)' : 'Select a scoring combination above'}</span><span>${STATE.showManualScore} pts</span>`;
+          dom.showBreakdownList.appendChild(prompt);
+
+          if(match.length){
+            const pts=match[0].points;
+            const row=document.createElement('div');
+            row.className='score-breakdown-item';
+            row.innerHTML=`<span style="color:var(--brass-bright); font-weight:700;">${match[0].label}</span><span style="color:var(--brass-bright); font-weight:700;">+${pts}</span>`;
+            dom.showBreakdownList.appendChild(row);
+          } else if(selected.length){
+            const row=document.createElement('div');
+            row.className='score-breakdown-item';
+            row.innerHTML=`<span style="color:var(--text-muted);">Not a scoring combination</span><span>0 pts</span>`;
+            dom.showBreakdownList.appendChild(row);
+          }
+
+          const note=document.createElement('div');
+          note.className='score-breakdown-item';
+          note.style.cssText='font-size:.78rem;color:var(--text-dim);';
+          note.innerHTML='<span>Score points by selecting one valid combination at a time.</span><span>Done when finished.</span>';
+          dom.showBreakdownList.appendChild(note);
+
+          const total=document.createElement('div');
+          total.className='score-breakdown-item total';
+          total.innerHTML=`<span>Your Total So Far:</span><span>+${STATE.showManualScore} PTS</span>`;
+          dom.showBreakdownList.appendChild(total);
+
+          dom.btnContinueShow.disabled=false;
+        } else {
+          const breakdown=scoreHand(cards,STATE.starterCard,isCrib);
+          const rows=[];
+          const names=arr=>arr.map(c=>c.name).join(' ');
+          breakdown.fifteens.forEach(combo=>rows.push(`15: ${names(combo)} (+2)`));
+          breakdown.pairs.forEach(pair=>rows.push(`Pair: ${names(pair)} (+2)`));
+          breakdown.runs.forEach(r=>rows.push(`Run of ${r.length}${r.multiplier>1?' ×'+r.multiplier:''}: +${r.points}`));
+          if(breakdown.flush) rows.push(`${breakdown.flush.desc}: +${breakdown.flush.points}`);
+          if(breakdown.nobs) rows.push(`His Nobs: +1`);
+          if(!rows.length) rows.push('No points scored.');
+          rows.forEach(x=>{ const row=document.createElement('div'); row.className='score-breakdown-item'; row.innerHTML=`<span>${x}</span><span></span>`; dom.showBreakdownList.appendChild(row); });
+          const total=document.createElement('div'); total.className='score-breakdown-item total';
+          total.innerHTML=`<span>Total Points:</span><span>+${breakdown.total} PTS</span>`;
+          dom.showBreakdownList.appendChild(total);
+          dom.btnContinueShow.disabled=false;
+        }
+      };
+
+      render();
+      dom.showModal.style.display='flex';
+
+      dom.btnContinueShow.onclick=()=>{
+        if(who==='player'){
+          dom.showModal.style.display='none';
+          const pts=STATE.showManualScore;
+          if(!isCrib){
+            STATE.stats.playerHandPts+=pts;
+            if(pts>STATE.stats.maxHandPlayer) STATE.stats.maxHandPlayer=pts;
+          } else STATE.stats.playerCribPts+=pts;
+          if(pts>0) addPoints('player',pts,`${title} (${pts} pts)`);
+          onContinue();
+        } else {
+          dom.showModal.style.display='none';
+          const breakdown=scoreHand(cards,STATE.starterCard,isCrib);
+          if(!isCrib){
+            STATE.stats[who==='player'?'playerHandPts':'botHandPts']+=breakdown.total;
+            if(who==='bot' && breakdown.total>STATE.stats.maxHandBot) STATE.stats.maxHandBot=breakdown.total;
+          } else STATE.stats[who==='player'?'playerCribPts':'botCribPts']+=breakdown.total;
+          if(breakdown.total>0) addPoints(who,breakdown.total,`${title} (${breakdown.total} pts)`);
+          onContinue();
+        }
+      };
+    }
+
+    function displayHandScoringModal(who, cards, isCrib, title, onContinue) {
+      renderManualScoringModal(who,cards,isCrib,title,onContinue);
+    }
+
+    function endRound() {
+      STATE.roundNumber++;
+      // Alternate dealer
+      STATE.dealer = (STATE.dealer === 'player') ? 'bot' : 'player';
+      logMessage(`--- Round Complete. Dealer switches to ${STATE.dealer === 'player' ? 'You' : 'Bot'}. ---`, 'highlight');
+
+      setTimeout(() => startRound(), 800);
+    }
+
+    /* =========================================================
+       GAME OVER & CELEBRATION
+       ========================================================= */
+    function triggerGameOver() {
+      STATE.phase = 'game_over';
+      const playerWon = STATE.playerScore >= STATE.matchLength;
+
+      if (playerWon) {
+        audio.playVictory();
+        confetti.launch();
+        dom.gameOverTitle.textContent = '🏆 VICTORY!';
+        dom.gameOverTitle.style.color = 'var(--player-color)';
+        dom.gameOverEmoji.textContent = '🎉👑';
+        dom.gameOverMsg.textContent = `You reached ${STATE.matchLength} points first! Congratulations!`;
+      } else {
+        audio.playGoBuzz();
+        dom.gameOverTitle.textContent = 'GAME OVER';
+        dom.gameOverTitle.style.color = 'var(--bot-color)';
+        dom.gameOverEmoji.textContent = '🤖';
+        dom.gameOverMsg.textContent = `The Bot reached ${STATE.matchLength} points first!`;
+      }
+
+      // Check skunk
+      const loserScore = playerWon ? STATE.botScore : STATE.playerScore;
+      const skunkThreshold = (STATE.matchLength === 121) ? 90 : 30;
+      const doubleSkunkThreshold = (STATE.matchLength === 121) ? 60 : 15;
+
+      if (loserScore < doubleSkunkThreshold) {
+        dom.skunkResultBadge.textContent = '🦨🦨 DOUBLE SKUNK! A truly devastating margin of victory!';
+      } else if (loserScore < skunkThreshold) {
+        dom.skunkResultBadge.textContent = '🦨 SKUNKED! Opponent held under the skunk line!';
+      } else {
+        dom.skunkResultBadge.textContent = 'A hard-fought contest!';
+      }
+
+      // Populate match statistics
+      dom.matchStatsList.innerHTML = `
+        <div class="score-breakdown-item">
+          <span>Final Score:</span>
+          <span style="font-weight:800;">You: ${STATE.playerScore} | Bot: ${STATE.botScore}</span>
+        </div>
+        <div class="score-breakdown-item">
+          <span>Rounds Played:</span>
+          <span>${STATE.roundNumber}</span>
+        </div>
+        <div class="score-breakdown-item">
+          <span>Your Pegging Points:</span>
+          <span>${STATE.stats.playerPeggingPts} pts</span>
+        </div>
+        <div class="score-breakdown-item">
+          <span>Bot Pegging Points:</span>
+          <span>${STATE.stats.botPeggingPts} pts</span>
+        </div>
+        <div class="score-breakdown-item">
+          <span>Your Hand Points:</span>
+          <span>${STATE.stats.playerHandPts} pts</span>
+        </div>
+        <div class="score-breakdown-item">
+          <span>Your Crib Points:</span>
+          <span>${STATE.stats.playerCribPts} pts</span>
+        </div>
+        <div class="score-breakdown-item">
+          <span>Your Highest Hand:</span>
+          <span style="color:var(--brass-bright); font-weight:700;">${STATE.stats.maxHandPlayer} pts</span>
+        </div>
+      `;
+
+      dom.gameOverModal.style.display = 'flex';
+    }
+
+    dom.btnPlayAgain.addEventListener('click', () => {
+      dom.gameOverModal.style.display = 'none';
+      dom.gameScreen.style.display = 'none';
+      dom.setupScreen.style.display = 'block';
+      document.body.classList.remove('in-game');
+    });
+
+    /* =========================================================
+       COACH MODE (HINT & ADVICE)
+       ========================================================= */
+    function updateCoachHint() {
+      if (!STATE.coachMode || STATE.phase !== 'discard') {
+        dom.coachHintBox.classList.remove('show');
+        return;
+      }
+
+      const isDealer = (STATE.dealer === 'player');
+      const botPos = { botScore: STATE.playerScore, targetHole: STATE.matchLength * 0.5 };
+      const expertEval = chooseBotDiscard(STATE.playerDealtHand, isDealer, 'expert', botPos);
+
+      const d1 = expertEval.discard[0].name;
+      const d2 = expertEval.discard[1].name;
+      const keepStr = expertEval.keep.map(c => c.name).join(' ');
+
+      dom.coachHintText.innerHTML = `
+        Recommended discard: <strong>${d1} and ${d2}</strong> to the crib (Keep: <strong>${keepStr}</strong>).<br>
+        <span style="color:#94a3b8; font-size:0.8rem;">
+          ${isDealer ? "This maximizes hand potential while tossing synergistic cards to your own crib." : "This protects your hand while tossing balk/low-synergy cards to opponent's crib."}
+          (Expected Value: ~${expertEval.ev.toFixed(1)} pts).
+        </span>
+      `;
+      dom.coachHintBox.classList.add('show');
+    }
+
+    dom.btnCoachToggle.addEventListener('click', () => {
+      STATE.coachMode = !STATE.coachMode;
+      dom.btnCoachToggle.textContent = `💡 Coach Advice: ${STATE.coachMode ? 'On' : 'Off'}`;
+      dom.btnCoachToggle.classList.toggle('active', STATE.coachMode);
+      updateCoachHint();
+    });
+
+    /* =========================================================
+       UI INTERACTION HANDLERS & MODALS
+       ========================================================= */
+    // Skill selection
+    document.querySelectorAll('.skill-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.skill-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+      });
+    });
+
+    // Toggle buttons in setup
+    document.querySelectorAll('.btn-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-target');
+        document.querySelectorAll(`.btn-toggle[data-target="${target}"]`).forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    dom.btnStartGame.addEventListener('click', () => {
+      startNewGame();
+    });
+
+    dom.btnHowToPlay.addEventListener('click', () => {
+      dom.rulesModal.style.display = 'flex';
+    });
+    dom.btnCloseRules.addEventListener('click', () => {
+      dom.rulesModal.style.display = 'none';
+    });
+
+    dom.btnSoundToggle.addEventListener('click', () => {
+      const on = audio.toggle();
+      dom.btnSoundToggle.textContent = `🔊 Sound: ${on ? 'On' : 'Off'}`;
+      dom.btnSoundToggle.classList.toggle('active', on);
+    });
+
+    dom.btnNewGame.addEventListener('click', () => {
+      if (confirm('Return to Match Setup screen? Current match will be reset.')) {
+        dom.gameScreen.style.display = 'none';
+        dom.setupScreen.style.display = 'block';
+        document.body.classList.remove('in-game');
+      }
+    });
+
+    dom.btnClearLog.addEventListener('click', () => {
+      dom.logFeed.innerHTML = '';
+    });
+  </script>
+</body>
+</html>
