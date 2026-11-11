@@ -79,23 +79,23 @@ header {
     font-style: italic;
 }
 
-h2 { 
-    font-size: 1.15rem; 
+h2 {
+    font-size: 1.15rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: #f3d03e;
-    margin-top: 2.5rem; 
-    margin-bottom: 1.25rem; 
+    margin-top: 2.5rem;
+    margin-bottom: 1.25rem;
     text-align: center;
 }
 
 /* 2-column grid on desktop */
 .browser-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1.5rem;
-    max-width: 620px;
+    max-width: 1050px;
     margin: 0 auto;
 }
 
@@ -138,16 +138,16 @@ h2 {
     color: #f3d03e;
 }
 
-.card-content h3 { 
-    font-size: 1.35rem; 
+.card-content h3 {
+    font-size: 1.35rem;
     font-weight: 700;
-    color: #ffffff; 
-    margin-bottom: 0.35rem; 
+    color: #ffffff;
+    margin-bottom: 0.35rem;
 }
 
-.card-content p { 
-    color: #a1a1aa; 
-    font-size: 0.95rem; 
+.card-content p {
+    color: #a1a1aa;
+    font-size: 0.95rem;
     line-height: 1.4;
 }
 
@@ -334,3 +334,46 @@ body.mobile-mode-active .btn {
     padding: 0.85rem 1rem;
     font-size: 1.1rem;
 }
+/* CLUEBUGLE PORTFOLIO GRID START */
+.more-games {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+    max-width: 685px;
+    margin: 1.5rem auto 0;
+}
+
+.browser-grid .card,
+.more-games .card {
+    min-width: 0;
+}
+
+@media (max-width: 800px) {
+    .browser-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .more-games {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 560px) {
+    .browser-grid,
+    .more-games {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+body.mobile-mode-active .more-games {
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+    gap: 1.25rem;
+}
+
+body.mobile-mode-active .more-games .card {
+    width: 100%;
+    min-height: 180px;
+    padding: 1.5rem 1.25rem;
+}
+/* CLUEBUGLE PORTFOLIO GRID END */

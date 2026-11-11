@@ -1,0 +1,24 @@
+.temporal-controls{border:1px solid #38525e;border-radius:4px;background:#0d1b25;padding:12px;margin-top:10px}
+.temporal-controls .twocol label{margin-bottom:10px}.temporal-controls select{margin-top:5px;padding:8px!important}
+.temporal-note{font:10px 'DM Mono',monospace;color:#94aeb9;line-height:1.5}
+.control .speedlabel{display:none!important}.control .runrow{margin-top:11px}
+#step{background:#304958}.clock-display{display:flex;align-items:center;gap:8px}
+.clock-date{font:500 18px 'DM Mono',monospace;color:var(--gold)}
+.command label{display:block;color:#b9c8cb;font-size:12px;margin-bottom:12px}
+.command select{display:block;width:100%;margin-top:7px;background:#0e1921;border:1px solid #3d505d;color:#eff3eb;padding:10px;font-size:12px;border-radius:3px}
+.command-title{margin-top:18px;border-top:1px solid var(--line);padding-top:15px}
+.player-banner{border-left:3px solid var(--gold);background:#263541;padding:10px 12px;color:#ead5af;font-size:12px;line-height:1.5}
+.command-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:15px}
+.command-metrics div{background:#0b1922;padding:9px 6px;text-align:center;border:1px solid #293d47}
+.command-metrics strong{display:block;font:500 21px Oswald,sans-serif;color:var(--gold)}
+.command-metrics span{font-size:10px;color:var(--muted)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.actions button{border:1px solid #445c68;background:#233642;color:#e6efec;text-align:left;padding:10px;border-radius:3px;font-size:11px;min-height:59px}
+.actions button:hover{border-color:#d4b17b;background:#314958}
+.actions button:disabled{opacity:.4;cursor:not-allowed}
+.actions button small{display:block;margin-top:5px;color:#91a5ad;font-size:10px}
+.actions .danger{border-color:#8d5353;background:#47303a}
+.actions .danger:hover{background:#6b343d}
+#playerSetup[hidden]{display:none}
+#modeStatus{color:#dfbb83}
+@media(max-width:650px){.actions{grid-template-columns:1fr 1fr}.clock-date{font-size:14px}}

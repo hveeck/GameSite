@@ -1,0 +1,11 @@
+.coalition-card{border:1px solid #cfb26b66;border-radius:6px;background:#1c303a;padding:12px;margin:0 0 16px}
+.coalition-card .quick-section-title{margin:0 0 10px;color:#e7c98e}
+.coalition-front{display:grid;gap:7px;padding:8px 0;border-bottom:1px solid #ffffff1b}
+.coalition-front:last-child{border:0}
+.coalition-front>b{font-size:12px;color:#f2e5c8}
+.coalition-front>small{font-size:11px;line-height:1.5;color:#b9cacb}
+.coalition-track{height:7px;background:#a85e58;border-radius:9px;overflow:hidden}
+.coalition-track i{display:block;height:100%;background:#75ad91}
+.coalition-call{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.coalition-call button{background:#2f4d5a;color:#efdfbc;border:1px solid #9aa8a5;border-radius:4px;padding:8px 10px;font-size:11px;cursor:pointer}
+.coalition-call button:hover{background:#476576}

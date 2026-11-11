@@ -10688,3 +10688,107 @@ window.simInvestigate=function(P){
   if(!ssUniqueCandidates(P,false).length)return;
   return ssUniqueOldSimInvestigate.apply(this,arguments);
 };
+
+// ===== v53: WIN-AWARE POLICIES AND EVIDENCE-FIRST BALLOTS =====
+// These are the final entry points used by live bots and the headless simulator.
+// An optional Communist policy must never be discarded at White match point.
+var ss53OldPresidentDiscard=window.pickPresidentDiscardIdx;
+window.pickPresidentDiscardIdx=function(p,c,cards){
+  // At either team's policy match point, never discard a Communist card
+  // if discarding White can preserve it. With CCW, this passes CC, not CW.
+  if(game.roles[p]!=='white' &&
+     (game.whitePolicies>=4 || game.communistPolicies>=5) &&
+     cards.indexOf('communist')>=0 && cards.indexOf('white')>=0){
+    return cards.indexOf('white');
+  }
+  return ss53OldPresidentDiscard.apply(this,arguments);
+};
+var ss53OldPremierEnact=window.pickChancellorEnactIdx;
+window.pickChancellorEnactIdx=function(c,p,cards){
+  if(game.roles[c]!=='white' && cards.indexOf('communist')>=0 &&
+     (game.whitePolicies>=4 || game.communistPolicies>=5)){
+    return cards.indexOf('communist');
+  }
+  return ss53OldPremierEnact.apply(this,arguments);
+};
+
+function ss53UnsafeTicket(b,P,C){
+  var checks=game.botInvestigations[b]||{};
+  var view=BRAIN?brainView(b):null;
+  for(var k=0;k<2;k++){
+    var i=k===0?P:C;
+    if(checks[i]==='communist' ||
+       (typeof v34KnownRed==='function'&&v34KnownRed(b,i)))return true;
+    // An unresolved policy-card feud implicates BOTH parties to an outsider.
+    // Strong independent clearances can resolve that presumption, but not a
+    // first-hand Communist investigation or a personal card contradiction.
+    if(hasDispute(b,i))return true;
+    if(typeof ss52FeudRisk==='function' && ss52FeudRisk(b,i)>=1.5){
+      if(!(typeof v34IndependentClears==='function' &&
+           v34IndependentClears(b,i)>=2 && view && view.F[i]<.3))return true;
+    }
+  }
+  return false;
+}
+var ss53OldVote=window.botDecideVote;
+window.botDecideVote=function(b){
+  var P=game.currentPresident,C=game.nominatedChancellor;
+  if(!BRAIN || game.gameOver || P==null || C==null ||
+     game.roles[b]!=='white')return ss53OldVote.apply(this,arguments);
+  // The nominating Secretary supports their own selected government.
+  if(b===P)return true;
+  if(ss53UnsafeTicket(b,P,C))return false;
+  var original=!!ss53OldVote.apply(this,arguments);
+  if(original || game.communistPolicies<3)return original;
+  // Roughly 10% fewer NO ballots in the zone, only for uncertain tickets.
+  // Never rescue a ticket with concrete evidence against either candidate.
+  var view=brainView(b),ticket=brainTicket(view,P,C,brainState());
+  if(view.F[P]>=.60 || view.F[C]>=.60 ||
+     (!game.confirmedNotStalin[C] && ticket.pS>=.30))return false;
+  return Math.random()<.10;
+};
+// Discussion commitments must be sampled from the same final ballot engine.
+ss47PreCommitVote=function(i){return window.botDecideVote(i);};
+
+// ===== v54: COMMUNISTS MAINTAIN COVER AROUND PUBLIC CARD FEUDS =====
+// Communist-aligned bots ordinarily reject contested governments too. They
+// may join an observable pro-government Liberal-looking bloc, but cannot use
+// unrevealed roles to identify which other voters are genuinely Liberal.
+var ss54OldVote=window.botDecideVote;
+function ss54PublicFeudOnTicket(P,C){
+  return typeof ss52ActivePairs==='function' && ss52ActivePairs().some(function(d){
+    return d.p1===P||d.p2===P||d.p1===C||d.p2===C;
+  });
+}
+function ss54VisibleLiberalSupport(b,P,C){
+  var supporters={};
+  Object.keys(game.votes||{}).forEach(function(key){
+    var i=Number(key);
+    if(i!==b && i!==P && i!==C && game.votes[key]===true) supporters[i]=true;
+  });
+  // Speakers publicly committed to YES are observable even before ballots.
+  if(typeof V35!=='undefined' && V35.roundDiscussions && typeof v36Key==='function'){
+    (V35.roundDiscussions[v36Key()]||[]).forEach(function(item){
+      if(item.yes && item.id!==b && item.id!==P && item.id!==C) supporters[item.id]=true;
+    });
+  }
+  return Object.keys(supporters).some(function(key){
+    var i=Number(key);
+    if(!game.players[i]||game.players[i].isDead)return false;
+    // Only publicly plausible Liberal votes count, not secret-role knowledge.
+    return typeof v35PublicCred!=='function' || v35PublicCred(i)>=0.25;
+  });
+}
+window.botDecideVote=function(b){
+  var P=game.currentPresident,C=game.nominatedChancellor;
+  if(!BRAIN||game.gameOver||P==null||C==null||game.roles[b]==='white'||
+     !ss54PublicFeudOnTicket(P,C))return ss54OldVote.apply(this,arguments);
+  // Nominees supporting their own ticket is ordinary public behavior.
+  if(b===P||b===C)return true;
+  // Never sacrifice an immediately winning Stalin election just for cover.
+  if(game.roles[b]==='communist' && game.roles[C]==='stalin' &&
+     game.communistPolicies>=3)return true;
+  if(!ss54VisibleLiberalSupport(b,P,C))return false;
+  // Once credible public supporters exist, use the normal strategic ballot.
+  return ss54OldVote.apply(this,arguments);
+};

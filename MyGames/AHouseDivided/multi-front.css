@@ -1,0 +1,29 @@
+.front-availability{font-size:11px;background:#244038;border:1px solid #5b8c74;padding:9px;margin:10px 0;color:#d1e3d3}
+.front-availability b{color:#f5d59a;font-size:14px}
+.multi-front-list{display:grid;gap:8px;margin:10px 0 15px}
+.multi-front-entry{border:1px solid #758b8e;background:#1d3640;border-left:3px solid #e2be7f;padding:9px}
+.multi-front-entry>div{display:flex;justify-content:space-between;gap:8px}
+.multi-front-entry strong{font-size:12px;color:#f1d9af}
+.multi-front-entry small{font-size:9px;color:#aabec3;white-space:nowrap}
+.multi-front-entry p{font-size:10px;margin:8px 0}
+.multi-front-entry button{padding:6px 10px;border:1px solid #ba8c82;background:#493840;color:#f5d4cb;font-size:10px;cursor:pointer}
+.front-empty{font-size:11px;color:#b1c2c7}
+.front-mix-title{font-size:11px;font-weight:700;color:#e6cf9a;margin:12px 0 5px}
+.unit-trait-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0 12px}
+.unit-trait{display:flex;flex-direction:column;gap:5px;padding:9px 7px;background:#173440;border:1px solid #56727c;border-radius:4px;min-width:0}
+.unit-trait strong{color:#f1cf8d;font-size:10px;line-height:1.35}
+.unit-trait span{font-size:10px;line-height:1.35;color:#cbdcda}
+@media(max-width:540px){.unit-trait-grid{grid-template-columns:1fr}}
+.front-mix-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:4px 0}
+.front-mix-grid label{display:flex;flex-direction:column;gap:4px;font-size:10px;color:#d8e3df}
+.front-mix-grid input,.front-mix-grid select{width:100%;box-sizing:border-box;background:#102b38;border:1px solid #63808b;border-radius:4px;color:#f7e1b2;padding:7px 3px;font-size:12px}
+#mixTotal{display:block;color:#d8be80;margin:4px 0 12px}
+@media(max-width:540px){.front-mix-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Strategic command only: individual army routes and the floating plan dock
+   remain internal to the simulation, never a second player command surface. */
+.quick-plan-dock,.army-panel .advanced-forces,.army-panel .military-planner,
+.army-panel .army-actions,.army-panel #armyRoster,.army-panel #armySelect,
+.army-panel label:has(#armySelect),.army-panel #armyCountry,
+.army-panel #armyMessage,.army-panel .section-head:has(#armyTotal),
+.army-panel label:has(#divisionQuality),.army-panel #recruitArmy,
+.army-panel > .war-report{display:none!important}

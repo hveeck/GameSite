@@ -1,0 +1,48 @@
+/* The complete clue must remain visible on one line at every screen size. */
+.clue{white-space:nowrap;overflow-wrap:normal;word-break:normal;line-height:1.2;font-size:clamp(10px,2.4vw,24px);letter-spacing:-.035em}
+@media(min-width:701px){.side .clue{font-size:clamp(9px,1.48vw,20px)}}
+.postgame{margin:22px auto 34px;max-width:1180px;padding:25px 28px;line-height:1.55}
+.review-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}
+.review-heading h2{margin:2px 0 4px;font:800 clamp(24px,3vw,36px) Fraunces,serif}
+.review-result{font-size:12px;font-weight:800;letter-spacing:.06em;border-radius:999px;padding:9px 13px;background:#e9dada;color:#883f3f}
+.review-result.blue{background:#dbe9f6;color:#245c8a}
+.review-outcome{padding:13px 16px;background:#eff2e8;border-radius:12px;margin:11px 0 16px}
+.review-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.review-stats>div{border:1px solid #dce2d6;border-radius:11px;padding:10px 14px;display:flex;flex-direction:column;gap:2px}
+.review-stats b{font-size:26px;color:#263b30}.review-stats small{font-size:12px;color:#69796a}
+.postgame h3{margin:17px 0 6px;font-size:18px}
+.review-explain{border-left:4px solid #679b70;background:#f1f5ed;padding:10px 16px;margin-bottom:15px;border-radius:0 10px 10px 0}
+.review-explain h3{margin:0 0 5px}.review-explain p{margin:0;font-size:14px}
+.review-turn{border:1px solid #dbe1d7;background:#fff;border-radius:12px;margin:9px 0;overflow:hidden}
+.review-turn summary{cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 15px;list-style:none}
+.review-turn summary::-webkit-details-marker{display:none}
+.review-turn summary::after{content:'⌄';margin-left:auto;color:#718073;font-size:20px}
+.review-turn[open] summary::after{transform:rotate(180deg)}
+.review-turn summary b{font-size:16px}.review-turn summary small{color:#65766a}
+.review-team{border-radius:6px;padding:3px 7px;font-size:10px;font-weight:800;letter-spacing:.06em}
+.review-team.red{background:#f5dddd;color:#a94343}.review-team.blue{background:#e0eef9;color:#2b6d9d}
+.review-round-status{font-size:11px;font-weight:800;border-radius:999px;padding:5px 9px;white-space:nowrap}
+.review-round-status.good{color:#236a3d;background:#dff2e5}
+.review-round-status.swap{color:#875d0f;background:#fff0c9}
+.review-round-status.miss{color:#963b36;background:#fbe0df}
+@media(max-width:620px){.review-turn summary{flex-wrap:wrap;gap:7px}.review-round-status{order:3}}
+.review-body{border-top:1px solid #e4e8df;padding:11px 16px 14px;font-size:14px}
+.review-body p{margin:7px 0 13px}.review-chips{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0}
+.review-chip{display:flex;flex-direction:column;border-radius:8px;padding:6px 10px;background:#e8f4e8;color:#28572e;font-weight:700}
+.review-chip small{font-size:10px;font-weight:500}
+.review-chip.risky{background:#fff0dc;color:#8c561e}
+.review-warning{color:#9a562a}.review-footer{margin-top:18px;border-top:1px solid #dbe1d7;padding-top:7px}
+.review-numbers{background:#f7f8f4;border:1px solid #e1e6dc;border-radius:10px;padding:12px 15px;margin:12px 0}
+.review-numbers h4{margin:0 0 5px;font-size:15px}.review-numbers p{margin:5px 0 10px}
+.review-numbers ul,.review-numbers ol{margin:6px 0 12px;padding-left:21px}.review-numbers li{margin:4px 0}
+.review-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.review-mistakes{margin:19px 0 22px;padding:13px 16px;background:#fff9f0;border:1px solid #ecd7b8;border-radius:12px}
+.review-mistakes h3{margin:0 0 9px}.review-error{border-top:1px solid #eadbc5;padding:9px 0 2px;font-size:14px}
+.review-error p{margin:5px 0 7px}.review-error strong{color:#92532f}
+@media(max-width:620px){.postgame{padding:16px}.review-stats{gap:5px}.review-stats>div{padding:8px}.review-stats b{font-size:19px}.review-stats small{font-size:10px}}
+@media(max-width:620px){.review-columns{grid-template-columns:1fr;gap:2px}}
+dialog.beta-dialog{max-width:510px;width:calc(100% - 32px);padding:32px;border:1px solid #8fa6a1;border-radius:18px;background:#fbfcf6;color:#253f3b;box-shadow:0 25px 90px #102f2b6b}
+dialog.beta-dialog::backdrop{background:#0b2927b8;backdrop-filter:blur(5px)}
+dialog.beta-dialog h2{font-size:2rem;margin:12px 0}
+dialog.beta-dialog p{line-height:1.65}
+dialog.beta-dialog .actions{margin-top:24px;display:flex;flex-wrap:wrap;gap:12px}

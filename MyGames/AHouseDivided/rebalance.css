@@ -1,0 +1,28 @@
+.clock-options,.clock-options-toggle{display:none!important}
+.fixed-clock-label{font-size:11px;opacity:.75;padding:6px 10px}
+.governance-controls .gov-actions{display:none!important}
+.governance-controls .domestic-toggle{display:none!important}
+#cabinetBody>#cabinetAgenda,#cabinetBody>#setAgenda,#cabinetBody>#cabinetAgendaDescription{display:none!important}
+#cabinetBody>.cabinet-section,#cabinetBody>.cabinet-muted{display:block}
+.simple-government{margin:8px 0 18px;border-bottom:1px solid #ffffff20;padding-bottom:14px}
+.simple-policy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+.simple-policy-grid button{padding:12px;text-align:left;border:1px solid #ffffff30;border-radius:8px;background:#192632;color:#f4edd8;cursor:pointer}
+.simple-policy-grid button.selected{border-color:#d7b96e;background:#283c42}
+.simple-policy-grid button b,.simple-policy-grid button small{display:block}
+.simple-policy-grid button small{font-size:11px;opacity:.8;line-height:1.35;margin-top:4px}
+.simple-policy-grid button span{display:block;font-size:10px;font-weight:600;color:#d8c58c;margin-top:7px}
+.auto-cabinet{display:none!important}
+.policy-advice{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-left:3px solid #c9ad68;background:#1d3338;color:#eae2d0;margin:12px 0}
+.policy-advice b{font-size:10px;letter-spacing:.09em;color:#d6b96b}
+.policy-advice span{font-size:12px;line-height:1.4}
+.national-levers{display:grid;gap:10px;margin:10px 0 16px}
+.national-levers label{display:grid;grid-template-columns:minmax(105px,1fr) minmax(110px,1fr);align-items:center;gap:5px 10px;background:#1b2c34;padding:10px;border:1px solid #ffffff20;border-radius:7px}
+.national-levers label>b{font-size:12px;color:#e4d2a1}
+.national-levers select{min-width:0;max-width:100%}
+.national-levers label>small{grid-column:1 / -1;opacity:.8;line-height:1.4}
+.ideology-guide{margin:10px 0 16px;padding:12px;border:1px solid #d4ae623b;background:#1a2e34;border-radius:7px;font-size:12px;line-height:1.5}
+.ideology-guide>b{display:block;font-size:13px;margin-bottom:7px;color:#e9d6a3}
+.ideology-guide>div{margin:4px 0}
+.ideology-guide .good{font-weight:bold;color:#88c69a}
+.ideology-guide .bad{font-weight:bold;color:#dd9b8b}
+.ideology-guide small{display:block;margin-top:8px;opacity:.78}

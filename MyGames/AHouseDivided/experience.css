@@ -1,0 +1,36 @@
+.war-rail button[hidden]{display:none!important}
+#experienceStatus{font:700 10px 'DM Mono',monospace;letter-spacing:.08em;color:#edd09b;max-width:150px;line-height:1.4}
+.war-bottom[data-experience="play"]{border-top-color:#bb9864}
+.population-2030-card{border:1px solid #ffffff25;background:#ffffff0c;padding:11px;margin:3px 0 12px;color:#c7d2d1;font-size:11px;line-height:1.55}
+.population-2030-card>div{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-bottom:6px}
+.population-2030-card b{font-size:17px;color:#f0d29e;white-space:nowrap}
+.population-loss{color:#ed9889!important}.population-gain{color:#9edab7!important}
+.population-2030-card small{font-size:10px;color:#b4c5c7;line-height:1.4}
+.inspector-population{display:flex;flex-direction:column;gap:7px;margin:14px 0;padding:12px;background:#ffffff0b;border:1px solid #ffffff26}
+.inspector-population strong{font-size:12px;color:#efd5a2}.inspector-population span{font-size:20px;font-family:Georgia,serif}
+.inspector-population small{font-size:10px;line-height:1.45;color:#b7c4c6}
+.military-planner{margin:14px 0 18px;padding:12px;border:1px solid #b29c6d;background:#ffffff08}
+.planner-title{font-size:11px;font-weight:800;letter-spacing:.12em;color:#edc987}
+.military-planner p{font-size:11px;line-height:1.5;color:#c7cccb;margin:9px 0}
+.planner-controls{display:grid;grid-template-columns:1.3fr 1fr .75fr;gap:6px}
+.planner-controls button{background:#344c59;border:1px solid #81949b;color:#f2e4c8;padding:10px 4px;font-size:11px;cursor:pointer}
+.planner-controls button.active,#executeBattlePlan{background:#55724b;border-color:#c8b17d}
+.planner-controls button:disabled{opacity:.3;cursor:not-allowed}
+.military-planner label{display:block;font-size:11px;color:#c9d2d0;margin:10px 0}
+.military-planner select{display:block;width:100%;margin:6px 0;padding:9px;background:#1a2d38;color:#efeadc;border:1px solid #536d7b}
+.plan-feedback{font-size:11px;line-height:1.5;color:#ebc98e;margin-top:8px}
+.planned-route-preview{stroke:#ffe0a3;stroke-width:3;stroke-dasharray:6 4;fill:none;filter:drop-shadow(0 0 4px #000)}
+.quick-plan-dock{position:absolute;z-index:29;left:50%;bottom:90px;transform:translateX(-50%);display:flex;align-items:center;gap:9px;border:1px solid #d5b980;background:#162b36f5;box-shadow:0 10px 35px #0009;color:#e8d1a5;padding:11px 13px;white-space:nowrap;font-size:11px}
+.quick-plan-dock[hidden]{display:none!important}.quick-plan-dock strong{font-size:10px;letter-spacing:.07em}
+.quick-plan-dock button{background:#405c66;border:1px solid #82959a;color:#f5e9d6;padding:9px;cursor:pointer}
+.quick-plan-dock #quickPlanGo{background:#5d7652;border-color:#e1c68d;color:#fff}
+.quick-plan-dock button:disabled{opacity:.4;cursor:not-allowed}
+#orderArmy[hidden]{display:none!important}
+.auto-cabinet{border:1px solid #a88e63;background:#ffffff09;padding:10px;margin:11px 0}
+.auto-cabinet .cabinet-section{margin:5px 0 10px}
+.auto-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.auto-row button{padding:10px 6px;color:#f0e5c9;background:#3d584d;border:1px solid #c2ae80;cursor:pointer;font-size:11px}
+.auto-cabinet label{display:block;font-size:11px;color:#bdcbce}
+.auto-cabinet select{width:100%;padding:8px;margin:6px 0;background:#1c303c;color:#eee;border:1px solid #78909a}
+@media(max-width:1100px){#experienceStatus{display:none}}
+@media(max-width:760px){.quick-plan-dock{max-width:calc(100vw - 30px);overflow-x:auto;gap:5px;padding:7px}.quick-plan-dock strong{display:none}}

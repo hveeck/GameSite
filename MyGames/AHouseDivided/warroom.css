@@ -1,0 +1,53 @@
+/* Grand-strategy layout: uninterrupted central map and docked popup panels. */
+body{height:100vh;overflow:hidden}
+header{height:66px;padding:9px 22px;position:relative;z-index:30}
+header .brand .star{font-size:29px}
+header h1{font-size:24px}
+header .brand small{font-size:8px}
+main.war-room{display:block;position:relative;max-width:none;width:100vw;height:calc(100vh - 66px);padding:0;overflow:hidden}
+.war-room .maincol{width:100%;height:100%;position:static}
+.war-room .toolbar{position:absolute;z-index:8;left:80px;top:56px;margin:0;max-width:330px;background:#0d1a25d9;border:1px solid #36505e;padding:13px 16px;border-radius:4px;box-shadow:0 8px 24px #0004}
+.war-room .toolbar h2{font-size:24px;line-height:1.15}
+.war-room .toolbar p{font-size:11px;line-height:1.35}
+.war-room .toolbar .seedbox{display:none}
+.war-room .map-panel{position:absolute;inset:0;background:none;border:0;border-radius:0}
+.war-room .map-wrap{position:absolute;inset:0 0 65px;min-height:0;display:flex;align-items:center;justify-content:center}
+.war-room #map.geo-map{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.war-room .geo-map svg{height:100%;width:100%;max-height:none}
+.war-room .maphead{position:absolute;z-index:8;top:13px;left:50%;transform:translateX(-50%);height:38px;background:#0b1b27e8;border:1px solid #426070;border-radius:4px;padding:0 14px;gap:24px;white-space:nowrap}
+.war-room .maphead .tabs{gap:17px}
+.war-room .map-footer{position:absolute;bottom:76px;left:50%;transform:translateX(-50%);z-index:7;border:1px solid #36505a;border-radius:3px;background:#0d1e2bea;min-height:0;max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:7px 15px;font-size:11px;text-align:center;pointer-events:none}
+.war-room .map-watermark{top:64px;right:17px;left:auto}
+.war-room .map-scale{bottom:76px;right:13px}
+.war-room .map-controls{right:20px;top:120px}
+.war-room footer{display:none}
+.war-room aside,.war-room .bottom-grid{display:contents}
+.war-panel{position:absolute;z-index:22;top:78px;width:min(380px,calc(100vw - 140px));max-height:calc(100% - 165px);overflow:auto;box-shadow:0 18px 70px #000a;border-color:#59717f;background:#14242ff5;display:none}
+.war-panel.open{display:block}
+.war-panel.left{left:75px}.war-panel.right{right:75px}
+.war-panel .panel-close{float:right;background:#2d404b;border:1px solid #526775;color:white;border-radius:3px;padding:0 7px;font-size:20px;margin:-8px -8px 0 8px}
+.war-room .eventcard .events{height:min(55vh,450px)}
+.war-room .bottom-grid .card{margin:0}
+.war-room .inspector{min-height:0}
+.war-room .command{min-height:0}
+.war-room .control .runrow,.war-room .control .temporal-controls{display:none}
+.war-rail{position:absolute;z-index:25;top:74px;display:flex;flex-direction:column;gap:7px}
+.war-rail.left{left:12px}.war-rail.right{right:12px}
+.war-rail button{width:49px;min-height:53px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:1px solid #486171;background:#0d202ce8;color:#bfced1;border-radius:4px;font-size:8px;font-family:'DM Mono',monospace;cursor:pointer;box-shadow:0 3px 16px #0005}
+.war-rail button span{font-size:20px;color:#e6c18c}
+.war-rail button:hover,.war-rail button.active{background:#314d5b;border-color:#e2b976;color:#fff}
+.war-bottom{position:absolute;z-index:24;bottom:0;left:0;right:0;min-height:65px;background:#0b1720f5;border-top:1px solid #3e5865;display:flex;align-items:center;gap:18px;padding:9px 22px}
+.war-bottom .temporal-controls{border:0;background:none;display:flex;align-items:center;gap:12px;padding:0;margin:0}
+.war-bottom .temporal-controls .section-head,.war-bottom .temporal-controls .temporal-note{display:none}
+.war-bottom .temporal-controls .twocol{display:flex;align-items:center;gap:10px}
+.war-bottom .temporal-controls label{font:9px 'DM Mono',monospace;color:#8eabb5;margin:0;white-space:nowrap}
+.war-bottom .temporal-controls select{min-width:105px;margin-top:3px;padding:5px!important;font-size:11px;background:#182b38;color:#e9f0ef;border:1px solid #59727f;border-radius:3px}
+.war-bottom .runrow{display:flex;gap:8px;align-items:center;margin:0;flex:0 0 auto}
+.war-bottom .runrow button{font-size:12px;padding:10px 15px;border:1px solid #5a7782;border-radius:3px;background:#284154;color:white;cursor:pointer}
+.war-bottom .runrow #play{background:#3c644e}
+.war-bottom .clock{font:500 17px 'DM Mono',monospace;color:#eac18a;white-space:nowrap}
+.war-bottom .world-brief{margin-left:auto;display:flex;gap:18px;color:#b8d0d0;font:10px 'DM Mono',monospace;white-space:nowrap}
+.war-bottom .world-brief b{color:#e8bf80;font-size:14px}
+.war-bottom .mode-shortcut{background:#263947;border:1px solid #637f89;color:#eee;padding:9px 10px;border-radius:3px;white-space:nowrap;font-size:11px}
+.war-room .stats{grid-template-columns:repeat(2,1fr);row-gap:18px}
+@media(max-width:800px){header{height:62px}.topright .fiction{display:none}main.war-room{height:calc(100vh - 62px)}.war-room .toolbar{top:60px;left:70px;max-width:230px}.war-room .toolbar h2{font-size:19px}.war-room .toolbar p{display:none}.war-room .maphead{top:9px;left:52%;padding:0 8px}.war-room .maphead .tabs{gap:8px}.war-room .maphead .legend{display:none}.war-room .map-wrap{bottom:78px}.war-rail button{width:43px;min-height:43px;font-size:7px}.war-rail button span{font-size:17px}.war-rail.left{left:7px}.war-rail.right{right:7px}.war-panel.left{left:55px}.war-panel.right{right:55px}.war-panel{width:min(360px,calc(100vw - 110px))}.war-bottom{flex-wrap:wrap;gap:7px;padding:8px;min-height:78px}.war-bottom .world-brief{display:none}.war-bottom .clock{font-size:12px}.war-bottom .temporal-controls .twocol{gap:5px}.war-bottom .temporal-controls select{min-width:85px}.war-bottom .mode-shortcut{font-size:9px;padding:7px}.war-room .map-footer{bottom:88px;max-width:80%}}

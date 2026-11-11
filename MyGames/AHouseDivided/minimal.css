@@ -1,0 +1,22 @@
+.challenge-picker{display:flex;align-items:center;gap:7px;font-size:10px;letter-spacing:.04em;color:#cfceb9;margin:4px 8px}
+.challenge-picker select{font-size:11px;max-width:90px}
+.relationship-meter{padding:10px 0 12px}
+.relationship-meter>div:first-child{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px}
+.relationship-track{height:7px;border-radius:7px;background:#ffffff20;overflow:hidden}
+.relationship-track i{display:block;height:100%;border-radius:7px}
+.bilateral-extra>small,.ideology-compatibility{display:none!important}
+.division-front{padding:12px 0;border-bottom:1px solid #ffffff25}
+.division-front>div:first-child{display:flex;justify-content:space-between;gap:8px;margin-bottom:8px}
+.division-front small{opacity:.75}
+.division-controls{display:flex;align-items:center;gap:8px}
+.division-controls button{width:34px;height:30px;font-size:18px}
+.division-controls select{margin-left:auto;max-width:130px}
+.army-toast-holder{position:fixed;top:84px;right:14px;z-index:100000;display:grid;gap:8px;max-width:320px;pointer-events:none}
+.army-toast{padding:12px 15px;border:1px solid #c77c71;border-radius:7px;background:#24313a;color:#f5e7de;box-shadow:0 5px 22px #0008;font-size:13px;line-height:1.35}
+.cabinet-section small,.quick-section-title small{font-weight:normal;opacity:.75}
+.cabinet-muted{font-size:11px;line-height:1.4}
+.national-programs{margin-top:14px}
+.national-programs .cabinet-muted{margin:7px 0}
+.world-wars{margin-top:12px}
+.campaign-choice .challenge-picker{display:flex;flex-direction:column;gap:8px;margin:16px 0;color:#e8d0a2;font-size:12px;letter-spacing:.05em}
+.campaign-choice .challenge-picker select{max-width:100%;background:#203743;color:#f4e7cf;border:1px solid #789099;padding:11px;border-radius:5px;font-size:13px}

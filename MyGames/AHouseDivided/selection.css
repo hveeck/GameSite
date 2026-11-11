@@ -1,0 +1,14 @@
+.country-pick-bar{position:fixed;z-index:950;top:100px;left:50%;transform:translateX(-50%);width:min(490px,calc(100% - 28px));padding:17px 20px;background:#192b36ee;color:#f1e6cd;border:1px solid #ddbd82;box-shadow:0 10px 45px #0009;backdrop-filter:blur(8px)}
+.country-pick-bar[hidden]{display:none!important}
+.pick-heading{text-align:center;letter-spacing:.18em;font-size:12px;font-weight:800;color:#e7c184}
+.country-pick-bar p{font-size:12px;text-align:center;color:#bfcfd1;margin:9px 0 14px}
+#mapPickName{text-align:center;background:#ffffff12;padding:10px;color:#f0e0ba;font-size:13px;font-weight:700;margin-bottom:12px}
+.country-pick-bar label{display:block;font-size:11px;color:#c3cfd0}
+.country-pick-bar select{display:block;width:100%;padding:8px;background:#213946;border:1px solid #73858b;color:#f0e6d4;margin:5px 0 12px}
+.pick-actions{display:grid;grid-template-columns:2fr 1fr;gap:9px}
+.pick-actions button{cursor:pointer;padding:11px 9px;color:#f3e6c9;background:#34505b;border:1px solid #ad9a77}
+#confirmCountry{background:#b18f55;color:#182b37;font-weight:800}
+.pick-actions button:disabled{opacity:.35;cursor:not-allowed}
+.county.candidate-country{stroke:#f7e59f!important;stroke-width:1.25px!important;filter:brightness(1.12)}
+@media(max-width:650px){.country-pick-bar{top:76px;padding:12px 15px}}
+.war-room .toolbar{display:none!important}

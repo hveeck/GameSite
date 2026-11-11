@@ -1,0 +1,7 @@
+.national-identity-control{border-top:1px solid #ffffff26;margin-top:15px;padding-top:5px}
+.national-identity-control select{width:100%;padding:9px;margin:7px 0 10px;background:#182e39;color:#f2ebd7;border:1px solid #627c86}
+.national-identity-control>button{width:100%;padding:11px;background:#51674c;color:#f1e7c9;border:1px solid #d4b77b;cursor:pointer}
+.national-identity-control>button:disabled{opacity:.35;cursor:not-allowed}
+.identity-hint{font-size:11px;line-height:1.5;padding:10px;color:#b9c4c5;background:#ffffff0a;border:1px solid #ffffff18}
+.ideology-compatibility{padding:10px 0;color:#e3d2a7;font-size:12px;border-bottom:1px solid #ffffff28;line-height:1.5;margin-bottom:12px}
+.ideology-compatibility b{color:#f0e4c2}
