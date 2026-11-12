@@ -1,0 +1,15 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101b26"><title>Senior Assassin — The Hunt</title><link rel="stylesheet" href="style.css"></head><body>
+<header><div class="brand"><span class="mark">✦</span><span>SENIOR <b>ASSASSIN</b><small>THE CLOTHESPIN HUNT</small></span></div><span id="phaseBadge" class="badge">REGISTRATION</span></header>
+<main>
+  <section id="authView" class="hero"><div class="eyebrow">A GAME OF STEALTH & STRATEGY</div><h1>Trust no one.<br><em>Clip your target.</em></h1><p>One secret target. One wooden clothespin. One survivor.</p>
+    <div class="authbox"><div class="tabs"><button id="loginTab">Log in</button><button id="registerTab" class="active">Join the game</button></div>
+      <form id="authForm"><div id="inviteStep"><label>Private invitation code<input id="authInvite" placeholder="Enter your game code" autocomplete="off"></label><button class="primary wide" id="verifyInvite" type="button">Continue →</button></div><div id="accountStep" hidden><label>Full name<input id="authName" autocomplete="username" maxlength="60" placeholder="Your full name"></label><label>Password<input id="authPassword" type="password" minlength="8" autocomplete="current-password" placeholder="Your password"></label><p id="authHint" class="muted small">Choose a throwaway password you don't use anywhere else.</p><button class="primary wide" id="authSubmit">Create account →</button></div></form>
+    </div><p class="muted small" id="startNotice">Registration closes Sunday, November 15 at 12:00 PM Eastern.</p>
+  </section>
+  <section id="appView" hidden>
+    <div class="topline"><div><span class="eyebrow">LIVE OPERATIONS</span><h1 id="welcome">The Hunt</h1></div><button class="ghost" id="logout">Log out</button></div>
+    <div class="stats"><div><strong id="aliveCount">–</strong><span>ALIVE</span></div><div><strong id="killCount">–</strong><span>YOUR KILLS</span></div><div><strong id="outCount">–</strong><span>ELIMINATED</span></div></div>
+    <nav aria-label="Game navigation"><button data-view="dashboard" class="active"><span class="nav-icon">⌂</span><span>Home</span></button><button data-view="players"><span class="nav-icon">♙</span><span>Players</span></button><button data-view="feed"><span class="nav-icon">◷</span><span>History</span></button><button data-view="rules"><span class="nav-icon">▤</span><span>Rules</span></button></nav>
+    <div id="content"></div>
+  </section>
+</main><div id="toast" aria-live="polite"></div><script src="config.js"></script><script src="game.js"></script></body></html>
