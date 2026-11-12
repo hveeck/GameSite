@@ -2,20 +2,40 @@
 // no Gemini credential is ever held by this page.
 const CB_AI_ENDPOINT='https://joqypdrkojtinlflbvur.supabase.co/functions/v1/cluebugle-ai';
 let cbGeminiFailureShown=false;
+// A Spymaster turn makes two SEQUENTIAL Gemini calls (candidate clues and
+// independent color-blind verification). The former 25-second browser timeout
+// could abort a healthy request before the second model call finished.
 async function cbGeminiRequest(g,team,level,role){
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),25000);
-  try{
-    const data={role,team,difficulty:level,board:g.words,
-      revealed:g.revealed,previous:(g.log||[]).slice(0,12),strategy:(typeof localStorage!=='undefined'?localStorage.getItem('cb_ai_risk'):null)||'balanced',
-      lessons:(()=>{try{return typeof localStorage==='undefined'?[]:JSON.parse(localStorage.getItem('cb_ai_lessons')||'[]').slice(-8)}catch{return []}})(),
-      ...(role==='spymaster'?{keys:g.keys}:{clue:g.clue})};
-    const res=await fetch(CB_AI_ENDPOINT,{method:'POST',signal:controller.signal,
-      headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-    const result=await res.json();
-    if(!res.ok||result.error)throw Error(result.error||`AI returned ${res.status}`);
-    return result;
-  }finally{clearTimeout(timer)}
+  const data={role,team,difficulty:level,board:g.words,
+    revealed:g.revealed,previous:(g.log||[]).slice(-12),strategy:(typeof localStorage!=='undefined'?localStorage.getItem('cb_ai_risk'):null)||'balanced',
+    lessons:(()=>{try{return typeof localStorage==='undefined'?[]:JSON.parse(localStorage.getItem('cb_ai_lessons')||'[]').slice(-8)}catch{return []}})(),
+    ...(role==='spymaster'?{keys:g.keys}:{clue:g.clue})};
+  // 2 x 22s upstream, plus backend retries and network overhead.
+  const timeoutMs=role==='spymaster'?95000:45000;
+  for(let attempt=0;attempt<2;attempt++){
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
+    let response, result;
+    try{
+      response=await fetch(CB_AI_ENDPOINT,{method:'POST',signal:controller.signal,
+        headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+      result=await response.json().catch(()=>({error:'Invalid response from Gemini service'}));
+      if(response.ok&&!result.error)return result;
+      const error=new Error(result.error||`AI returned ${response.status}`);
+      error.status=response.status;
+      throw error;
+    }catch(error){
+      // Do not retry quota exhaustion, authorization errors, or invalid input.
+      // An occasional missing legal candidate / failed verifier (422 / 503),
+      // network interruption or timeout warrants ONE fresh attempt.
+      const retryable=error.name==='AbortError'||error instanceof TypeError||
+        error.status===422||error.status===500||error.status===502||error.status===503||error.status===504;
+      if(attempt===1||!retryable)throw error;
+      console.warn('Gemini temporary failure; retrying once:',error.message);
+    }finally{clearTimeout(timer)}
+  }
+  throw Error('AI service unavailable');
 }
+
 async function cbLiveClue(g,team,level){
   try{
     const result=await cbGeminiRequest(g,team,level,'spymaster');
@@ -23,7 +43,8 @@ async function cbLiveClue(g,team,level){
     return {word:result.word,n:result.n,targets:result.targets,
       reason:result.reason,verification:result.verification,provider:'gemini'};
   }catch(e){
-    if(!cbGeminiFailureShown){cbGeminiFailureShown=true;toast(`Gemini unavailable: ${e.message}. Using offline bot.`)}
+    console.warn('Gemini Spymaster unavailable for this turn:',e);
+    if(!cbGeminiFailureShown){cbGeminiFailureShown=true;toast('Gemini was unavailable for this turn; the backup AI took over. See browser console for details.');}
     return aiClue(g,team,level);
   }
 }
@@ -33,7 +54,8 @@ async function cbLiveGuess(g,team,level){
       const result=await cbGeminiRequest(g,team,level,'guesser');
       g.aiPlan={clue:g.clue.word,guesses:result.guesses,stopAfter:result.stopAfter};
     }catch(e){
-      if(!cbGeminiFailureShown){cbGeminiFailureShown=true;toast(`Gemini unavailable: ${e.message}. Using offline bot.`)}
+      console.warn('Gemini Guesser unavailable for this turn:',e);
+      if(!cbGeminiFailureShown){cbGeminiFailureShown=true;toast('Gemini was unavailable for this turn; the backup AI took over. See browser console for details.');}
       return {choice:aiGuess(g,team,level),fallback:true};
     }
   }

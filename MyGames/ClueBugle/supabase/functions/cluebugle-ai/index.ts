@@ -265,7 +265,13 @@ JSON: {"guesses":["WORD1","WORD2"],"stopAfter":2,"reason":"brief explanation"}.`
       if(!candidates.length)return json({error:'No legal Gemini clue candidates; retry or use fallback'},422);
       let rankings:Map<string,string[]>;
       try{rankings=await verifyClues(key,MODEL,available,candidates)}
-      catch(e){return json({error:'Clue verifier failed: '+String(e instanceof Error?e.message:e)},503)}
+      catch(e){
+        // A malformed verifier response is recoverable. Never send an unverified
+        // clue, and do not double-send requests when the provider is rate-limiting.
+        if(String(e).includes('429')||String(e).includes('403'))throw e;
+        try{rankings=await verifyClues(key,MODEL,available,candidates)}
+        catch(e2){return json({error:'Clue verifier failed: '+String(e2 instanceof Error?e2.message:e2)},503)}
+      }
       const opposition=available.filter((w:string)=>data.keys[board.indexOf(w)]!==team);
       const lastChance=opposition.filter((w:string)=>data.keys[board.indexOf(w)]=== (team==='red'?'blue':'red')).length===1;
       const countFriendly=(words:string[])=>words.filter(w=>own.includes(w)).length;
