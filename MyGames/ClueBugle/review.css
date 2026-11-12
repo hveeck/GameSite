@@ -46,3 +46,16 @@ dialog.beta-dialog::backdrop{background:#0b2927b8;backdrop-filter:blur(5px)}
 dialog.beta-dialog h2{font-size:2rem;margin:12px 0}
 dialog.beta-dialog p{line-height:1.65}
 dialog.beta-dialog .actions{margin-top:24px;display:flex;flex-wrap:wrap;gap:12px}
+
+
+/* ClueBugle v6.5 simple after-action report */
+.cb-simple-rounds{display:grid;gap:12px;margin-top:16px}
+.cb-simple-round .review-body{display:grid;gap:15px}
+.cb-review-section{display:grid;gap:6px}
+.cb-match-line{display:grid;grid-template-columns:minmax(92px,1.2fr) minmax(58px,1fr) 58px;align-items:center;gap:10px;padding:3px 0}
+.cb-match-name{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cb-match-name small{opacity:.65;font-size:11px}
+.cb-match-meter{height:7px;border-radius:20px;background:rgba(140,140,140,.2);overflow:hidden}
+.cb-match-meter span{display:block;height:100%;background:var(--green,#70b59b);border-radius:20px}
+.cb-match-score{text-align:right;font-variant-numeric:tabular-nums;font-size:12px}
+.cb-gemini-commentary{margin-top:18px}

@@ -207,11 +207,11 @@ Return JSON ONLY with the exact schema:
 "clueAssessment":"plain-English evaluation", "targets":[{"word":"WORD","closeness":82,"explanation":"why"}],
 "guessAssessments":[{"word":"WORD","color":"red|blue|neutral|assassin","closeness":76,"explanation":"why that was or was not a sensible guess"}],
 "improvement":"concrete advice or clearer legal one-word clue"}]}.
-One round record per supplied round, in order. Max 55 words of explanation per round. Name the actual words and mistaken associations.`;
+One round record per supplied round, in order. Max 25 words of explanation per round. Name the actual words and mistaken associations.`;
       let review:Record<string,unknown>;
-      try{review=await askGemini(key,MODEL,prompt,.15,4800)}
+      try{review=await askGemini(key,VERIFIER_MODEL,prompt,.15,3200)}
       catch(e){if(String(e).includes('429')||String(e).includes('403'))throw e;
-        review=await askGemini(key,MODEL,prompt+'\nReturn a single compact valid JSON object, no markdown.',.1,4800)}
+        review=await askGemini(key,MODEL,prompt+'\nReturn a single compact valid JSON object, no markdown.',.1,3200)}
       const raw=Array.isArray(review.rounds)?review.rounds:[];
       const rows=filtered.map((round:any)=>{
         const row=raw.find((r:any)=>Number(r?.round)===round.round)||{};

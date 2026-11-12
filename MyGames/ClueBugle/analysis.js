@@ -89,21 +89,22 @@ function cbWrongRounds(g,teamFilter){
 }
 // Escape all model-authored text before rendering it into the game page.
 function cbLLMReviewHTML(data,rounds){
-  if(!data)return '<p>Gemini analysis unavailable. The recorded turn analysis below remains available.</p>';
-  const byRound=new Map((rounds||[]).map(r=>[Number(r.round),r]));
-  const items=(data.rounds||[]).slice(0,25).filter(x=>byRound.has(Number(x.round))).map(x=>{
-    const recorded=byRound.get(Number(x.round));
-    const detail=(text,max=700)=>esc(String(text||'').slice(0,max));
-    const words=(x.targets||[]).filter(y=>typeof y.word==='string').slice(0,9);
-    const attempts=(x.guessAssessments||[]).filter(y=>typeof y.word==='string').slice(0,12);
-    const parts=words.map(t=>`<li><b>${detail(t.word,26)}</b>: ${detail(t.explanation,220)} <small>Closeness ${Math.max(0,Math.min(100,Math.round(Number(t.closeness)||0)))}/100 (subjective model rating)</small></li>`).join('');
-    const chosen=attempts.map(a=>`<li><b>${detail(a.word,26)}</b> — ${detail(a.color,20)}, connection ${Math.max(0,Math.min(100,Math.round(Number(a.closeness)||0)))}/100: ${detail(a.explanation,240)}</li>`).join('');
-    return `<details class="review-turn"><summary><b>Round ${Number(x.round)} · ${detail(recorded.clue,26)} ${Number(recorded.n)}</b> <span class="review-round-status ${x.outcome==='successful'?'good':x.outcome==='partial'?'swap':'miss'}">${detail(x.outcome||'Reviewed',30)}</span></summary><div class="review-body"><p><b>Clue assessment:</b> ${detail(x.clueAssessment)}</p><p><b>${recorded.ai?'AI intended targets':'Likely human targets (inferred by Gemini, not recorded)'}:</b></p><ul>${parts||'<li>Targets not established</li>'}</ul><p><b>What was actually guessed, including mistakes:</b></p><ul>${chosen||'<li>No cards selected</li>'}</ul><p><b>How to improve:</b> ${detail(x.improvement)}</p></div></details>`;
+  if(!data)return '<p>Written feedback unavailable.</p>';
+  const record=new Map((rounds||[]).map(r=>[Number(r.round),r]));
+  const notes=(data.rounds||[]).filter(r=>record.has(Number(r.round))).map(r=>{
+    const known=record.get(Number(r.round));
+    const score=x=>`${Math.max(0,Math.min(100,Math.round(Number(x.closeness)||0)))}/100`;
+    const relevant=(r.targets||[]).filter(x=>typeof x.word==='string').map(x=>`${esc(x.word)} ${score(x)}`).join(', ');
+    const wrong=(r.guessAssessments||[]).filter(x=>x.color!=='red'&&typeof x.word==='string').map(x=>`${esc(x.word)} (${esc(x.color)}, ${score(x)})`).join(', ');
+    const correct=(r.guessAssessments||[]).filter(x=>x.color==='red'&&typeof x.word==='string').map(x=>`${esc(x.word)} ${score(x)}`).join(', ');
+    return `<div class="cb-written-round"><b>Round ${Number(r.round)}</b><p>${esc(String(r.clueAssessment||'').slice(0,190))}</p>
+      <p class="small"><b>${known.ai?'Intended words':'Likely human targets (inferred by Gemini, not recorded)'}:</b> ${relevant||'Not identified'}</p>
+      <p class="small"><b>Correct guesses:</b> ${correct||'None'}${wrong?` · <b>Incorrect:</b> ${wrong}`:''}</p></div>`;
   }).join('');
-  return `<p>${esc(String(data.overview||'').slice(0,1100))}</p><p class="small muted">The 0–100 ratings are Gemini’s subjective assessments of how closely a card relates to the clue, not measured probabilities or guaranteed human agreement. They are separate from the offline similarity scores below.</p>${items||'<p>No reviewed rounds were returned.</p>'}`;
+  return `<p>${esc(String(data.overview||'').slice(0,450))}</p>${notes}`;
 }
 function cbStartLLMReview(g,role){
-  if(g._llmReviewState)return;
+  if(g._llmReviewState==='loading'||g._llmReviewState==='ready')return;
   g._llmReviewState='loading';
   // Snapshot turn history before submitting; never leak the hidden board
   // during gameplay. This is called only once g.winner is present.
@@ -117,37 +118,67 @@ function cbStartLLMReview(g,role){
     g._llmReviewState='error';
     if(game!==g||mode!=='solo')return;
     const el=document.getElementById('cb-llm-report');
-    if(el)el.innerHTML='<p>Gemini could not generate the detailed review ('+esc(String(error.message||error).slice(0,130))+'). The recorded analysis below is still available.</p>';
+    if(el)el.innerHTML='<p>Written commentary is temporarily unavailable. Word-by-word comparisons above are unaffected.</p>';
   });
 }
 function cbPostgame(g,solo){
   if(!g?.winner)return '';
-  const escape=s=>esc(s);
-  const loser=g.winner==='red'?'blue':'red';
-  const assassinHit=g.words.find((w,i)=>g.keys?.[i]==='assassin'&&g.revealed[i]);
-  const reason=assassinHit?`${loser.toUpperCase()} selected ${assassinHit}, the assassin. That immediately ended the match.`:
-    `${g.winner.toUpperCase()} uncovered every one of its agents first.`;
-  const unclaimed=team=>g.words.filter((w,i)=>g.keys?.[i]===team&&!g.revealed[i]);
-  const red=unclaimed('red'),blue=unclaimed('blue');
-  const userTeam=solo?'red':(typeof online!=='undefined'?online?.player?.team:null);
-  const notes=(g.review||[]).filter(note=>!userTeam||note.team===userTeam);
-  function cbRoundResult(note){
-    const intended=note.targets.filter(x=>x.key===note.team).map(x=>x.word);
-    const picked=note.guesses.filter(x=>x.key===note.team).map(x=>x.word);
-    const wrong=note.guesses.some(x=>x.key!==note.team);
-    if(!wrong&&intended.length&&intended.every(w=>picked.includes(w)))return {label:'All intended cards',type:'good'};
-    if(!wrong&&intended.length&&picked.length>=intended.length&&intended.some(w=>!picked.includes(w)))return {label:'Friendly swap',type:'swap'};
-    return {label:'Missed target',type:'miss'};
-  }
-  const rows=notes.map((note,idx)=>{
-    const result=cbRoundResult(note);
-    const guesses=note.guesses.length?note.guesses.map(x=>`${escape(x.word)} (${escape(cbCardType(x.key,note.team))}; match ${cbPct(cbSimilarity(note.word,x.word))})`).join(' → '):'No guesses followed this clue.';
-    const targets=note.targets.length?note.targets.map(x=>`<span class="review-chip good">${escape(x.word)} <small>our card · ${cbPct(x.score)}</small></span>`).join(' '):'<span class="muted">No confidently ranked friendly targets</span>';
-    const danger=note.danger.filter(x=>x.key!==note.team&&x.score>=note.targets.at(-1)?.score-.07);
-    const caution=danger.length?`<p class="review-warning">Nearby danger (not intended): ${escape(danger.map(x=>x.word+' ('+cbCardType(x.key,note.team)+', '+cbPct(x.score)+')').join(', '))}.</p>`:'';
-    return `<details class="review-turn" ${idx===notes.length-1?'open':''}><summary><span class="review-team ${note.team}">${note.team.toUpperCase()}</span> <b>${escape(note.word)} · ${note.n}</b> <small>Round ${note.round}</small> <span class="review-round-status ${result.type}">${result.label}</span></summary><div class="review-body"><p>${escape(cbWhy(note))}</p><div><b>Friendly cards the bot intended:</b><div class="review-chips">${targets}</div></div>${caution}<p><b>What actually got guessed (with scores):</b> ${guesses}</p>${result.type==='swap'?'<p class="review-warning">You found the right number of team cards, but one or more were different from those planned by the AI.</p>':''}${cbNumericalDetails(note)}<p class="small muted">This is the bot's recorded ranking and risk estimate, not a guaranteed human interpretation.</p></div></details>`;
+  const team=solo?'red':(typeof online!=='undefined'?online?.player?.team:'red');
+  const rounds=(g.roundReview||[]).filter(r=>r.team===team);
+  const format=(v)=>esc(String(v));
+  const scale=(v)=>{const n=Number(v);return Number.isFinite(n)?Math.max(0,Math.min(100,Math.round(n*100))):null};
+  // Scores are offline semantic association estimates, NOT measured human
+  // agreement or calibrated probabilities. They always load, even if Gemini fails.
+  const percent=(clue,word,recorded)=>{
+    const s=recorded?.scores?.find(x=>x.word===word)?.score;
+    return scale(s==null?cbSimilarity(clue,word):s);
+  };
+  const meter=(word,color,pct,tag)=>`<div class="cb-match-line"><div class="cb-match-name"><b>${format(word)}</b><small>${format(tag)}</small></div><div class="cb-match-meter"><span style="width:${pct??0}%"></span></div><b class="cb-match-score">${pct==null?'—':pct+'/100'}</b></div>`;
+  const cards=rounds.map((r,index)=>{
+    const note=(g.review||[]).find(n=>n.team===team&&n.round===r.round&&n.word===r.word);
+    const targets=(note?.targets||[]).map(x=>x.word);
+    const inferred=!note;
+    // The human Spymaster's true intentions were never recorded. Infer only
+    // from friendly board cards, and say explicitly that these are guesses.
+    const guesses=r.guesses||[];
+    const candidates=(r.scores||[]).filter(x=>x.key===team);
+    const likely=inferred?candidates.slice(0,Math.max(1,Math.min(3,r.n))).map(x=>x.word):targets;
+    const intended=likely.length?likely.map(w=>meter(w,team,percent(r.word,w,r),'friendly card')).join(''):'<p class="muted small">No intended targets recorded.</p>';
+    const picked=guesses.length?guesses.map(x=>meter(x.word,x.key,percent(r.word,x.word,r),x.key===team?'correct':cbCardType(x.key,team))).join(''):'<p class="muted small">No guesses this round.</p>';
+    const hazards=(r.scores||[]).filter(x=>x.key!==team).sort((a,b)=>b.score-a.score);
+    const assassin=hazards.find(x=>x.key==='assassin');
+    const closest=hazards.filter(x=>x.key!=='assassin').slice(0,2);
+    const nearby=[...new Map([...(assassin?[assassin]:[]),...closest].map(x=>[x.word,x])).values()];
+    const risky=nearby.length?nearby.map(x=>meter(x.word,x.key,percent(r.word,x.word,r),cbCardType(x.key,team))).join(''):'<p class="muted small">No unrevealed risky cards recorded.</p>';
+    const correct=guesses.filter(x=>x.key===team).length;
+    const missed=guesses.filter(x=>x.key!==team).length;
+    const summary=missed?`${correct} correct · ${missed} wrong`: `${correct} correct`;
+    return `<details class="review-turn cb-simple-round" ${index===0?'open':''}>
+      <summary><b>${format(r.word)} · ${Number(r.n)}</b><small> Round ${Number(r.round)} · ${summary}</small></summary>
+      <div class="review-body">
+        <div class="cb-review-section"><b>${inferred?'Likely intended words (inferred)':'Intended words'}</b>${intended}</div>
+        <div class="cb-review-section"><b>What was guessed</b>${picked}</div>
+        <div class="cb-review-section"><b>Other tempting words</b>${risky}</div>
+      </div>
+    </details>`;
   }).join('');
-  const guessEvents=(g.log||[]).filter(x=>x.includes(' guessed ')).slice(0,8);
-  const llmSection=solo?`<section class="review-explain"><h3>Gemini's detailed review — your ${myRole==='spymaster'?'clue-giving':'guessing'} turns</h3><div id="cb-llm-report">${g._llmReviewState==='ready'?cbLLMReviewHTML(g._llmReviewData,(g.roundReview||[]).filter(r=>r.team==='red')):g._llmReviewState==='error'?'The review could not be loaded.': 'Reviewing your clues, intended matches, wrong guesses, and missed opportunities…'}</div></section>`:'';
-  return `<section id="postgame" class="postgame panel"><div class="review-heading"><div><div class="eyebrow">After-action report</div><h2>How this game unfolded</h2></div><span class="review-result ${g.winner}">${g.winner.toUpperCase()} WIN</span></div><p class="review-outcome">${escape(reason)}</p><div class="review-stats"><div><b>${remaining(g,'red')}</b><small>Red cards left</small></div><div><b>${remaining(g,'blue')}</b><small>Blue cards left</small></div><div><b>${notes.length}</b><small>Your team's AI clues</small></div></div><div class="review-explain"><h3>How to read the analysis</h3><p>Only your team's clues are shown. Each round is labeled <b>All intended cards</b>, <b>Friendly swap</b> (you found different friendly words), or <b>Missed target</b>. Expand a round to see its planned cards, model scores, alternatives, and mistakes. Match scores are relative associations, not probabilities.</p></div>${llmSection}${cbWrongRounds(g,userTeam)}<h3>Your AI teammate's clues</h3>${rows||`<p>${solo?'You played the spymaster, so no teammate AI clues were recorded.':'No AI clue decisions were recorded for your team.'}</p>`}<div class="review-footer"><h3>Words still hidden</h3><p><b>Red:</b> ${red.length?escape(red.join(', ')):'None'}<br><b>Blue:</b> ${blue.length?escape(blue.join(', ')):'None'}</p>${!notes&&guessEvents.length?`<h3>Recent guesses</h3><p>${escape(guessEvents.join(' · '))}</p>`:''}<p class="small muted">The colors of all unselected cards are now visible on the board. Every ending—including choosing the assassin—shows this report.</p></div></section>`;
+  const noData=rounds.length?'':'<p>Round-by-round records were not available for this match.</p>';
+  const llm=solo?`<details class="review-turn cb-gemini-commentary"><summary><b>Gemini's written feedback</b> <small>optional</small></summary>
+    <div class="review-body"><div id="cb-llm-report">${g._llmReviewState==='ready'?cbLLMReviewHTML(g._llmReviewData,rounds):g._llmReviewState==='error'?'The written review was unavailable. Your word comparisons above are complete.':'Writing a brief review…'}</div>
+    <button class="secondary" id="cb-retry-review" type="button">Retry written review</button></div></details>`:'';
+  return `<section id="postgame" class="postgame panel"><div class="review-heading"><div><div class="eyebrow">After-action report</div><h2>Clue strength</h2></div><span class="review-result ${format(g.winner)}">${format(g.winner.toUpperCase())} WIN</span></div>
+    <p class="small muted">Connection scores compare clue and word meanings on a 0–100 relative scale. They are estimates, not probabilities. The assassin is always listed separately when available.</p>
+    <div class="cb-simple-rounds">${cards||noData}</div>${llm}
+  </section>`;
+}
+
+if(typeof window!=='undefined'&&typeof document!=='undefined'&&!window.__cbRetryReviewBound){
+  window.__cbRetryReviewBound=true;
+  document.addEventListener('click',event=>{
+    if(event.target?.closest?.('#cb-retry-review') && typeof game!=='undefined'&&game?.winner){
+      game._llmReviewState=null;cbStartLLMReview(game,typeof myRole==='string'?myRole:'guesser');
+      const el=document.getElementById('cb-llm-report');
+      if(el)el.textContent='Trying again…';
+    }
+  });
 }
