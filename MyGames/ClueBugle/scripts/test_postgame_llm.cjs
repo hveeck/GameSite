@@ -1,0 +1,15 @@
+const vm=require('vm'),fs=require('fs'),assert=require('assert');
+const source=fs.readFileSync('analysis.js','utf8');
+const start=source.indexOf('function cbLLMReviewHTML(');
+const stop=source.indexOf('function cbPostgame(',start);
+assert(start>0&&stop>start);
+const ctx={esc:s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'),game:null,mode:'solo'};
+vm.createContext(ctx);vm.runInContext(source.slice(start,stop).replace(/function cbStartLLMReview\([\s\S]*$/,''),ctx);
+const data={overview:'Review <b> safely',rounds:[{round:2,outcome:'missed',clueAssessment:'PHYSICS clearly suggests FORCE and GRAVITY',targets:[{word:'FORCE',closeness:95,explanation:'fundamental physical force'}],guessAssessments:[{word:'GRAVITY',color:'red',closeness:96,explanation:'central physics concept'},{word:'STEAM',color:'neutral',closeness:30,explanation:'only indirectly relevant'}],improvement:'Continue to GRAVITY'}]};
+const out=ctx.cbLLMReviewHTML(data,[{round:2,clue:'PHYSICS',n:2,ai:false}]);
+assert(out.includes('STEAM')&&out.includes('30/100'));
+assert(out.includes('Likely human targets (inferred by Gemini, not recorded)'));
+assert(out.includes('&lt;b&gt;')&&!out.includes('Review <b>'));
+assert(out.includes('GRAVITY')&&out.includes('96/100'));
+assert(!ctx.cbLLMReviewHTML({overview:'',rounds:[]},[]).includes('undefined'));
+console.log('PASS: postgame review, human clue inference, wrong-card scores, escaped model text');

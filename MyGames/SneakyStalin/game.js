@@ -10792,3 +10792,70 @@ window.botDecideVote=function(b){
   // Once credible public supporters exist, use the normal strategic ballot.
   return ss54OldVote.apply(this,arguments);
 };
+
+// ===== v55: STALIN-ZONE COALITION VOTING =====
+function ss55FailedElectionRun(){
+  var history=game.voteLog||[], count=0;
+  // Chaos resets the tracker but does not elect a government.
+  for(var i=history.length-1;i>=0 && history[i].zone && !history[i].passed;i--) count++;
+  return Math.max(count,game.electionTracker);
+}
+
+function ss55HardOpposition(b,i){
+  return i!==b && (v34KnownRed(b,i)||hasDispute(b,i));
+}
+
+function ss55TicketRisk(P,C,view,st){
+  var ticket=brainTicket(view,P,C,st);
+  var stalin=game.confirmedNotStalin[C]?0:ticket.pS;
+  // The Secretary controls any execution, so weigh their alignment more
+  // heavily when a red policy can grant that power.
+  var execution=st.r===3||st.r===4 ? .25*view.F[P] : 0;
+  return (1-stalin)*ticket.eRed + 1.5*stalin + execution;
+}
+
+var ss55OldNomination=window.pickNomination;
+window.pickNomination=function(P){
+  if(!BRAIN||game.gameOver||game.communistPolicies<3||game.roles[P]!=='white'||
+     ss55FailedElectionRun()<1 || (game.baPending && game.baPending.pres===P)){
+    return ss55OldNomination.apply(this,arguments);
+  }
+  var st=brainState(), view=brainView(P), publicView=brainView(-1);
+  var best=null, bestRisk=Infinity;
+  v24LegalPremiers(P).forEach(function(C){
+    if(ss55HardOpposition(P,C))return;
+    var risk=ss55TicketRisk(P,C,view,st)+ss55TicketRisk(P,C,publicView,st)
+      +.10*Math.min(3,ss52FeudRisk(P,C));
+    if(risk<bestRisk){best=C;bestRisk=risk;}
+  });
+  return best===null?ss55OldNomination.apply(this,arguments):best;
+};
+
+var ss55OldVote=window.botDecideVote;
+window.botDecideVote=function(b){
+  if(V36.on && V36.key===v36Key() && Object.prototype.hasOwnProperty.call(V36.committed,b)){
+    return V36.committed[b];
+  }
+  var P=game.currentPresident,C=game.nominatedChancellor;
+  if(!BRAIN||game.gameOver||game.communistPolicies<3||game.roles[b]!=='white'||
+     P==null||C==null||b===P)return ss55OldVote.apply(this,arguments);
+
+  var failures=ss55FailedElectionRun();
+  if(!failures||ss55HardOpposition(b,P)||ss55HardOpposition(b,C)){
+    return ss55OldVote.apply(this,arguments);
+  }
+
+  var st=brainState(),view=brainView(b);
+  var stalin=game.confirmedNotStalin[C]?0:view.S[C];
+  var urgent=st.tracker>=2||failures>=4;
+  // A public card feud counts as uncertainty here. A first-hand red check,
+  // direct dispute, or strong Stalin signal still blocks this fallback.
+  if(stalin<=(urgent?.33:.24) && view.F[C]<=(urgent?.76:.64) &&
+     view.F[P]<=(urgent?.80:.68)){
+    var risk=ss55TicketRisk(P,C,view,st);
+    var matchPoint=st.w>=4||st.r>=5;
+    var tolerance=urgent?(matchPoint?.15:.09):.04;
+    if(risk<=st.pChaosRed+tolerance)return true;
+  }
+  return ss55OldVote.apply(this,arguments);
+};
