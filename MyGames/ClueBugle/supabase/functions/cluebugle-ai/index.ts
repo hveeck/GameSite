@@ -63,35 +63,35 @@ function parseJson(text: string): Record<string, unknown> {
 // Ask Gemini with explicit JSON output. Safety blocks and quota exhaustion
 // are surfaced as recoverable errors rather than accepting an invalid move.
 async function askGemini(key:string,model:string,prompt:string,temperature=.3,maxOutputTokens=2700) {
-  const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),maxOutputTokens>2700?48000:22000);
-  let response:Response;
-  // Google documents 503 as transient server overload. Retry that specific
-  // upstream status with bounded backoff, preserving the normal model safety
-  // response and every downstream legality/risk check.
-  for(let attempt=0;;attempt++){
-    try {
-      response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{
+  // Fresh timeout per attempt; cap retries so games remain responsive.
+  let lastError:Error=new Error('Gemini temporarily unavailable');
+  for(let attempt=0;attempt<4;attempt++){
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),maxOutputTokens>3000?21000:11000);
+    try{
+      const response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{
         method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json','x-goog-api-key':key},
-        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature,maxOutputTokens}})
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature,maxOutputTokens,
+          ...(maxOutputTokens<=500?{thinkingConfig:{thinkingBudget:0}}:{})}})
       });
-    } catch(e) {
-      clearTimeout(timeout);
-      throw e;
-    }
-    if(response.status===503 && attempt<2){
-      await response.body?.cancel().catch(()=>{});
-      await new Promise(resolve=>setTimeout(resolve,attempt===0?650:1700));
-      continue;
-    }
-    break;
+      if(!response.ok){
+        lastError=new Error(`Gemini request failed (${response.status})`);
+        if(![429,500,502,503,504].includes(response.status)||attempt===3)throw lastError;
+        await response.body?.cancel().catch(()=>{});
+      }else{
+        const raw=await response.json();
+        const answer=raw.candidates?.[0]?.content?.parts?.map((p:{text?:string})=>p.text||'').join('')||'';
+        if(!answer)throw new Error(`Gemini returned no text (${raw.candidates?.[0]?.finishReason||raw.promptFeedback?.blockReason||'unknown'})`);
+        return parseJson(answer);
+      }
+    }catch(e){
+      lastError=e instanceof Error?e:new Error(String(e));
+      const retriable=lastError.name==='AbortError'||/Gemini request failed \((429|500|502|503|504)\)/.test(String(lastError));
+      if(!retriable||attempt===3)throw lastError;
+    }finally{clearTimeout(timer)}
+    await new Promise(resolve=>setTimeout(resolve,[400,900,1800][attempt]));
   }
-  clearTimeout(timeout);
-  if(!response.ok)throw Error(`Gemini request failed (${response.status})`);
-  const raw=await response.json();
-  const text=raw.candidates?.[0]?.content?.parts?.map((p:{text?:string})=>p.text||'').join('')||'';
-  if(!text)throw Error(`Gemini returned no text (${raw.candidates?.[0]?.finishReason||raw.promptFeedback?.blockReason||'unknown'})`);
-  return parseJson(text);
+  throw lastError;
 }
 
 // Shared rules are provided to both the first generation and the repair prompt.
@@ -207,11 +207,11 @@ Return JSON ONLY with the exact schema:
 "clueAssessment":"plain-English evaluation", "targets":[{"word":"WORD","closeness":82,"explanation":"why"}],
 "guessAssessments":[{"word":"WORD","color":"red|blue|neutral|assassin","closeness":76,"explanation":"why that was or was not a sensible guess"}],
 "improvement":"concrete advice or clearer legal one-word clue"}]}.
-One round record per supplied round, in order. Max 180 words of explanation per round.`;
+One round record per supplied round, in order. Max 55 words of explanation per round. Name the actual words and mistaken associations.`;
       let review:Record<string,unknown>;
-      try{review=await askGemini(key,MODEL,prompt,.25,10000)}
+      try{review=await askGemini(key,MODEL,prompt,.15,4800)}
       catch(e){if(String(e).includes('429')||String(e).includes('403'))throw e;
-        review=await askGemini(key,MODEL,prompt+'\nReturn a single compact valid JSON object, no markdown.',.1,10000)}
+        review=await askGemini(key,MODEL,prompt+'\nReturn a single compact valid JSON object, no markdown.',.1,4800)}
       const raw=Array.isArray(review.rounds)?review.rounds:[];
       const rows=filtered.map((round:any)=>{
         const row=raw.find((r:any)=>Number(r?.round)===round.round)||{};
@@ -294,6 +294,33 @@ Return an ordered list with at most ${Math.min(10, available.length)} words,
 most convincing first, plus your recommended number of guesses for this clue.
 The recommended number may be lower than the clue count if clues are unsafe.
 JSON: {"guesses":["WORD1","WORD2"],"stopAfter":2,"reason":"brief explanation"}.`;
+    }
+    // Fast final-card mode: avoids multi-candidate generation and a second model
+    // call. Legal clue validation remains, but independent risk verification is
+    // skipped only when exactly one friendly target remains.
+    if(role==='spymaster'){
+      const own=available.filter((w:string)=>data.keys[board.indexOf(w)]===team);
+      if(own.length===1){
+        const target=own[0];
+        const assassin=available.filter((w:string)=>data.keys[board.indexOf(w)]==='assassin');
+        const others=available.filter((w:string)=>data.keys[board.indexOf(w)]!==team);
+        const quick=`You are a cautious Codenames Spymaster. Exactly ONE friendly word remains: ${target}.
+${CLUE_RULES}
+FULL BOARD: ${JSON.stringify(board)}.
+ASSASSIN: ${JSON.stringify(assassin)}. OTHER UNREVEALED DISTRACTORS: ${JSON.stringify(others)}.
+PREVIOUS CLUES: ${JSON.stringify(history)}.
+Choose a clear, legal, single-word clue for the target; avoid any association with
+assassin, enemy and bystander words. Output ONLY JSON:
+{"candidates":[{"word":"CLUE","n":1,"targets":["${target}"],"reason":"short reason"}]}.`;
+        for(let attempt=0;attempt<2;attempt++){
+          const response=await askGemini(key,MODEL,quick+(attempt?' Pick a different legal word.':''),.12,400);
+          const choices=Array.isArray(response.candidates)?response.candidates:[response];
+          const legal=choices.map((c:any)=>legalCandidate(c,board,available,own,history)).find(Boolean);
+          if(legal)return json({...legal,provider:'gemini',verification:{predicted:[target],risks:[],score:0,
+            note:'Final-card fast path: independent verifier bypassed'}});
+        }
+        return json({error:'No legal final-card clue after regeneration',code:'CLUE_VALIDATION_FAILED'},422);
+      }
     }
     let output:Record<string,unknown>;
     try{output=await askGemini(key,MODEL,prompt,level==='hard'?.25:.5)}
