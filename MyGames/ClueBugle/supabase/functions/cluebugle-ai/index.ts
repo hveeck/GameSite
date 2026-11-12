@@ -12,6 +12,9 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 const validWord = (s: unknown): s is string => typeof s === 'string' && /^[A-Z]{2,24}$/.test(s);
 const validTeam = (s: unknown) => ['red', 'blue', 'neutral', 'assassin'].includes(String(s));
 const MODEL = Deno.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
+// The verifier only ranks publicly visible word associations. Keep the
+// stronger model for actual clues and detailed postgame reviews.
+const VERIFIER_MODEL = Deno.env.get('GEMINI_VERIFIER_MODEL') || 'gemini-2.5-flash-lite';
 // Best-effort per-worker throttling; Google free-tier quotas are the final
 // limit. A production, paid deployment should add durable DB-backed quotas.
 const traffic = new Map<string,{minute:number,count:number}>();
@@ -63,10 +66,27 @@ async function askGemini(key:string,model:string,prompt:string,temperature=.3,ma
   const controller=new AbortController();
   const timeout=setTimeout(()=>controller.abort(),maxOutputTokens>2700?48000:22000);
   let response:Response;
-  try { response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{
-    method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json','x-goog-api-key':key},
-    body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature,maxOutputTokens}})
-  }); } finally {clearTimeout(timeout)}
+  // Google documents 503 as transient server overload. Retry that specific
+  // upstream status with bounded backoff, preserving the normal model safety
+  // response and every downstream legality/risk check.
+  for(let attempt=0;;attempt++){
+    try {
+      response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{
+        method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json','x-goog-api-key':key},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature,maxOutputTokens}})
+      });
+    } catch(e) {
+      clearTimeout(timeout);
+      throw e;
+    }
+    if(response.status===503 && attempt<2){
+      await response.body?.cancel().catch(()=>{});
+      await new Promise(resolve=>setTimeout(resolve,attempt===0?650:1700));
+      continue;
+    }
+    break;
+  }
+  clearTimeout(timeout);
   if(!response.ok)throw Error(`Gemini request failed (${response.status})`);
   const raw=await response.json();
   const text=raw.candidates?.[0]?.content?.parts?.map((p:{text?:string})=>p.text||'').join('')||'';
@@ -74,11 +94,28 @@ async function askGemini(key:string,model:string,prompt:string,temperature=.3,ma
   return parseJson(text);
 }
 
+// Shared rules are provided to both the first generation and the repair prompt.
+// Game legality must also be checked on the server (see legalCandidate).
+const CLUE_RULES = `STRICT CODENAMES CLUE RULES (mandatory):
+1. Your clue must be ONE ordinary English word: letters only. No spaces, hyphens, numbers, initials or phrases.
+2. The clue must NOT be any word currently on the board, revealed OR unrevealed.
+3. The clue must NOT be a plural, inflection, or obvious derivative of a board word.
+4. The clue must NOT contain an entire board word as an obvious component (e.g. RAINBOW for RAIN).
+5. Never reuse a clue already given in this match.
+6. Use meaning-based associations, not spelling, initial letters, word location, or the number of letters.
+7. The number n must equal the number of distinct, unrevealed FRIENDLY targets you list. Never list an enemy, bystander, or assassin as an intended target.
+8. Look for intuitive 2-3 target links when safe; a single-target clue is preferable to a risky multi-target clue.
+9. Avoid clues strongly associated with the assassin. Evaluate dangerous alternatives before proposing a clue.
+The legality rules do not change with Conservative, Balanced or Aggressive settings.`;
+
 // Candidate validation is independent of the model's confidence.
 function legalCandidate(c:any, board:string[], available:string[], own:string[], history:string[]) {
   const word=String(c?.word||'').trim().toUpperCase();
-  const n=Number(c?.n);
-  const targets=Array.isArray(c?.targets)?c.targets.map((x:unknown)=>String(x).toUpperCase()):[];
+  const targets=Array.isArray(c?.targets)?c.targets.map((x:unknown)=>String(x).trim().toUpperCase()):[];
+  // A model occasionally says n=3 but provides two specific targets.
+  // The intended words, not the inconsistent count, determine the legal clue number.
+  const statedN=Number(c?.n);
+  const n=targets.length>0 && targets.length<=9 ? targets.length : statedN;
   const singular=(s:string)=>s.endsWith('IES')?s.slice(0,-3)+'Y':s.endsWith('S')?s.slice(0,-1):s;
   const legal=validWord(word)&&!board.some((w:string)=>singular(w)===singular(word)||(w.length>=4&&(word.startsWith(w)||word.endsWith(w))));
   const safe=Number.isInteger(n)&&n>=1&&n<=Math.min(9,own.length)&&targets.length===n&&
@@ -98,7 +135,14 @@ Do not use any secret card identities: you have not been given any.
 Candidates: ${JSON.stringify(candidates.map(x=>({word:x.word,n:x.n})))}.
 Return JSON only: {"rankings":[{"word":"CLUE","guesses":["CARD", "CARD"]}]}.
 Only use words appearing on the visible board. One entry for each clue.`;
-  const result=await askGemini(key,model,prompt,.12);
+  let result:Record<string,unknown>;
+  try { result=await askGemini(key,VERIFIER_MODEL,prompt,.12); }
+  catch(e){
+    // A model might not be available to this API key. For that case only,
+    // use the working primary model; never bypass verification.
+    if(!String(e).includes('404'))throw e;
+    result=await askGemini(key,model,prompt,.12);
+  }
   const rows=Array.isArray(result.rankings)?result.rankings:[];
   return new Map<string,string[]>(rows.map((x:any)=>[String(x.word||'').toUpperCase(),
     Array.isArray(x.guesses)?x.guesses.map((w:unknown)=>String(w).toUpperCase()).filter((w:string)=>available.includes(w)):[]]));
@@ -214,6 +258,7 @@ One round record per supplied round, in order. Max 180 words of explanation per 
       const cards = available.map((word: string) => ({ word, color: keys[board.indexOf(word)] }));
       const ours = cards.filter((x: {color: string}) => x.color === team).length;
       prompt = `You are a brilliant HUMAN Codenames spymaster. Return JSON only.
+${CLUE_RULES}
 TEAM: ${team}. DIFFICULTY: ${level}. REMAINING FRIENDLY: ${ours}.
 UNREVEALED BOARD WITH HIDDEN COLORS: ${JSON.stringify(cards)}.
 RECENT GAME LOG: ${JSON.stringify(history)}.
@@ -260,9 +305,43 @@ JSON: {"guesses":["WORD1","WORD2"],"stopAfter":2,"reason":"brief explanation"}.`
     }
     if(role==='spymaster'){
       const own=available.filter((w:string)=>data.keys[board.indexOf(w)]===team);
-      const rawCandidates=Array.isArray(output.candidates)?output.candidates:[output];
-      const candidates=rawCandidates.map((c:any)=>legalCandidate(c,board,available,own,history)).filter(Boolean).slice(0,6);
-      if(!candidates.length)return json({error:'No legal Gemini clue candidates; retry or use fallback'},422);
+      const normalize=(result:Record<string,unknown>)=>{
+        const raw=Array.isArray(result.candidates)?result.candidates:[result];
+        return raw.map((c:any)=>legalCandidate(c,board,available,own,history))
+          .filter(Boolean).slice(0,6);
+      };
+      let candidates=normalize(output);
+      if(!candidates.length){
+        // A 422 is our validator rejecting all proposed clues, not a Gemini outage.
+        // Regenerate once with the exact legal target list, keeping all safety rules.
+        const retryPrompt=`${CLUE_RULES}
+Your previous clue proposals could not be used because
+        they failed the game's strict legality check. Generate FIVE NEW clues.
+        UNREVEALED BOARD: ${JSON.stringify(available)}.
+        UNREVEALED FRIENDLY WORDS (only these may be targets):
+        ${JSON.stringify(own)}.
+        PREVIOUS CLUES: ${JSON.stringify(history)}.
+        Give one-word ordinary English clues, not any board word or its
+        inflection, without including an entire visible board word.
+        For each clue, choose 1 to ${Math.min(6,own.length)} distinct friendly
+        targets, and set n EXACTLY to the number of listed targets.
+        Focus on strong intuitive links and avoid clues suggesting the assassin
+        or opponents. Risk strategy: ${strategy}. Return JSON ONLY:
+        {"candidates":[{"word":"EXAMPLE","n":2,"targets":["TARGET1","TARGET2"],
+        "reason":"why this connects those exact words"}]}.
+        When no safe pair exists, a safe one-target clue is acceptable.`;
+        try{
+          const repaired=await askGemini(key,MODEL,retryPrompt,.18);
+          candidates=normalize(repaired);
+        }catch(e){
+          if(String(e).includes('429')||String(e).includes('403'))throw e;
+          // Keep the original validation error rather than mislabel as service outage.
+        }
+      }
+      if(!candidates.length)return json({
+        error:'No legal Gemini clue candidates after regeneration',
+        code:'CLUE_VALIDATION_FAILED'
+      },422);
       let rankings:Map<string,string[]>;
       try{rankings=await verifyClues(key,MODEL,available,candidates)}
       catch(e){
