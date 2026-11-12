@@ -101,7 +101,7 @@ function cbLLMReviewHTML(data,rounds){
       <p class="small"><b>${known.ai?'Intended words':'Likely human targets (inferred by Gemini, not recorded)'}:</b> ${relevant||'Not identified'}</p>
       <p class="small"><b>Correct guesses:</b> ${correct||'None'}${wrong?` · <b>Incorrect:</b> ${wrong}`:''}</p></div>`;
   }).join('');
-  return `<p>${esc(String(data.overview||'').slice(0,450))}</p>${notes}`;
+  return `<p>${esc(String(data.overview||'').slice(0,950))}</p>${notes}`;
 }
 function cbStartLLMReview(g,role){
   if(g._llmReviewState==='loading'||g._llmReviewState==='ready')return;
@@ -163,12 +163,12 @@ function cbPostgame(g,solo){
     </details>`;
   }).join('');
   const noData=rounds.length?'':'<p>Round-by-round records were not available for this match.</p>';
-  const llm=solo?`<details class="review-turn cb-gemini-commentary"><summary><b>Gemini's written feedback</b> <small>optional</small></summary>
-    <div class="review-body"><div id="cb-llm-report">${g._llmReviewState==='ready'?cbLLMReviewHTML(g._llmReviewData,rounds):g._llmReviewState==='error'?'The written review was unavailable. Your word comparisons above are complete.':'Writing a brief review…'}</div>
+  const llm=solo?`<details class="review-turn cb-gemini-commentary" open><summary><b>Five-sentence game summary</b> <small>Gemini · optional</small></summary>
+    <div class="review-body"><div id="cb-llm-report">${g._llmReviewState==='ready'?cbLLMReviewHTML(g._llmReviewData,rounds):g._llmReviewState==='error'?'The written review was unavailable. Your word comparisons above are complete.':'Writing your five-sentence summary…'}</div>
     <button class="secondary" id="cb-retry-review" type="button">Retry written review</button></div></details>`:'';
   return `<section id="postgame" class="postgame panel"><div class="review-heading"><div><div class="eyebrow">After-action report</div><h2>Clue strength</h2></div><span class="review-result ${format(g.winner)}">${format(g.winner.toUpperCase())} WIN</span></div>
     <p class="small muted">Connection scores compare clue and word meanings on a 0–100 relative scale. They are estimates, not probabilities. The assassin is always listed separately when available.</p>
-    <div class="cb-simple-rounds">${cards||noData}</div>${llm}
+    ${llm}<div class="cb-simple-rounds">${cards||noData}</div>
   </section>`;
 }
 

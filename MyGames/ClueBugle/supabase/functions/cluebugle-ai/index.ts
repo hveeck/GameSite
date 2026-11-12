@@ -62,36 +62,38 @@ function parseJson(text: string): Record<string, unknown> {
 
 // Ask Gemini with explicit JSON output. Safety blocks and quota exhaustion
 // are surfaced as recoverable errors rather than accepting an invalid move.
-async function askGemini(key:string,model:string,prompt:string,temperature=.3,maxOutputTokens=2700) {
-  // Fresh timeout per attempt; cap retries so games remain responsive.
-  let lastError:Error=new Error('Gemini temporarily unavailable');
-  for(let attempt=0;attempt<4;attempt++){
+async function askGemini(key:string,model:string,prompt:string,temperature=.3,maxOutputTokens=950,
+                         deadline=Date.now()+16000, thinkingBudget=256) {
+  // Never stack four full-length waits. Every stage respects the SAME turn deadline.
+  let last:Error=new Error('Gemini temporarily unavailable');
+  for(let attempt=0; attempt<2; attempt++){
+    const remaining=deadline-Date.now();
+    if(remaining<650)throw last;
     const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),maxOutputTokens>3000?21000:11000);
+    const timer=setTimeout(()=>controller.abort(),Math.max(400,Math.min(7500,remaining-100)));
     try{
       const response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{
-        method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json','x-goog-api-key':key},
-        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature,maxOutputTokens,
-          ...(maxOutputTokens<=500?{thinkingConfig:{thinkingBudget:0}}:{})}})
+        method:'POST',signal:controller.signal,
+        headers:{'Content-Type':'application/json','x-goog-api-key':key},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{
+          responseMimeType:'application/json',temperature,maxOutputTokens,
+          thinkingConfig:{thinkingBudget}}})
       });
-      if(!response.ok){
-        lastError=new Error(`Gemini request failed (${response.status})`);
-        if(![429,500,502,503,504].includes(response.status)||attempt===3)throw lastError;
-        await response.body?.cancel().catch(()=>{});
-      }else{
+      if(response.ok){
         const raw=await response.json();
         const answer=raw.candidates?.[0]?.content?.parts?.map((p:{text?:string})=>p.text||'').join('')||'';
-        if(!answer)throw new Error(`Gemini returned no text (${raw.candidates?.[0]?.finishReason||raw.promptFeedback?.blockReason||'unknown'})`);
+        if(!answer)throw Error(`Gemini returned no text (${raw.candidates?.[0]?.finishReason||raw.promptFeedback?.blockReason||'unknown'})`);
         return parseJson(answer);
       }
+      last=new Error(`Gemini request failed (${response.status})`);
+      if(![429,500,502,503,504].includes(response.status))throw last;
     }catch(e){
-      lastError=e instanceof Error?e:new Error(String(e));
-      const retriable=lastError.name==='AbortError'||/Gemini request failed \((429|500|502|503|504)\)/.test(String(lastError));
-      if(!retriable||attempt===3)throw lastError;
+      last=e instanceof Error?e:new Error(String(e));
+      if(last.name!=='AbortError'&&!/Gemini request failed \((429|500|502|503|504)\)/.test(String(last)))throw last;
     }finally{clearTimeout(timer)}
-    await new Promise(resolve=>setTimeout(resolve,[400,900,1800][attempt]));
+    if(attempt===0&&deadline-Date.now()>1000)await new Promise(r=>setTimeout(r,350));
   }
-  throw lastError;
+  throw last;
 }
 
 // Shared rules are provided to both the first generation and the repair prompt.
@@ -126,26 +128,23 @@ function legalCandidate(c:any, board:string[], available:string[], own:string[],
 
 // A separate hidden-key-blind guessing pass. It sees ONLY public board words
 // and proposed clues. The spymaster evaluates its guesses against the key.
-async function verifyClues(key:string,model:string,available:string[],candidates:any[]) {
-  const prompt=`You are an independent expert CODENAMES GUESSER who cannot see card colors.
-All visible words: ${JSON.stringify(available)}.
-For EACH candidate clue below, list the six words you would guess FIRST, ordered by
-most obvious association. Treat misleading distractors as seriously as correct answers.
-Do not use any secret card identities: you have not been given any.
-Candidates: ${JSON.stringify(candidates.map(x=>({word:x.word,n:x.n})))}.
-Return JSON only: {"rankings":[{"word":"CLUE","guesses":["CARD", "CARD"]}]}.
-Only use words appearing on the visible board. One entry for each clue.`;
+async function verifyClues(key:string,model:string,available:string[],candidates:any[],deadline:number) {
+  // Color-blind verifier: no secret identity data enters this request.
+  const prompt=`CODENAMES GUESSER. Rank the 5 most tempting guesses for each clue.
+VISIBLE UNREVEALED WORDS: ${JSON.stringify(available)}
+CLUES: ${JSON.stringify(candidates.map(x=>({word:x.word,n:x.n})))}
+Respond with compact JSON ONLY: {"rankings":[{"word":"CLUE","guesses":["WORD1","WORD2","WORD3","WORD4","WORD5"]}]}
+Use only visible words. No explanation. Consider the most obvious connections, including dangerous distractors.`;
   let result:Record<string,unknown>;
-  try { result=await askGemini(key,VERIFIER_MODEL,prompt,.12); }
+  try{result=await askGemini(key,VERIFIER_MODEL,prompt,.08,680,deadline,0)}
   catch(e){
-    // A model might not be available to this API key. For that case only,
-    // use the working primary model; never bypass verification.
-    if(!String(e).includes('404'))throw e;
-    result=await askGemini(key,model,prompt,.12);
+    if(!String(e).includes('(404)'))throw e;
+    result=await askGemini(key,model,prompt,.08,680,deadline,0);
   }
   const rows=Array.isArray(result.rankings)?result.rankings:[];
-  return new Map<string,string[]>(rows.map((x:any)=>[String(x.word||'').toUpperCase(),
-    Array.isArray(x.guesses)?x.guesses.map((w:unknown)=>String(w).toUpperCase()).filter((w:string)=>available.includes(w)):[]]));
+  return new Map<string,string[]>(rows.map((x:any)=>[String(x.word||'').trim().toUpperCase(),
+    Array.isArray(x.guesses)?[...new Set<string>(x.guesses.map((w:unknown)=>String(w).trim().toUpperCase()))]
+      .filter((w:string)=>available.includes(w)).slice(0,6):[]]));
 }
 
 Deno.serve(async req => {
@@ -188,52 +187,31 @@ Deno.serve(async req => {
       if (!filtered.length)return json({error:'No complete turns to review'},400);
       const coloredBoard=board.map((word:string,i:number)=>({word,color:data.keys[i],revealed:revealed[i]}));
       const roleInstruction=data.humanRole==='spymaster'
-        ? 'The HUMAN supplied the clues; evaluate how understandable each was, why the AI guesser selected its answers, and any better clue choice. Its exact intended targets were NOT recorded: infer likely targets and clearly say they are inferred.'
-        : 'The AI supplied the clues; its recorded intended targets and explanation are shown. Evaluate what the human guessed, what was overlooked, and whether the clue itself was misleading. Do not blame the human for an ambiguous clue.';
-      const prompt=`You are an expert, fair and candid CODENAMES postgame coach.
-This match is OVER. Analyze only the human RED team's clue turns.
-HUMAN ROLE: ${data.humanRole}. ${roleInstruction}
-FINAL PUBLIC BOARD WITH TRUE COLORS: ${JSON.stringify(coloredBoard)}.
-RED TURNS: ${JSON.stringify(filtered)}.
-Explain specific semantic connections, realistic distractors, and what the player or bot could have done differently.
-For EVERY turn, give: intended friendly cards (recorded if supplied, otherwise inferred and labeled),
-why the clue fit each intended card, each actual guess including WRONG ones,
-why each was tempting and how strongly it related to that clue, and one specific improvement.
-Closeness scores 0..100 are SUBJECTIVE conversational ratings of intuitive semantic association,
-NOT measured likelihoods, original model logits, or observed probabilities. Avoid false precision.
-Do not invent guesses, targets, or colors. Never say a blue/neutral/assassin word was an intended RED card.
-Return JSON ONLY with the exact schema:
-{"overview":"2-4 specific sentences", "rounds":[{"round":1,"outcome":"successful|partial|missed",
-"clueAssessment":"plain-English evaluation", "targets":[{"word":"WORD","closeness":82,"explanation":"why"}],
-"guessAssessments":[{"word":"WORD","color":"red|blue|neutral|assassin","closeness":76,"explanation":"why that was or was not a sensible guess"}],
-"improvement":"concrete advice or clearer legal one-word clue"}]}.
-One round record per supplied round, in order. Max 25 words of explanation per round. Name the actual words and mistaken associations.`;
-      let review:Record<string,unknown>;
-      try{review=await askGemini(key,VERIFIER_MODEL,prompt,.15,3200)}
-      catch(e){if(String(e).includes('429')||String(e).includes('403'))throw e;
-        review=await askGemini(key,MODEL,prompt+'\nReturn a single compact valid JSON object, no markdown.',.1,3200)}
-      const raw=Array.isArray(review.rounds)?review.rounds:[];
-      const rows=filtered.map((round:any)=>{
-        const row=raw.find((r:any)=>Number(r?.round)===round.round)||{};
-        const normScore=(x:unknown)=>Math.max(0,Math.min(100,Math.round(Number(x)||0)));
-        const expected=new Set(round.intended);
-        const guesses=round.guesses.map((g:any)=>{
-          const item=Array.isArray(row.guessAssessments)?row.guessAssessments.find((x:any)=>String(x.word).toUpperCase()===g.word):null;
-          return {word:g.word,color:g.color,closeness:normScore(item?.closeness),explanation:String(item?.explanation||'').slice(0,350)};
-        });
-        const targets=Array.isArray(row.targets)?row.targets.filter((x:any)=>typeof x.word==='string'&&
-          data.keys[board.indexOf(x.word.toUpperCase())]==='red').slice(0,9).map((x:any)=>({
-            word:String(x.word).toUpperCase(),closeness:normScore(x.closeness),explanation:String(x.explanation||'').slice(0,350)})):[];
-        const hits=guesses.filter((g:any)=>g.color==='red').map((g:any)=>g.word);
-        const wrong=guesses.some((g:any)=>g.color!=='red');
-        const outcomes=['successful','partial','missed'];
-        const outcome=wrong?'missed':(expected.size&&[...expected].every(w=>hits.includes(w)))?'successful':
-          guesses.length?'partial':'missed';
-        return {round:round.round,outcome:outcomes.includes(outcome)?outcome:'partial',
-          clueAssessment:String(row.clueAssessment||'').slice(0,900),targets,
-          guessAssessments:guesses,improvement:String(row.improvement||'').slice(0,700)};
-      });
-      return json({provider:'gemini',overview:String(review.overview||'').slice(0,1200),rounds:rows});
+        ? 'Human gave the clues; intended targets may be inferred, not known.'
+        : 'Human guessed; AI targets are recorded where supplied.';
+      // The actual round-by-round similarity bars are calculated locally.
+      // Generate only a concise 5-sentence overall summary, not per-round essays.
+      const brief=filtered.map((r:any)=>({clue:r.clue,n:r.n,
+        intended:r.intended,guesses:r.guesses}));
+      const prompt=`You are a thoughtful Codenames coach. Write EXACTLY FIVE short,
+      specific, easy-to-understand sentences reviewing this finished match.
+      Mention actual clues and words, which correct guesses worked, which
+      incorrect guess was tempting, any dangerously attractive wrong word,
+      and one improvement. ${roleInstruction}
+      BOARD: ${JSON.stringify(coloredBoard)}.
+      HUMAN ROLE: ${data.humanRole}. WINNER: ${data.winner}.
+      OUR TURNS: ${JSON.stringify(brief)}.
+      Never invent a guess, intention or danger. Keep it friendly, direct,
+      and less than 125 total words. JSON ONLY: {"overview":"Five sentences."}`;
+      let result:Record<string,unknown>;
+      try{result=await askGemini(key,VERIFIER_MODEL,prompt,.15,620,Date.now()+11500,0)}
+      catch(e){
+        if(!String(e).includes('(404)'))throw e;
+        result=await askGemini(key,MODEL,prompt,.15,620,Date.now()+8500,0);
+      }
+      const overview=String(result.overview||'').trim();
+      if(!overview)throw Error('Review summary missing');
+      return json({provider:'gemini',overview:overview.slice(0,950),rounds:[]});
     }
     const strategy=['safe','balanced','aggressive'].includes(data.strategy)?data.strategy:'balanced';
     const lessons=Array.isArray(data.lessons)?data.lessons.slice(-8).map((x:any)=>({
@@ -257,127 +235,92 @@ One round record per supplied round, in order. Max 25 words of explanation per r
         return json({ error: 'Missing spymaster key' }, 400);
       const cards = available.map((word: string) => ({ word, color: keys[board.indexOf(word)] }));
       const ours = cards.filter((x: {color: string}) => x.color === team).length;
-      prompt = `You are a brilliant HUMAN Codenames spymaster. Return JSON only.
+      prompt = `Play as an expert Codenames Spymaster for ${team}.
 ${CLUE_RULES}
-TEAM: ${team}. DIFFICULTY: ${level}. REMAINING FRIENDLY: ${ours}.
-UNREVEALED BOARD WITH HIDDEN COLORS: ${JSON.stringify(cards)}.
-RECENT GAME LOG: ${JSON.stringify(history)}.
-Produce FIVE DISTINCT possible single-word clue candidates for 1..${Math.min(6,ours)} friendly cards.
-Find ingenious but ordinary connections: actions and objects, materials and uses,
-idioms, technology, geography, science, arts, food and multiple senses.
-Early turns prefer 3-4 related friendly cards if reasonably safe, otherwise 2.
-Risk profile: ${strategy}. For safe prioritize protection, for balanced prioritize safe 2-3,
-for aggressive accept plausible risky 3-4 cards when trailing.
-Previous clue outcomes (avoid repeating failures): ${JSON.stringify(lessons)}.
-Avoid 1 until late unless there truly is no defensible pair. Re-evaluate the
-whole board; don't fixate on a single category. Consider several candidate
-clues and mentally simulate the first guesses of a person who DOES NOT know colors.
-Dangerous cards are an absolute priority, especially assassin. Never count an
-opponent, neutral, or assassin as an intended target. Be much more precise
-when there is only one friendly target left. Do not repeat any past clue.
-Only single English words; don't use a visible board word, its inflection,
-or a clue containing a visible word as an obvious component.
-JSON: {"candidates":[{"word":"CLUE","n":2,"targets":["WORD1","WORD2"],"reason":"brief explanation"}]}.
-Give FIVE alternatives, not just one. Targets MUST all be unrevealed friendly words and exactly n entries.`;
+UNREVEALED BOARD AND SECRET COLORS: ${JSON.stringify(cards)}.
+FULL BOARD (none may appear in clues): ${JSON.stringify(board)}.
+PAST CLUES: ${JSON.stringify(history)}.
+FRIENDLY WORDS REMAINING: ${ours}.
+RISK: ${strategy} (avoid the assassin at every risk level).
+LESSONS FROM PRIOR MATCHES: ${JSON.stringify(lessons.slice(-4))}.
+Generate EXACTLY THREE DISTINCT, clever, LEGAL ordinary one-word clue options.
+Prefer 2-3 intuitive friendly words, but 1 if necessary to protect from danger.
+Try unrelated meanings if one theme is too risky. Targets must be DISTINCT,
+UNREVEALED, FRIENDLY words only. Do NOT add clue numbers or explanations.
+Return ONLY compact JSON: {"candidates":[{"word":"CLUE","targets":["TARGET1","TARGET2"]}]}`;
     } else {
       if (!clue || !validWord(clue.word) || !Number.isInteger(clue.n) || clue.n < 0 || clue.n > 9)
         return json({ error: 'Invalid clue' }, 400);
       // Never include hidden colors in the guesser request or its prompt.
-      prompt = `You are an excellent human Codenames guesser. Return JSON only.
-CLUE: ${clue.word} ${clue.n}. DIFFICULTY: ${level}.
-UNREVEALED PUBLIC BOARD: ${JSON.stringify(available)}.
-PREVIOUS CLUES / REVEALED HISTORY: ${JSON.stringify(history)}.
-Rank likely answers by direct, intuitive semantic relationship to the clue.
-Consider different word senses. Prefer obvious strong links; avoid tangential
-connections. You do NOT know any hidden colors, so do not invent them.
-Return an ordered list with at most ${Math.min(10, available.length)} words,
-most convincing first, plus your recommended number of guesses for this clue.
-The recommended number may be lower than the clue count if clues are unsafe.
-JSON: {"guesses":["WORD1","WORD2"],"stopAfter":2,"reason":"brief explanation"}.`;
+      prompt = `Play as a careful Codenames Guesser. You CANNOT see card colors.
+CLUE: ${clue.word} ${clue.n}. SKILL: ${level}.
+UNREVEALED WORDS: ${JSON.stringify(available)}.
+PREVIOUS CLUES: ${JSON.stringify(history)}.
+Rank the most obvious semantic connections first. No explanations.
+Return JSON ONLY: {"guesses":["WORD1","WORD2","WORD3"],"stopAfter":2}.
+Choose up to ${Math.min(7,available.length)} board words; never invent words.`;
     }
-    // Fast final-card mode: avoids multi-candidate generation and a second model
-    // call. Legal clue validation remains, but independent risk verification is
-    // skipped only when exactly one friendly target remains.
+    // One friendly card remains: one short model call, no batch verification.
+    // Legality is still checked; Gemini sees all nonfriendly colors for safety.
     if(role==='spymaster'){
       const own=available.filter((w:string)=>data.keys[board.indexOf(w)]===team);
       if(own.length===1){
-        const target=own[0];
-        const assassin=available.filter((w:string)=>data.keys[board.indexOf(w)]==='assassin');
-        const others=available.filter((w:string)=>data.keys[board.indexOf(w)]!==team);
-        const quick=`You are a cautious Codenames Spymaster. Exactly ONE friendly word remains: ${target}.
+        const target=own[0],others=available.filter(w=>w!==target);
+        const assassin=available.filter(w=>data.keys[board.indexOf(w)]==='assassin');
+        const quick=`CODENAMES: one remaining friendly word is ${target}.
 ${CLUE_RULES}
-FULL BOARD: ${JSON.stringify(board)}.
-ASSASSIN: ${JSON.stringify(assassin)}. OTHER UNREVEALED DISTRACTORS: ${JSON.stringify(others)}.
-PREVIOUS CLUES: ${JSON.stringify(history)}.
-Choose a clear, legal, single-word clue for the target; avoid any association with
-assassin, enemy and bystander words. Output ONLY JSON:
-{"candidates":[{"word":"CLUE","n":1,"targets":["${target}"],"reason":"short reason"}]}.`;
-        for(let attempt=0;attempt<2;attempt++){
-          const response=await askGemini(key,MODEL,quick+(attempt?' Pick a different legal word.':''),.12,400);
-          const choices=Array.isArray(response.candidates)?response.candidates:[response];
-          const legal=choices.map((c:any)=>legalCandidate(c,board,available,own,history)).find(Boolean);
-          if(legal)return json({...legal,provider:'gemini',verification:{predicted:[target],risks:[],score:0,
-            note:'Final-card fast path: independent verifier bypassed'}});
+ALL BOARD WORDS: ${JSON.stringify(board)}
+ASSASSIN: ${JSON.stringify(assassin)}
+OTHER UNREVEALED DISTRACTORS: ${JSON.stringify(others)}
+PAST CLUES: ${JSON.stringify(history)}
+Give ONE simple, safe, legal clue; avoid connections to distractors.
+Return JSON ONLY: {"word":"CLUE","targets":["${target}"]}.`;
+        const deadline=Date.now()+8500;
+        for(let i=0;i<2;i++){
+          try{
+            let response:Record<string,unknown>;
+            try{response=await askGemini(key,VERIFIER_MODEL,quick+(i?' Different word required.':''),.1,240,deadline,0)}
+            catch(e){if(!String(e).includes('(404)'))throw e;
+              response=await askGemini(key,MODEL,quick,.1,240,deadline,0)}
+            const options=Array.isArray(response.candidates)?response.candidates:[response];
+            const legal=options.map((c:any)=>legalCandidate(c,board,available,own,history)).find(Boolean);
+            if(legal)return json({...legal,provider:'gemini',verification:{predicted:[target],risks:[],score:0,
+              note:'One-card fast path; independent check skipped'}});
+          }catch(e){if(i===1)throw e;}
         }
-        return json({error:'No legal final-card clue after regeneration',code:'CLUE_VALIDATION_FAILED'},422);
+        return json({error:'No legal final-card clue',code:'CLUE_VALIDATION_FAILED'},422);
       }
     }
+    // All normal Spymaster stages share a 16-second total budget.
+    const deadline=Date.now()+(role==='spymaster'?16000:10000);
     let output:Record<string,unknown>;
-    try{output=await askGemini(key,MODEL,prompt,level==='hard'?.25:.5)}
-    catch(e){
-      // An occasional blocked or invalid response gets one fresh attempt.
-      // Quota/rate-limit errors must surface immediately instead of doubling usage.
-      if(String(e).includes('429')||String(e).includes('403'))throw e;
-      output=await askGemini(key,MODEL,prompt+'\nPlease return one complete, valid JSON object only.',.15);
-    }
+    output=await askGemini(key,MODEL,prompt,level==='hard'?.2:.35,role==='spymaster'?1150:580,deadline,
+      role==='spymaster'?256:128);
     if(role==='spymaster'){
       const own=available.filter((w:string)=>data.keys[board.indexOf(w)]===team);
       const normalize=(result:Record<string,unknown>)=>{
         const raw=Array.isArray(result.candidates)?result.candidates:[result];
         return raw.map((c:any)=>legalCandidate(c,board,available,own,history))
-          .filter(Boolean).slice(0,6);
+          .filter(Boolean).slice(0,3);
       };
       let candidates=normalize(output);
-      if(!candidates.length){
-        // A 422 is our validator rejecting all proposed clues, not a Gemini outage.
-        // Regenerate once with the exact legal target list, keeping all safety rules.
-        const retryPrompt=`${CLUE_RULES}
-Your previous clue proposals could not be used because
-        they failed the game's strict legality check. Generate FIVE NEW clues.
-        UNREVEALED BOARD: ${JSON.stringify(available)}.
-        UNREVEALED FRIENDLY WORDS (only these may be targets):
-        ${JSON.stringify(own)}.
-        PREVIOUS CLUES: ${JSON.stringify(history)}.
-        Give one-word ordinary English clues, not any board word or its
-        inflection, without including an entire visible board word.
-        For each clue, choose 1 to ${Math.min(6,own.length)} distinct friendly
-        targets, and set n EXACTLY to the number of listed targets.
-        Focus on strong intuitive links and avoid clues suggesting the assassin
-        or opponents. Risk strategy: ${strategy}. Return JSON ONLY:
-        {"candidates":[{"word":"EXAMPLE","n":2,"targets":["TARGET1","TARGET2"],
-        "reason":"why this connects those exact words"}]}.
-        When no safe pair exists, a safe one-target clue is acceptable.`;
-        try{
-          const repaired=await askGemini(key,MODEL,retryPrompt,.18);
-          candidates=normalize(repaired);
-        }catch(e){
-          if(String(e).includes('429')||String(e).includes('403'))throw e;
-          // Keep the original validation error rather than mislabel as service outage.
-        }
+      if(!candidates.length && deadline-Date.now()>2600){
+        // One short correction only when every candidate was illegal.
+        const reprompt=`${CLUE_RULES}\nOnly these FRIENDLY targets are allowed: ${JSON.stringify(own)}.
+Full forbidden BOARD words: ${JSON.stringify(board)}.
+Already used clues: ${JSON.stringify(history)}.
+Produce 2 NEW legal one-word clues (with friendly target lists only).
+Return JSON: {"candidates":[{"word":"CLUE","targets":["FRIENDLY"]}]}`;
+        try{candidates=normalize(await askGemini(key,MODEL,reprompt,.12,500,deadline,0))}
+        catch(e){if(String(e).includes('429')||String(e).includes('403'))throw e;}
       }
       if(!candidates.length)return json({
         error:'No legal Gemini clue candidates after regeneration',
         code:'CLUE_VALIDATION_FAILED'
       },422);
       let rankings:Map<string,string[]>;
-      try{rankings=await verifyClues(key,MODEL,available,candidates)}
-      catch(e){
-        // A malformed verifier response is recoverable. Never send an unverified
-        // clue, and do not double-send requests when the provider is rate-limiting.
-        if(String(e).includes('429')||String(e).includes('403'))throw e;
-        try{rankings=await verifyClues(key,MODEL,available,candidates)}
-        catch(e2){return json({error:'Clue verifier failed: '+String(e2 instanceof Error?e2.message:e2)},503)}
-      }
+      try{rankings=await verifyClues(key,MODEL,available,candidates,deadline)}
+      catch(e){return json({error:'Clue verifier temporarily unavailable: '+String(e instanceof Error?e.message:e)},503)}
       const opposition=available.filter((w:string)=>data.keys[board.indexOf(w)]!==team);
       const lastChance=opposition.filter((w:string)=>data.keys[board.indexOf(w)]=== (team==='red'?'blue':'red')).length===1;
       const countFriendly=(words:string[])=>words.filter(w=>own.includes(w)).length;
