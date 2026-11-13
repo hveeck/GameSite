@@ -1,0 +1,12 @@
+A HOUSE DIVIDED v67 — Front Assignment Repair
+
+- Restores an explicit "Open / Assign a Front" section on the compact Military screen.
+- Select a neighboring or current enemy nation, choose a number of reserve divisions, and open its front.
+- Existing wars retain plus/minus controls for adding and releasing divisions.
+- New assignments default to Balanced orders (100%) and can then be customized.
+- Preserves v66 mercenaries (20 strength, 130 treasury on Medium) and recruitable-population UI.
+- Updated version badge and cache-busting asset URLs to v67.
+
+Checks: JavaScript syntax validated for all JS files, existing population/integration test passed,
+front UI controls and handlers verified by source assertions. Full browser interaction not verified
+because Chromium blocks local file loading in this environment.
