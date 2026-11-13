@@ -159,7 +159,7 @@ advanceCabinet=function(days){originalCampaignAdvance(days);if(!days)return;
 // available, but most small actions are hidden under optional details.
 const originalCampaignUpdate=update;
 let lastCampaignRender=0;
-update=function(){originalCampaignUpdate();if(Date.now()-lastCampaignRender<700&&timer)return;lastCampaignRender=Date.now();renderCampaignStory();if(!frontSection.contains(document.activeElement))renderNationalFront()};
+update=function(){originalCampaignUpdate();if(Date.now()-lastCampaignRender<700&&timer)return;lastCampaignRender=Date.now();renderCampaignStory();if(!(frontSection.contains(document.activeElement)&&document.activeElement.matches('select,input,textarea')))renderNationalFront()};
 const originalCampaignGenerate=generate;
 generate=function(reuse=false){campaignHistory.length=0;campaignReportSnapshot=null;campaignReportDay=0;originalCampaignGenerate(reuse)};
 renderCampaignStory();renderNationalFront();

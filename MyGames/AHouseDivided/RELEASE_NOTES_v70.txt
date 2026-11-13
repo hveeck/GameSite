@@ -1,0 +1,8 @@
+A House Divided v70 — Reliable Front Assignments & War Declarations
+
+- Fixed a long-standing render-suppression bug: opening a Military panel while the game was running would freeze the front-control DOM.
+- Fixed a second focus bug: clicking a front button kept it focused, preventing the front panel from refreshing in subsequent ticks.
+- Restored clear +/− assignment controls for each active enemy, including immediately after a new declaration of war.
+- War declarations now operate on the exact country clicked, rather than relying on a secondary country picker that could re-render.
+- The declaration button displays a clear reason when a war is blocked (alliance, nonaggression, no border, insufficient treasury), or confirmation when it succeeds.
+- All v69 population, mercenaries, music, and integration features are preserved.

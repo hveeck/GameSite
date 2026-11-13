@@ -166,7 +166,7 @@ simulatePeriod=function(){
 const previousMinimalUpdate=update;
 update=function(){
  const active=document.activeElement;
- const editing=timer&&['cabinet','armies','intel'].includes(openPanel)||active&&active.matches('select,input,button')&&active.closest('.card,.inspector,.army-panel');
+ const editing=!!(active && active.matches('select,input,textarea') && active.closest('.card,.inspector,.army-panel'));
  if(editing){
   // Leave live control trees alone while the player is using them. Data and map still update.
   const oldRenderCabinet=renderCabinet,oldRenderFront=renderNationalFront,oldRenderBilateral=renderBilateral;

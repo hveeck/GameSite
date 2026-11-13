@@ -1,0 +1,7 @@
+/* v70: consistent high-contrast front assignment buttons and feedback. */
+.national-front .division-front .division-controls{display:flex!important;align-items:center!important;gap:9px!important;min-height:40px}
+.national-front .division-front .division-controls button[data-more],
+.national-front .division-front .division-controls button[data-less]{display:inline-flex!important;justify-content:center;align-items:center;min-width:43px;width:43px;height:39px;font-size:24px;font-weight:800;line-height:1;color:#f9f1d9;background:#294d50;border:1px solid #a6c6bd;border-radius:6px;cursor:pointer}
+.national-front .division-front .division-controls button[data-more]:disabled,
+.national-front .division-front .division-controls button[data-less]:disabled{opacity:.35;cursor:not-allowed}
+.v70-action-feedback{margin:8px 0 10px;padding:9px 11px;background:#23463f;color:#eaf8ed;border:1px solid #9bc7b1;border-radius:6px;font-size:12px;line-height:1.4}
