@@ -1,0 +1,23 @@
+A HOUSE DIVIDED v65 — MERCENARY / MANPOWER / INTEGRATION UI REPAIR
+
+Why mercenaries were hidden in v64:
+The compact Military interface in minimal.js replaced the earlier national recruiting
+interface from multi-front.js. The former had only Militia and Veterans in its
+recruitment dropdown, despite mercenaries existing in the core game engine.
+Its older recruitment handler also omitted manpower spending and eligibility checks.
+
+Fixes:
+- Military's actual compact recruitment menu now shows Mercenaries (295 treasury
+  on Regular), with their 18 strength and no-population tradeoff.
+- Recruiting from the compact menu now properly spends recruitable population
+  (for nonmercenaries) and only uses home or fully integrated territory.
+- Government now displays Recruitable population immediately next to Population.
+- Government and National Cabinet now show explicit Regional Integration controls.
+  Local integration: pay 35 for +25 percentage points to a selected county.
+  National integration: pay 90 for +8 points across all conquered counties.
+  Both actions share a 90-day cooldown.
+- Existing passive integration and Regional Integration initiative continue to work.
+- Visible version label and JavaScript/CSS cache identifiers updated to v65.
+
+Note: A v65 label alone still cannot verify all game assets were uploaded; check
+that minimal.js and v65-ui.js exist alongside index.html in the published folder.

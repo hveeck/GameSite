@@ -50,10 +50,10 @@ renderNationalFront=function(){
   return '<div class="division-front" data-front="'+id+'"><div><b>'+countries[id].name+'</b><small>'+n+' divisions · M/V '+composition+'</small></div><div class="division-controls"><button data-less="'+id+'" '+(!n?'disabled':'')+'>−</button><strong>'+n+'</strong><button data-more="'+id+'" '+(!reserve.length?'disabled':'')+'>＋</button></div>'+
   '<div class="front-mix-title">Orders for this front</div><div class="front-mix-grid">'+[['breakthrough','Aggressive'],['balanced','Balanced'],['cautious','Cautious'],['defend','Defending']].map(([k,label])=>'<label>'+label+'<select data-front-mix="'+id+'" data-stance="'+k+'">'+[0,25,50,75,100].map(v=>'<option value="'+v+'" '+(v===mix[k]?'selected':'')+'>'+v+'%</option>').join('')+'</select></label>').join('')+'</div><div class="division-controls"><small data-mix-message="'+id+'">'+(Object.values(mix).reduce((n,v)=>n+v,0)===100?'Total: 100%':'Choose a total of 100%')+'</small><button class="apply-front-mix" data-apply-mix="'+id+'" '+(!f||Object.values(mix).reduce((n,v)=>n+v,0)!==100?'disabled':'')+'>Apply orders</button></div></div>';
  }).join(''):'<p class="front-empty">No active wars.</p>')+
- '<div class="front-mix-title">RECRUIT DIVISION</div><label>Type<select id="nationalQuality"><option value="militia" '+(selectedRecruitQuality==='militia'?'selected':'')+'>Militia · '+divisionRecruitPrice('militia')+'</option><option value="elite" '+(selectedRecruitQuality==='elite'?'selected':'')+'>Veterans · '+divisionRecruitPrice('elite')+'</option></select></label><small id="recruitTraits"></small>'+
+ '<div class="front-mix-title">RECRUIT DIVISION</div><label>Type<select id="nationalQuality"><option value="militia" '+(selectedRecruitQuality==='militia'?'selected':'')+'>Militia · '+divisionRecruitPrice('militia')+'</option><option value="elite" '+(selectedRecruitQuality==='elite'?'selected':'')+'>Veterans · '+divisionRecruitPrice('elite')+'</option><option value="mercenary" '+(selectedRecruitQuality==='mercenary'?'selected':'')+'>Mercenaries · '+divisionRecruitPrice('mercenary')+' treasury</option></select></label><small id="recruitTraits"></small>'+
  '<button class="raise-national" id="raiseNationalForce">＋ Recruit selected division</button>';
  const qualityPicker=frontSection.querySelector('#nationalQuality'),recruitButton=frontSection.querySelector('#raiseNationalForce');
- function refreshRecruit(){recruitButton.disabled=c.treasury<divisionRecruitPrice(qualityPicker.value);recruitButton.textContent='＋ Recruit '+divisionName(qualityPicker.value)+' · '+divisionRecruitPrice(qualityPicker.value)+' treasury';frontSection.querySelector('#recruitTraits').textContent={militia:'9 strength · 60% faster · 90% combat · cheap upkeep · ideal for capturing open land',elite:'15 strength · 145% combat · 60% less battle damage · standard speed · expensive upkeep'}[qualityPicker.value]}
+ function refreshRecruit(){const quality=qualityPicker.value,affordable=c.treasury>=divisionRecruitPrice(quality),manpower=canSupplyManpower(c,quality,divisionStartStrength(quality));recruitButton.disabled=!affordable||!manpower||!coreRecruitCounties(c.id).length;recruitButton.textContent='＋ Recruit '+divisionName(quality)+' · '+divisionRecruitPrice(quality)+' treasury';frontSection.querySelector('#recruitTraits').textContent={militia:'9 strength · fast, low upkeep · uses recruitable population',elite:'15 strength · durable frontline force · uses recruitable population',mercenary:'18 strength · 220% combat · highly durable · NO population required · extremely expensive upkeep'}[quality]+(!manpower?' · NOT ENOUGH RECRUITABLE POPULATION':'')}
  qualityPicker.onchange=()=>{selectedRecruitQuality=qualityPicker.value;refreshRecruit()};refreshRecruit();
  function adjust(id,delta){
   let f=activeFronts(c).find(x=>x.target===id);
@@ -84,13 +84,14 @@ renderNationalFront=function(){
  frontSection.querySelector('#raiseNationalForce').onclick=()=>{
   const quality=qualityPicker.value,price=divisionRecruitPrice(quality);
   selectedRecruitQuality=quality;
-  if(c.treasury<price)return;
-  const holdings=countryStats(c).holdings,frontier=holdings.filter(t=>(countyGraph[t.i]||[]).some(j=>territories[j].owner!==c.id));
+  const initialStrength=divisionStartStrength(quality);
+  if(c.treasury<price||!canSupplyManpower(c,quality,initialStrength))return;
+  const holdings=coreRecruitCounties(c.id),frontier=holdings.filter(t=>(countyGraph[t.i]||[]).some(j=>territories[j].owner!==c.id));
   const best=(frontier.length?frontier:holdings).slice().sort((a,b)=>b.infra-a.infra)[0];
-  if(!best)return;
+  if(!best){armyMessage='Recruitment requires home or fully integrated territory.';return;}
   c.treasury-=price;
-  const initialStrength=quality==='militia'?9:15;
-  const division=createArmy(c.id,best.i,initialStrength,quality);
+  const division=createArmy(c.id,best.i,initialStrength,quality,true);
+  if(!division){c.treasury+=price;return;}
   armyMessage='Division '+division.id+' ('+divisionName(quality)+') recruited for '+price+' treasury with '+initialStrength+' starting strength.';
   renderNationalFront();update();
  };

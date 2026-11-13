@@ -1,0 +1,11 @@
+.v65-manpower-stat{display:inline-flex!important;flex-direction:column;gap:3px}
+.v65-manpower-stat small{font-size:10px;opacity:.7}
+.v65-integration{margin:14px 0;padding:13px 14px;border:1px solid rgba(158,186,176,.4);border-radius:8px;background:rgba(65,115,100,.11);font-size:12px;line-height:1.5}
+.v65-section-heading{font-size:12px;font-weight:850;letter-spacing:.075em;color:#c9ddb6;margin-bottom:8px}
+.v65-integration p{margin:5px 0 10px}
+.v65-region-label{display:block;margin:8px 0}
+.v65-region-label select{width:100%;max-width:100%;margin-top:5px}
+.v65-integration-actions{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}
+.v65-integration-actions button{flex:1 1 195px;white-space:normal;min-height:36px}
+.v65-integration small{opacity:.78;display:block;line-height:1.5}
+.v65-delay{font-size:11px;color:#e9bc8b}
