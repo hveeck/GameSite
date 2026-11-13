@@ -170,14 +170,15 @@ function renderNationalFront(){
   '<div class="front-buttons"><button id="launchFront" '+(!targets.some(x=>!fronts.some(f=>f.target===x.id))||!unassigned?'disabled':'')+'>Launch front</button></div>'+
   '<div class="front-mix-title">RECRUIT DIVISIONS</div><div class="unit-trait-grid">'+[
    ['militia','MILITIA','90% attack / defense','10% more casualties','60% faster · extra 50% speed capturing undefended counties','55% upkeep'],
-   ['elite','VETERANS','145% attack / defense','60% fewer casualties','Normal movement','160% upkeep']
+   ['elite','VETERANS','145% attack / defense','60% fewer casualties','Normal movement','160% upkeep'],
+   ['mercenary','MERCENARIES','220% attack / defense','74% fewer casualties','20% faster · no population used','460% upkeep']
   ].map(([id,name,power,damage,speed,upkeep])=>'<div class="unit-trait"><strong>'+name+' · '+divisionRecruitPrice(id)+' treasury</strong><span>'+power+'</span><span>'+damage+'</span><span>'+speed+'</span><span>'+upkeep+'</span></div>').join('')+'</div>'+
-  '<label>Recruit division<select id="nationalQuality"><option value="militia" selected>Militia · '+divisionRecruitPrice('militia')+' treasury</option><option value="elite">Veterans · '+divisionRecruitPrice('elite')+' treasury</option></select></label><button class="raise-national" id="raiseNationalForce">＋ Recruit selected division</button>'+
+  '<label>Recruit division<select id="nationalQuality"><option value="militia" selected>Militia · '+divisionRecruitPrice('militia')+' treasury</option><option value="elite">Veterans · '+divisionRecruitPrice('elite')+' treasury</option><option value="mercenary">Mercenaries · '+divisionRecruitPrice('mercenary')+' treasury</option></select></label><button class="raise-national" id="raiseNationalForce">＋ Recruit selected division</button>'+
   '<small>Commitments share the same army pool. A second offensive does not interrupt your first. Use Diplomacy to negotiate peace.</small>';
  const selector=frontSection.querySelector('#frontTarget');
  const recruitment=frontSection.querySelector('#nationalQuality');
  const recruitButton=frontSection.querySelector('#raiseNationalForce');
- function syncRecruit(){recruitButton.disabled=c.treasury<divisionRecruitPrice(recruitment.value)}
+ function syncRecruit(){recruitButton.disabled=c.treasury<divisionRecruitPrice(recruitment.value)||!coreRecruitCounties(c.id).length||!canSupplyManpower(c,recruitment.value,divisionStartStrength(recruitment.value))}
  recruitment.onchange=syncRecruit;syncRecruit();
  const shares=[...frontSection.querySelectorAll('.mix-share')];
  function checkMix(){const n=shares.reduce((sum,x)=>sum+(+x.value||0),0);frontSection.querySelector('#mixTotal').textContent=n===100?'100% assigned':n+'% — adjust to exactly 100%';frontSection.querySelector('#launchFront').disabled=n!==100||!targets.some(x=>!fronts.some(f=>f.target===x.id))||!unassigned}
@@ -205,10 +206,10 @@ function renderNationalFront(){
  };
  frontSection.querySelector('#raiseNationalForce').onclick=()=>{
   const quality=frontSection.querySelector('#nationalQuality').value,price=divisionRecruitPrice(quality);
-  if(c.treasury<price)return;const holdings=countryStats(c).holdings;if(!holdings.length)return;
+  if(c.treasury<price||!canSupplyManpower(c,quality,divisionStartStrength(quality)))return;const holdings=coreRecruitCounties(c.id);if(!holdings.length)return;
   const frontier=holdings.filter(t=>(countyGraph[t.i]||[]).some(j=>territories[j].owner!==c.id));
   const best=(frontier.length?frontier:holdings).slice().sort((a,b)=>b.infra-a.infra)[0];
-  c.treasury-=price;const army=createArmy(c.id,best.i,quality==='militia'?9:15,quality);army.auto=false;
+  c.treasury-=price;const army=createArmy(c.id,best.i,divisionStartStrength(quality),quality,true);if(!army){c.treasury+=price;return}army.auto=false;
   addCampaignStory('Reinforcements recruited',divisionName(quality)+' division '+army.id+' raised near '+best.name+', '+best.state+' for '+price+' treasury.');
   assignFrontRoutes(c);update();renderNationalFront();
  };

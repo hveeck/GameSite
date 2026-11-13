@@ -8,7 +8,7 @@ militaryPanel.innerHTML='<button class="panel-close" aria-label="Close armies pa
  '<p>Raise formations in your own counties. Select a formation, order a march to a friendly county, or attack an adjacent enemy county when at war.</p>'+
  '<div id="armyCountry"></div><div class="army-status" id="armyMessage">Choose a country in Play as a Faction mode.</div>'+
  '<label>Selected formation<select id="armySelect"></select></label>'+
- '<label>Recruit type<select id="divisionQuality"><option value="militia" selected>Militia · inexpensive, fast</option><option value="elite">Veterans · powerful, durable</option></select></label>'+
+ '<label>Recruit type<select id="divisionQuality"><option value="militia" selected>Militia · inexpensive, fast</option><option value="elite">Veterans · powerful, durable</option><option value="mercenary">Mercenaries · elite hired force, no manpower</option></select></label>'+
  '<div class="army-actions"><button id="recruitArmy">＋ Raise formation</button><button id="orderArmy">➤ Move / attack</button><button id="splitArmy">⫶ Split formation</button><button id="entrenchArmy">⬟ Entrench</button><button id="holdArmy">■ Hold position</button><button id="autoArmy">◇ Auto-defend</button></div>'+
  '<div class="section-head"><span>FIELD ARMY ROSTER</span><span id="armyTotal">0</span></div><div class="army-roster" id="armyRoster"></div>';
 field.append(militaryPanel);
@@ -21,7 +21,7 @@ document.querySelector('.war-rail.right').prepend(armyRailButton);
 function selectedArmy(){return armies.find(a=>a.id===selectedArmyId&&a.owner===humanId)}
 function ownedArmies(id){return armies.filter(a=>a.owner===id)}
 function divisionRecruitPrice(quality='militia'){
- const cost={militia:{easy:14,medium:15,hard:32},elite:{easy:40,medium:65,hard:95}};
+ const cost={militia:{easy:14,medium:15,hard:32},elite:{easy:40,medium:65,hard:95},mercenary:{easy:225,medium:295,hard:380}};
  return (cost[quality]||cost.militia)[typeof aiChallenge==='undefined'?'medium':aiChallenge];
 }
 // Recruitment pricing depends on who is paying. The Medium player retains
@@ -39,13 +39,14 @@ function countryDivisionRecruitPrice(c,quality='militia'){
 // mobilization may run a temporary deficit, but it still needs tax revenue
 // and enough reserves to service that deficit for several months.
 function aiMilitaryRecruitmentCapacity(c,quality='militia',emergency=false){
+ if(!coreRecruitCounties(c.id).length||!canSupplyManpower(c,quality,divisionStartStrength(quality)))return {affordable:false,price:countryDivisionRecruitPrice(c,quality)};
  const force=ownedArmies(c.id),count=force.length;
  const income=revenueEstimate(c),ledger=recurringLedger(c);
  const funding=({low:.75,normal:1,high:1.45})[c.militaryPolicy]??1;
  const inWar=enemies(c.id).length>0;
  const upkeepDifficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
  const factor=(inWar?1.4:1)*funding*({easy:1.10,medium:1.18,hard:.88})[upkeepDifficulty];
- const unit= a=>(.60+Math.max(0,a.strength)*.075)*(a.quality==='elite'?1.6:.55);
+ const unit= a=>(.60+Math.max(0,a.strength)*.075)*(a.quality==='mercenary'?4.6:a.quality==='elite'?1.6:.55);
  const currentBase=force.reduce((total,a)=>total+unit(a),0);
  const added=unit({quality,strength:quality==='elite'?15:9});
  const oldBurden=1+Math.max(0,count-8)*.03;
@@ -63,21 +64,25 @@ function aiMilitaryRecruitmentCapacity(c,quality='militia',emergency=false){
  return {affordable:afterPurchase>=minimumReserve&&expenseAfter<=expenseLimit&&
    monthsOfRunway>=(emergency?4:9),marginal,estimatedNet,monthsOfRunway,income,price};
 }
-function divisionTraits(quality){return quality==='elite'?{combat:1.45,damage:.40,pace:1}:{combat:.90,damage:1.10,pace:1.6}}
+function divisionTraits(quality){return quality==='mercenary'?{combat:2.20,damage:.26,pace:1.20}:quality==='elite'?{combat:1.45,damage:.40,pace:1}:{combat:.90,damage:1.10,pace:1.6}}
 function fieldStrength(a){return Math.max(1,a.strength-(a.marchFatigue||0)-(a.supplyPenalty||0))}
-function divisionName(quality){return quality==='elite'?'Veterans':'Militia'}
+function divisionName(quality){return quality==='mercenary'?'Mercenaries':quality==='elite'?'Veterans':'Militia'}
 function undefendedCaptureBonus(a,countyIndex){
  if(a.quality!=='militia'||territories[countyIndex]?.owner===a.owner)return 1;
  const owner=territories[countyIndex]?.owner;
  return armies.some(other=>other.owner===owner&&other.county===countyIndex)?1:1.5;
 }
 function describeCounty(t){return t?t.name+', '+t.state:'Unknown'}
-function createArmy(owner,county,strength,quality='militia'){
- const army={id:nextArmyId++,owner,county,strength,quality:quality==='elite'?'elite':'militia',stance:'1.05',entrench:0,route:[],travelDays:0,auto:false};
+function createArmy(owner,county,strength,quality='militia',recruited=false){
+ if(recruited&&!canSupplyManpower(countries[owner],quality,strength))return null;
+ if(recruited)spendManpower(countries[owner],quality,strength);
+ const army={id:nextArmyId++,owner,county,strength,quality:['elite','mercenary'].includes(quality)?quality:'militia',stance:'1.05',entrench:0,route:[],travelDays:0,auto:false};
  armies.push(army);return army;
 }
 function initializeArmies(){
  armies=[];nextArmyId=1;selectedArmyId=null;awaitingDestination=false;armyMessage='';
+ for(const t of territories)t.coreOwner=t.owner;
+ for(const c of validCountries())resetManpower(c);
  for(const c of validCountries()){
   const holdings=countryStats(c).holdings;
   if(!holdings.length)continue;
@@ -151,7 +156,7 @@ function resolveArmyAssault(army,target){
   // Occupying an empty county doesn't kill soldiers. Casualties belong to
   // actual battles with opposing formations or their reinforcements.
   const rawLosses=(defenders*.21+rand()*2)*divisionTraits(army.quality).damage;
-  const maxBattleLoss=Math.max(1,Math.ceil(army.strength*(army.quality==='elite'?.10:.28)));
+  const maxBattleLoss=Math.max(1,Math.ceil(army.strength*(army.quality==='mercenary'?.07:army.quality==='elite'?.10:.28)));
   const losses=garrison.length||reinforcing.length?Math.min(maxBattleLoss,Math.max(1,Math.round(rawLosses))):0;
   army.strength=Math.max(1,army.strength-losses);
   army.lastBattleResult='Victory'+(losses?' · '+losses+' lost':' · no casualties');army.lastBattleDay=daysElapsed;
@@ -176,7 +181,7 @@ function resolveArmyAssault(army,target){
   return true;
  }
  army.siegePressure=Math.min(24,(army.siegeTarget===target?army.siegePressure||0:0)+2.5);army.siegeTarget=target;
- const losses=garrison.length||reinforcing.length?Math.min(army.quality==='elite'?1:2,Math.ceil((defenders*.14+rand()*3)*divisionTraits(army.quality).damage)):0;
+ const losses=garrison.length||reinforcing.length?Math.min(army.quality==='elite'||army.quality==='mercenary'?1:2,Math.ceil((defenders*.14+rand()*3)*divisionTraits(army.quality).damage)):0;
  army.strength=Math.max(1,army.strength-losses);
  army.lastBattleResult='Assault repulsed'+(losses?' · '+losses+' lost':' · no casualties');army.lastBattleDay=daysElapsed;
  friend.warExhaustion=clamp((friend.warExhaustion||0)+Math.min(.65,.18+losses*.17),0,100);
@@ -292,7 +297,7 @@ function automaticArmyOrders(days){
   if(c.treasury>=35&&ownForces.length<desired&&chance(setting==='hard'?.9999:setting==='easy'?.86:.997,days)){
    const threatened=borders.filter(t=>countyGraph[t.i].some(j=>atWar(c.id,territories[j].owner)));
    const staging=(threatened.length?threatened:borders).filter(t=>t.owner===c.id);
-   const location=choice(staging.length?staging:countryStats(c).holdings);if(!location)continue;
+   const homelands=coreRecruitCounties(c.id);const location=choice(staging.filter(t=>t.coreOwner===c.id).length?staging.filter(t=>t.coreOwner===c.id):homelands);if(!location)continue;
    // Rivals recruit the same three formations and pay their actual treasury costs.
    // Rich armies favor veterans, while stretched governments field more militia.
    const hasVeteranOpposition=enemyForces.some(a=>a.quality==='elite');
@@ -301,7 +306,7 @@ function automaticArmyOrders(days){
    let assessment=aiMilitaryRecruitmentCapacity(c,quality,false);
    let pickedQuality=quality;
    if(!assessment.affordable&&quality==='elite'){pickedQuality='militia';assessment=aiMilitaryRecruitmentCapacity(c,pickedQuality,false)}
-   if(assessment.affordable){c.treasury-=assessment.price;createArmy(c.id,location.i,pickedQuality==='militia'?9:15,pickedQuality)}
+   if(assessment.affordable){c.treasury-=assessment.price;createArmy(c.id,location.i,pickedQuality==='militia'?9:15,pickedQuality,true)}
   }
   const own=ownedArmies(c.id),enemyBorder=[];
   const threat=borders.map(t=>{
@@ -449,13 +454,13 @@ function emergencyAiWarResponse(){
    // Expensive veterans shouldn't block affordable militia reinforcements.
    if(!assessment.affordable&&quality==='elite'){quality='militia';assessment=aiMilitaryRecruitmentCapacity(c,quality,threatened)}
    if(!assessment.affordable)break;
-   const staging=borders.map(({t,ownNeighbors})=>({t,i:ownNeighbors[0],priority:
+   let staging=borders.map(({t,ownNeighbors})=>({t,i:ownNeighbors.find(j=>territories[j]?.owner===c.id&&territories[j]?.coreOwner===c.id),priority:
     (t.recentlyCapturedFrom===c.id?20:0)+
     armies.filter(a=>enemy.includes(a.owner)&&a.county===t.i).length*15+
     t.p*.4+t.e*.3})).sort((a,b)=>b.priority-a.priority)[0];
-   if(!staging)break;
+   if(!staging||!Number.isInteger(staging.i)){const home=coreRecruitCounties(c.id)[0];if(!home)break;staging={...staging,i:home.i}}
    c.treasury-=assessment.price;
-   createArmy(c.id,staging.i,quality==='elite'?15:9,quality);
+   createArmy(c.id,staging.i,quality==='elite'?15:9,quality,true);
    own=ownedArmies(c.id);
   }
   // Counterattack occupied home counties; otherwise exploit ungarrisoned
@@ -638,7 +643,7 @@ function armyDisplay(){
  $('armyRoster').innerHTML=current.map(a=>'<div class="army-entry '+(a.id===selectedArmyId?'selected':'')+'" data-id="'+a.id+'"><div>Division '+a.id+' · '+divisionName(a.quality)+'<small>'+describeCounty(territories[a.county])+(a.route.length?' → '+describeCounty(territories[a.route.at(-1)]):' · Holding')+((a.marchFatigue||0)+(a.supplyPenalty||0)>.1?' · Temporary fatigue −'+((a.marchFatigue||0)+(a.supplyPenalty||0)).toFixed(1):'')+(a.lastBattleResult&&daysElapsed-(a.lastBattleDay||0)<90?' · '+a.lastBattleResult:'')+'</small></div><strong>'+Math.round(a.strength)+' ⚔</strong></div>').join('');
  $('armyRoster').querySelectorAll('[data-id]').forEach(el=>el.onclick=()=>{selectedArmyId=+el.dataset.id;armyDisplay();drawArmyMap()});
  for(const id of ['orderArmy','splitArmy','entrenchArmy','holdArmy','autoArmy'])$(id).disabled=!active;
- $('recruitArmy').disabled=!player||!countryStats(player).holdings.length;
+ $('recruitArmy').disabled=!player||!coreRecruitCounties(player.id).length;
 }
 function drawArmyMap(){
  if(!geomReady||!geoGroup)return;
@@ -654,7 +659,7 @@ function drawArmyMap(){
   const isEnemy=gameMode==='player'&&a.owner!==humanId;
   layer.append('circle').attr('class','army-marker'+(isEnemy?' hostile':'')+(a.id===selectedArmyId?' selected':'')).attr('cx',x).attr('cy',y).attr('r',isEnemy?5:4.5).attr('fill',isEnemy?'#e27c72':a.owner===humanId?'#ffe0a1':'#daebe9')
    .attr('data-army-id',a.id).append('title').text(countries[a.owner]?.name+' · Division '+a.id+' · '+Math.round(a.strength)+' strength');
-  layer.append('text').attr('class','army-type-symbol').attr('x',x).attr('y',y+1.7).attr('text-anchor','middle').attr('font-size','5.1px').attr('font-weight','900').attr('fill','#18202a').attr('pointer-events','none').text(a.quality==='elite'?'V':'M');
+  layer.append('text').attr('class','army-type-symbol').attr('x',x).attr('y',y+1.7).attr('text-anchor','middle').attr('font-size','5.1px').attr('font-weight','900').attr('fill','#18202a').attr('pointer-events','none').text(a.quality==='mercenary'?'$':a.quality==='elite'?'V':'M');
  }
  const active=selectedArmy();
  // Army destinations are conveyed in the roster, without cluttering the map
@@ -708,10 +713,11 @@ $('armySelect').onchange=()=>{selectedArmyId=+$('armySelect').value;armyDisplay(
 $('recruitArmy').onclick=()=>{
  if(gameMode!=='player'||humanId===null)return;
  const c=countries[humanId],t=territories[selectedCounty??-1];
- if(!t||t.owner!==humanId){armyMessage='First click one of your counties on the map.';armyDisplay();return}
+ if(!t||t.owner!==humanId||!coreRecruitCounties(humanId).some(home=>home.i===t.i)){armyMessage='Select home territory or a fully integrated county; occupied land cannot recruit troops.';armyDisplay();return}
  const quality=$('divisionQuality').value,price=divisionRecruitPrice(quality);
+ if(!canSupplyManpower(c,quality,divisionStartStrength(quality))){armyMessage='Insufficient recruitable population. Hire mercenaries instead or allow manpower to recover.';armyDisplay();return}
  if(c.treasury<price){armyMessage='A '+quality+' division costs '+price+' treasury; its ongoing upkeep also depends on quality.';armyDisplay();return}
- c.treasury-=price;const a=createArmy(humanId,t.i,quality==='militia'?9:15,quality);selectedArmyId=a.id;
+ c.treasury-=price;const a=createArmy(humanId,t.i,divisionStartStrength(quality),quality,true);if(!a){c.treasury+=price;return}selectedArmyId=a.id;
  armyMessage='Division '+a.id+' ('+quality+') raised for '+price+' treasury in '+describeCounty(t)+'.';log(c.name+' raises a '+quality+' division in '+describeCounty(t)+'.');
  update();
 };

@@ -2,7 +2,7 @@
    Never play for AI actions or automatic simulation advances. */
 (()=>{'use strict';
  const src={click:'sfx/click.ogg',coins:'sfx/coins.ogg',rally:'sfx/rally.ogg',order:'sfx/order.ogg',policy:'sfx/policy.ogg',diplomacy:'sfx/diplomacy.ogg',treaty:'sfx/treaty.ogg'};
- const vol={click:.055,coins:.17,rally:.18,order:.12,policy:.13,diplomacy:.12,treaty:.16};
+ const vol={click:.055,coins:.17,rally:.09,order:.12,policy:.13,diplomacy:.12,treaty:.16};
  const sounds={};let last=0,lastType='',active=0;
  Object.keys(src).forEach(t=>{try{const a=new Audio(src[t]);a.preload='auto';sounds[t]=a;}catch(_){}});
  function play(t){

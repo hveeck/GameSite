@@ -1,0 +1,14 @@
+A HOUSE DIVIDED v64 — Population, Mercenaries & Regional Integration
+
+- New recruitment eligibility: troops spawn only in original homeland counties or fully integrated annexed counties, never freshly occupied territory.
+- Recruitable manpower scales with population, is consumed by militia and veteran recruitment, and gradually regenerates. Mercenaries use no population.
+- Mercenaries: 18 starting strength; 220% combat modifier, 74% lower damage taken, 20% faster than veterans; extremely high enlistment and maintenance costs. Map marker: $.
+- Tax receipts and productive output are partially suppressed in newly conquered counties, improving as counties integrate.
+- Each foreign-owned county gains integration progress with time, administrative funding, stability and peace. Regional Integration national initiatives grant a substantial one-time boost.
+- Fully integrated annexed counties eventually contribute their population to regular military recruitment.
+- Conquest puts additional pressure on national stability and rebellion risk, more seriously on Regular and especially Hard difficulty. Rebellions now favor unintegrated regions.
+- The recruiting/rally sound is 50% quieter.
+- Existing v63 soundtrack, sound effects, diplomatic AI and game UI remain bundled.
+
+Integration test: run node test_population_integration.js from the extracted game directory.
+Browser gameplay has not been fully tested in this environment.

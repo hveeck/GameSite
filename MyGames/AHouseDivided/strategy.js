@@ -71,18 +71,19 @@ function progressDate(){
 }
 function regionalUprising(parent){
  const holdings=countryStats(parent).holdings;
- if(holdings.length<70||parent.stability>=32)return false;
+ if(holdings.length<4||parent.stability>=40)return false;
  const avgE=nums(holdings.map(t=>t.e))/holdings.length;
  const avgR=nums(holdings.map(t=>t.res))/holdings.length;
  const ideologyRegions=typeof ideologyByRegion==='undefined'?{}:ideologyByRegion;
  const grievances=holdings.map(t=>{
   const regional=t.region!==parent.origin?1:0;
+  const occupation=typeof countyIntegration==='function'?1-countyIntegration(t):0;
   const economic=Math.min(1,Math.abs(t.e-avgE)/Math.max(1,avgE));
   const resources=Math.min(1,Math.abs(t.res-avgR)/Math.max(1,avgR));
   const outlook=(ideologyRegions[t.region]||[]).includes(parent.ideology)?0:1;
   // Differences in regional culture, economic interests, and political outlook
   // influence secession; race alone never causes an uprising.
-  return {t,score:regional*3+economic*1.3+resources*.8+outlook*1.7+rand()*1.2};
+  return {t,score:regional*3+occupation*4+economic*1.3+resources*.8+outlook*1.7+rand()*1.2};
  }).sort((a,b)=>b.score-a.score);
  const seed=choice(grievances.slice(0,Math.min(10,grievances.length))).t;
  const count=Math.min(45,Math.max(4,Math.round(holdings.length*(.06+rand()*.13))));
@@ -105,7 +106,7 @@ function regionalUprising(parent){
  const alternate=(ideologyRegions[seed.region]||ideologyKeys).filter(x=>x!==parent.ideology);
  rebels.ideology=alternate.length?choice(alternate):'republicanism';
  countries.push(rebels);
- for(const i of claim)territories[i].owner=id;
+ for(const i of claim){territories[i].owner=id;territories[i].coreOwner=id;territories[i].integrationForOwner=id;territories[i].integrationProgress=1;}
  armies=armies.filter(a=>a.owner!==parent.id||!claim.has(a.county));
  createArmy(id,seed.i,Math.max(7,Math.round(Math.sqrt(claim.size)*2.8)));
  createArmy(id,[...claim][claim.size-1],Math.max(5,Math.round(Math.sqrt(claim.size)*1.5)));
@@ -220,7 +221,7 @@ function simulatePeriod(){
   }else if(rand()<.3)log('Offensives stall around '+target.name+' County, '+target.state+'.','warlog');
  }
  if($('interventions').checked){
-  const candidates=validCountries().filter(c=>countryStats(c).holdings.length>=70&&c.stability<32);
+  const candidates=validCountries().filter(c=>(countryStats(c).holdings.length>=70||gameMode==='player'&&c.id===humanId&&countryStats(c).holdings.length>=3)&&c.stability<40);
   for(const c of candidates){
    const instability=clamp((32-c.stability)/32,0,1);
    const authorities=['fascism','communism','military_junta','theocracy','monarchy'];
@@ -233,7 +234,12 @@ function simulatePeriod(){
    const posture=typeof militaryPosture==='function'?militaryPosture(c):null;
    const military=clamp((1-(c.readiness||50)/140)*(posture?.rebelRisk??1),.08,1.25);
    const governed=clamp(1-(c.treasury||0)/600,.35,1);
-   const annualRisk=(.015+instability*.10)*authoritarian*institutional*military*governed*vol;
+   const difficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
+   const isPlayer=gameMode==='player'&&c.id===humanId;
+   const civicShock=clamp((40-c.stability)/30,0,1);
+   const severeRisk=isPlayer?({easy:.08,medium:.25,hard:.48})[difficulty]*civicShock:0;
+   const integrationRisk=typeof integrationPressure==='function'?integrationPressure(c).ratio*({easy:.03,medium:.18,hard:.44})[difficulty]:0;
+   const annualRisk=clamp((.015+instability*.10)*authoritarian*institutional*military*governed*vol+severeRisk+integrationRisk,0,.85);
    if(chance(annualRisk,days))regionalUprising(c);
   }
   if(!candidates.length&&chance(.09*vol,days)){

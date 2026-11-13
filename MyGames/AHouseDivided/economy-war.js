@@ -294,7 +294,7 @@ if(tutorial)tutorial.insertAdjacentHTML('beforeend','<p><b>Military scale:</b> A
 // Critical-strength formations automatically consolidate; disbanding returns a partial refund.
 function divisionMergeLimit(quality){return quality==='elite'?28:20}
 function canMergeDivisions(a,b){
- return !!a&&!!b&&a.id!==b.id&&a.owner===b.owner&&a.strength>0&&b.strength>0&&a.strength<=10&&b.strength<=10;
+ return !!a&&!!b&&a.quality!=='mercenary'&&b.quality!=='mercenary'&&a.id!==b.id&&a.owner===b.owner&&a.strength>0&&b.strength>0&&a.strength<=10&&b.strength<=10;
 }
 function mergeDivisions(c,firstId,secondId){
  const a=ownedArmies(c.id).find(x=>x.id===firstId),b=ownedArmies(c.id).find(x=>x.id===secondId);
@@ -391,12 +391,13 @@ renderNationalFront=function(){
  disbandDetails.querySelectorAll('[data-disband]').forEach(button=>button.onclick=()=>{
   const id=+button.dataset.disband,a=armies.find(x=>x.id===id&&x.owner===c.id);
   if(!a)return;
-  const original=a.quality==='elite'?15:9;
+  const original=divisionStartStrength(a.quality);
   const refund=Math.floor(divisionRecruitPrice(a.quality)*.25*Math.min(1,a.strength/original));
-  const returning=Math.max(0,a.strength)*.00045;
+  const returning=a.quality==='mercenary'?0:Math.max(0,a.strength)*.00018;
   c.treasury+=refund;
   const home=territories[a.county]?.owner===c.id?territories[a.county]:countryStats(c).holdings[0];
   if(home)home.p+=returning;
+  if(a.quality!=='mercenary'){initManpower(c);c.manpowerPool=Math.min(manpowerCapacity(c),c.manpowerPool+returning*.7)}
   armies=armies.filter(x=>x!==a);
   for(const f of activeFronts(c)){
    f.armyIds=(f.armyIds||[]).filter(value=>value!==id);
@@ -467,3 +468,16 @@ const priorArmySeedGenerate=generate;
 generate=function(reuse=false){cancelBorderPick();initialArmiesVerified=false;priorArmySeedGenerate(reuse);if(geomReady&&armies.length)initialArmiesVerified=true};
 const priorBorderPickUpdate=update;
 update=function(){priorBorderPickUpdate();if(borderPick&&!borderDock.hidden)refreshBorderPick()};
+
+// Regional integration projects prioritize governing conquered populations.
+const baseIntegrationProjectFinish=nationalPrograms.integration.finish;
+nationalPrograms.integration.finish=function(c){
+ const before=programUses(c,'integration');
+ baseIntegrationProjectFinish(c);
+ const weight=[1,.65,.4][before]||0;
+ for(const t of countryStats(c).holdings){
+  if(t.coreOwner===c.id)continue;
+  if(t.integrationForOwner!==c.id){t.integrationForOwner=c.id;t.integrationProgress=0;}
+  t.integrationProgress=Math.min(1,(t.integrationProgress||0)+.25*weight);
+ }
+};

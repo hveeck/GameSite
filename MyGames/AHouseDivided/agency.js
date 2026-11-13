@@ -52,7 +52,9 @@ function revenueEstimate(c){
  // industry contribute: empty territory is not an unlimited money generator.
  // Resource-bearing and industrial counties also generate taxable production,
  // so capturing a productive county has value beyond its raw headcount.
- const economicBase=2+Math.sqrt(Math.max(0,s.economy))*1.35+s.pop*.34+Math.sqrt(Math.max(0,s.resources||0))*.75+Math.sqrt(Math.max(0,s.industry||0))*.65;
+ const taxablePop=s.holdings.reduce((n,t)=>n+t.p*(.20+.80*countyIntegration(t)),0);
+ const taxEfficiency=s.pop>0?.65+.35*taxablePop/s.pop:1;
+ const economicBase=2+(Math.sqrt(Math.max(0,s.economy))*1.35+Math.sqrt(Math.max(0,s.resources||0))*.75+Math.sqrt(Math.max(0,s.industry||0))*.65)*taxEfficiency+taxablePop*.84;
  const fatigue=1-Math.min(.42,(c.warExhaustion||0)*.0042);
  const difficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
  const playerDifficulty=gameMode==='player'&&c.id===humanId?(difficulty==='easy'?1.28:difficulty==='hard'?.82:1):1;
@@ -72,7 +74,7 @@ function budgetExpense(c){
  // affordable to an industrial state but maintaining a huge army is not free.
  const inWar=typeof enemies==='function'&&enemies(c.id).length>0;
  const militaryFunding=({low:.75,normal:1,high:1.45})[c.militaryPolicy]??1;
- const militaryBase=active.reduce((cost,a)=>cost+(.60+Math.max(0,a.strength)*.075)*(a.quality==='elite'?1.6:.55),0);
+ const militaryBase=active.reduce((cost,a)=>cost+(.60+Math.max(0,a.strength)*.075)*(a.quality==='mercenary'?4.6:a.quality==='elite'?1.6:.55),0);
  const forceBurden=1+Math.max(0,active.length-8)*.03;
  const difficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
  const difficultyCost=gameMode==='player'&&c.id===humanId?({easy:.55,medium:1.08,hard:1.40})[difficulty]:({easy:1.10,medium:1.18,hard:.88})[difficulty];
@@ -80,8 +82,8 @@ function budgetExpense(c){
  // Governing a sprawling country costs increasingly more, especially when its
  // new regions have not been integrated into the national institutions.
  const holdings=s.holdings?.length??(c.initialCount||0),core=Math.max(4,c.initialCount||holdings);
- const expansion=Math.max(0,holdings-core),unintegrated=1-(c.integration||0)*.65;
- const administration=(expansion*.012*unintegrated+Math.pow(expansion/160,1.3)*1.25)*(c.authorityPolicy==='centralized'?1.20:c.authorityPolicy==='decentralized'?.93:1);
+ const expansion=Math.max(0,holdings-core),unfinished=integrationPressure(c);
+ const administration=(expansion*.012+unfinished.count*.038+unfinished.unintegrated*.32+Math.pow(expansion/160,1.3)*1.25)*(c.authorityPolicy==='centralized'?1.20:c.authorityPolicy==='decentralized'?.93:1);
  const empireServices=Math.max(0,s.pop-8)*.055;
  const overextension=typeof militaryPosture==='function'?militaryPosture(c):null;
  const oversized=overextension?.tier==='oversized'?military*.18:0;
