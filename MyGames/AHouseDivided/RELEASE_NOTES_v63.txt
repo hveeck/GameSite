@@ -1,0 +1,15 @@
+A House Divided v63 — Interaction Sounds
+
+Based on v62, including American peacetime music, difficulty balancing, and nearest-front automatic merging.
+
+NEW
+- Subtle offline sound effects for recruitment (rally), spending (coin clink), military orders,
+  diplomacy, policy choices, peace treaties, and ordinary navigation.
+- Short, low-volume effects are triggered by human clicks, never by AI actions or automatic time advancement.
+- Sound concurrency and repeat throttles prevent large overlapping noise bursts.
+- The dramatic cue no longer plays when an ordinary division is lost, for random neutral wars,
+  for routine peace treaties, or when unrelated countries capitulate. It is reserved for a severe
+  danger event affecting the player country, such as the player's capitulation.
+- No added music controls.
+
+Existing background music remains locally bundled for offline play.

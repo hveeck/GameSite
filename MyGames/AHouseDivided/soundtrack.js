@@ -3,7 +3,7 @@
 (()=>{'use strict';
  const peace=['music/peace_shenandoah.ogg','music/peace_america_beautiful.ogg','music/peace_yankee_doodle.ogg'];
  const war=['music/war_johnny_comes_marching.ogg','music/war_battle_hymn.ogg','music/war_mozart_serenade.ogg'];
- const eventClips={war:'music/cue_war_declaration.ogg',peace:'music/cue_peace_treaty.ogg'};
+ const eventClips={danger:'music/cue_war_declaration.ogg'};
  const BACKGROUND_LEVEL=.18,EVENT_LEVEL=.27;
  let enabled=false,current=null,mode=null,transition=null,stopping=false,lastCue=0,trackIndex={peace:0,war:0};
  let currentFile=null,mutationCounter=0;
@@ -42,7 +42,7 @@
  }
  function start(){if(enabled)return;enabled=true;fadeTo(isWar()?'war':'peace');}
  function cue(type){
-  if(!enabled||Date.now()-lastCue<7000)return;
+  if(!enabled||type!=='danger'||Date.now()-lastCue<20000)return;
   lastCue=Date.now();const a=new Audio(eventClips[type]);a.volume=EVENT_LEVEL;
   // Briefly duck only; the continuous score always resumes at its current position.
   const bg=current;const orig=bg?bg.volume:0;
@@ -65,8 +65,12 @@
    const oldLog=log;
    log=function(message,type){const result=oldLog.apply(this,arguments);
     if(enabled&&typeof message==='string'){
-     if(/declares war on|war has been declared|launches .* offensive/i.test(message))cue('war');
-     else if(/capitulates|peace treaty|sign a ceasefire|signs a peace|agrees to peace|agrees to a ceasefire/i.test(message))cue('peace');
+     // Play a dramatic cue only for actual disasters affecting the player's country.
+     // Normal division losses, other nations' wars, routine peace and capitulations stay silent.
+     const own=typeof gameMode!=='undefined'&&gameMode==='player'&&typeof humanId!=='undefined'&&countries?.[humanId];
+     const name=own?countries[humanId].name:'';
+     if(own&&((message.includes(name)&&/capitulates|has fallen|collapses|surrenders/i.test(message))||
+        (/your (capital|government|country).*?(fallen|capitulat|collaps|invasion)/i.test(message))))cue('danger');
     }
     return result;
    };
