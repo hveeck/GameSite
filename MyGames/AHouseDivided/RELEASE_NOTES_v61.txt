@@ -1,0 +1,33 @@
+A HOUSE DIVIDED v61 — DIFFICULTY AND AMERICAN SOUNDTRACK
+
+Easy:
+* Militia: player 14, AI 22. Veterans: player 40, AI 65.
+* AI emergency mobilisation limited to 2 divisions per cycle.
+* Player starts with +75 treasury, +18 stability, +17 national strength.
+* Player earns 28% more normal income than Medium, pays 0.55x military upkeep, and has a moderate combat edge.
+* Monthly stability/strength recovery and slow war-exhaustion reduction.
+* Easy AI recruitment cap reduced below the Medium base, with less favorable battle modifier.
+
+Regular/Medium:
+* Maintains v60 economics and combat behavior.
+
+Hard:
+* Player starts with -35 treasury, -12 stability, -12 strength.
+* Player normal revenue is 82% of Medium and upkeep costs 1.40x.
+* Enemy AI recruitment is more ambitious and emergency defense can recruit 3 units; its upkeep factor is .88.
+* Hard AI militia cost 25, veterans 75, and has modestly stronger combat odds.
+* Player gradually loses strength/stability and accumulates more war exhaustion.
+
+Music:
+* Peacetime: Shenandoah, America the Beautiful, Yankee Doodle.
+* War: When Johnny Comes Marching Home, Battle Hymn of the Republic, Eine kleine Nachtmusik.
+* Musical stingers for war declarations and settlements, with automatic crossfades.
+* Music starts on a user click, has no settings or buttons, and is locally bundled.
+* Music credit and GPL notices are provided alongside audio and generator source.
+
+Deployment:
+Extract the zip directly into MyGames/AHouseDivided (or your existing game folder).
+Then add/verify your portfolio's index.html link to MyGames/AHouseDivided/index.html.
+Commit the changed files and push the GitHub repo.
+
+NOTE: Browser playback was not manually validated in a full campaign.

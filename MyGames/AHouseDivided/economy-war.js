@@ -318,6 +318,32 @@ function mergeDivisions(c,firstId,secondId){
  assignFrontRoutes(c);invalidate();
  return keep;
 }
+// Find the nearest reachable active war front, measured in county steps.
+// A consolidated formation stays where its surviving troops are; it is not
+// teleported to the selected front. Front routing handles the march.
+function nearestMergeFront(c,army,fronts){
+ if(!fronts.length)return null;
+ const targets=new Set(fronts.map(f=>f.target));
+ const start=army.county;
+ if(!Number.isInteger(start)||!territories[start])return null;
+ const q=[start],seen=new Set(q);
+ for(let k=0;k<q.length;k++){
+  const county=q[k],owner=territories[county]?.owner;
+  if(targets.has(owner))return fronts.find(f=>f.target===owner);
+  // If any front is one county beyond this location, it is the nearest one.
+  for(const adjacent of countyGraph[county]||[]){
+   if(targets.has(territories[adjacent]?.owner))return fronts.find(f=>f.target===territories[adjacent].owner);
+  }
+  for(const adjacent of countyGraph[county]||[]){
+   if(seen.has(adjacent))continue;
+   const nextOwner=territories[adjacent]?.owner;
+   if(nextOwner!==c.id&&!alliance(c.id,nextOwner))continue;
+   seen.add(adjacent);q.push(adjacent);
+  }
+ }
+ // An isolated force can't march to another front; keep its existing assignment.
+ return fronts.find(f=>f.target===army.frontTarget)||null;
+}
 function autoMergeCriticallyWeakDivisions(c){
  let changes=0;
  for(let tries=0;tries<100;tries++){
@@ -331,11 +357,12 @@ function autoMergeCriticallyWeakDivisions(c){
   changes++;
   const fronts=activeFronts(c).filter(f=>atWar(c.id,f.target));
   if(fronts.length){
-   const smallest=[...fronts].sort((a,b)=>(a.armyIds||[]).length-(b.armyIds||[]).length)[0];
+   const nearest=nearestMergeFront(c,joined,fronts);
+   if(!nearest)continue;
    for(const f of fronts)f.armyIds=(f.armyIds||[]).filter(id=>id!==joined.id);
-   smallest.armyIds.push(joined.id);
-   smallest.divisions=Math.max(smallest.divisions||0,smallest.armyIds.length);
-   joined.frontOwner=c.id;joined.frontTarget=smallest.target;joined.route=[];joined.plan=null;
+   nearest.armyIds.push(joined.id);
+   nearest.divisions=Math.max(nearest.divisions||0,nearest.armyIds.length);
+   joined.frontOwner=c.id;joined.frontTarget=nearest.target;joined.route=[];joined.plan=null;
    assignFrontRoutes(c);
   }
  }
@@ -355,7 +382,7 @@ renderNationalFront=function(){
  const c=countries[humanId];if(!c||gameMode!=='player'||frontSection.hidden)return;
  const units=ownedArmies(c.id);
  const autoNote=document.createElement('p');autoNote.className='division-help';
- autoNote.textContent='Automatic consolidation: divisions at 1–3 strength combine with another division of 10 or less, keeping all surviving troops. The result reinforces the least-staffed active front. No orders needed.';
+ autoNote.textContent='Automatic consolidation: divisions at 1–3 strength combine with another division of 10 or less, keeping all surviving troops. The result marches toward the nearest reachable active front. No orders needed.';
  frontSection.append(autoNote);
  const disbandDetails=document.createElement('details');disbandDetails.className='division-roster disband-roster';disbandDetails.open=disbandWasOpen;
  disbandDetails.innerHTML='<summary>Disband divisions ('+units.length+') <small>Permanently remove a formation</small></summary>'+

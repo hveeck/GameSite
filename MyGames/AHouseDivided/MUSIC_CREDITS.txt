@@ -1,0 +1,31 @@
+A HOUSE DIVIDED — BACKGROUND MUSIC, v61
+======================================
+Soundtrack is bundled locally and plays offline. There are no in-game music controls.
+Audio begins after the user deliberately enters or starts the simulation, as required by browser autoplay rules.
+
+These are NEW, SYNTHESIZED ARRANGEMENTS of PUBLIC-DOMAIN MELODIES, not historical or professional orchestra recordings. The melodies and accompaniment are simplified adaptations, deliberately looped and not purported to be full original scores.
+
+PEACETIME ROTATION
+- Shenandoah — traditional American folk melody, 19th century; newly synthesized arrangement.
+- America the Beautiful — public-domain tune Materna, Samuel A. Ward (1882); newly synthesized adaptation.
+- Yankee Doodle — traditional American song, public-domain tune.
+
+WARTIME ROTATION
+- When Johnny Comes Marching Home — Patrick Gilmore (1863). Public-domain composition; simplified arrangement.
+- Battle Hymn of the Republic — tune based on traditional John Brown's Body (19th century); simplified arrangement.
+- Eine kleine Nachtmusik — adapted motif from K. 525, Wolfgang Amadeus Mozart (1787). Public-domain composition.
+
+SHORT ORIGINAL EVENT CUES
+- War declaration — original instrumental stinger.
+- Peace treaty / capitulation — original instrumental stinger.
+
+RECORDING DETAILS AND REDISTRIBUTION
+- Created for this release using the FluidSynth open-source synthesizer and TimGM6mb SoundFont samples.
+- TimGM6mb SoundFont: Tim Brechbill (2004), David Bolton (2010), GPL version 2.
+  https://packages.debian.org/sid/timgm6mb-soundfont
+  https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+- Soundtrack recordings are distributed separately under GPL version 2 to comply with any applicable rights in the sampled sounds. See MUSIC_GPL-2.0.txt.
+- Generator source is in tools/build_soundtrack.py, likewise provided under GPL-2.0. The rest of the game is separate software; this notice addresses only the music assets and their generator.
+- No royalties or commercial tracks are used. Compositions are in the public domain, but the sampled instrument SoundFont is GPL-licensed, so preserve the license and source when redistributing the audio.
+
+The European pieces from v60 are retained as unused alternate assets; the peacetime rotation now uses American music only.

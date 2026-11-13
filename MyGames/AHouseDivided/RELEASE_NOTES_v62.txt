@@ -1,0 +1,3 @@
+A House Divided v62 — nearest-front automatic merging
+
+Merged divisions now reinforce the closest reachable active war front by land route, rather than the least staffed front. They do not teleport: the surviving formation stays in its county and follows normal army routing. If isolated, it remains with its previous front. No other balance or music settings changed from v61.

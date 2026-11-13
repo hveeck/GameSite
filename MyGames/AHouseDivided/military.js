@@ -28,7 +28,11 @@ function divisionRecruitPrice(quality='militia'){
 // Medium AI governments pay a premium for recruitment; player pricing remains unchanged.
 function countryDivisionRecruitPrice(c,quality='militia'){
  const difficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
- if(difficulty==='medium'&&(gameMode!=='player'||c?.id!==humanId))return quality==='elite'?100:30;
+ if(gameMode!=='player'||c?.id!==humanId){
+  if(difficulty==='easy')return quality==='elite'?65:22;
+  if(difficulty==='medium')return quality==='elite'?100:30;
+  if(difficulty==='hard')return quality==='elite'?75:25;
+ }
  return divisionRecruitPrice(quality);
 }
 // Project the next formation's recurring cost before spending cash. Emergency
@@ -39,7 +43,8 @@ function aiMilitaryRecruitmentCapacity(c,quality='militia',emergency=false){
  const income=revenueEstimate(c),ledger=recurringLedger(c);
  const funding=({low:.75,normal:1,high:1.45})[c.militaryPolicy]??1;
  const inWar=enemies(c.id).length>0;
- const factor=(inWar?1.4:1)*funding*(typeof aiChallenge==='undefined'||aiChallenge==='medium'?1.18:1);
+ const upkeepDifficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
+ const factor=(inWar?1.4:1)*funding*({easy:1.10,medium:1.18,hard:.88})[upkeepDifficulty];
  const unit= a=>(.60+Math.max(0,a.strength)*.075)*(a.quality==='elite'?1.6:.55);
  const currentBase=force.reduce((total,a)=>total+unit(a),0);
  const added=unit({quality,strength:quality==='elite'?15:9});
@@ -135,8 +140,13 @@ function resolveArmyAssault(army,target){
  const fortBonus=Math.max(0,(enemy.fort||0)*8-siege*.6)*(garrison.length?1:.28);
  const defenders=(nums(garrison.map(a=>fieldStrength(a)*(1+a.entrench*.7)*divisionTraits(a.quality).combat))+reserve+5+fortBonus)*(ideologies[enemy.ideology]?.army||1);
  const fightingCondition=c=>(.45+.55*clamp(c.stability/75,.15,1.2))*(.48+.52*clamp(c.baseEconomyFactor||1,.45,1.8))*(1-Math.min(.6,(c.warExhaustion||0)*.006));
- const attack=(fieldStrength(army)*divisionTraits(army.quality).combat+support)*(ideologies[friend.ideology]?.army||1)*(.55+friend.readiness/105)*fightingCondition(friend)*(.72+rand()*.52);
- const defense=defenders*(.55+enemy.readiness/115)*fightingCondition(enemy)*(.83+rand()*.44);
+ const level=typeof aiChallenge==='undefined'?'medium':aiChallenge;
+ const playerCombat=(gameMode==='player'&&army.owner===humanId)?({easy:1.15,medium:1,hard:.92})[level]:1;
+ const aiCombat=(gameMode==='player'&&army.owner!==humanId)?({easy:.91,medium:1,hard:1.09})[level]:1;
+ const attack=(fieldStrength(army)*divisionTraits(army.quality).combat+support)*(ideologies[friend.ideology]?.army||1)*(.55+friend.readiness/105)*fightingCondition(friend)*(.72+rand()*.52)*playerCombat*aiCombat;
+ const defendingPlayer=gameMode==='player'&&enemy.id===humanId;
+ const defenseModifier=defendingPlayer?({easy:1.15,medium:1,hard:.92})[level]:gameMode==='player'?({easy:.91,medium:1,hard:1.09})[level]:1;
+ const defense=defenders*(.55+enemy.readiness/115)*fightingCondition(enemy)*(.83+rand()*.44)*defenseModifier;
  if(attack>defense){
   // Occupying an empty county doesn't kill soldiers. Casualties belong to
   // actual battles with opposing formations or their reinforcements.
@@ -278,7 +288,7 @@ function automaticArmyOrders(days){
   const baseDesired=Math.max(3,Math.min(setting==='hard'?22:setting==='easy'?9:16,Math.ceil(countryStats(c).holdings.length/(setting==='hard'?9:setting==='easy'?23:14)),Math.ceil((enemyForces.length+2)*(setting==='medium'?.9:1))));
   // Regular AI fields about 45% fewer divisions than the original target.
   // This limits army-size advantage without changing battlefield decisions.
-  const desired=typeof aiChallenge!=='undefined'&&aiChallenge==='medium'?Math.max(2,Math.ceil(baseDesired*.55)):baseDesired;
+  const desired=Math.max(2,Math.ceil(baseDesired*({easy:.57,medium:.55,hard:1.13})[setting]));
   if(c.treasury>=35&&ownForces.length<desired&&chance(setting==='hard'?.9999:setting==='easy'?.86:.997,days)){
    const threatened=borders.filter(t=>countyGraph[t.i].some(j=>atWar(c.id,territories[j].owner)));
    const staging=(threatened.length?threatened:borders).filter(t=>t.owner===c.id);
@@ -421,7 +431,8 @@ function emergencyAiWarResponse(){
   const baseDesired=Math.min(28,Math.ceil(Math.max(5,Math.ceil(countryStats(c).holdings.length/8),enemyNear.length*2+3)*(typeof aiChallenge!=='undefined'&&aiChallenge==='medium'?.9:1)));
   // Regular AI fields about 45% fewer divisions than the original target.
   // This limits army-size advantage without changing battlefield decisions.
-  const desired=typeof aiChallenge!=='undefined'&&aiChallenge==='medium'?Math.max(2,Math.ceil(baseDesired*.55)):baseDesired;
+  const challenge=typeof aiChallenge==='undefined'?'medium':aiChallenge;
+  const desired=Math.max(2,Math.ceil(baseDesired*({easy:.57,medium:.55,hard:1.13})[challenge]));
   const reserve=threatened?Math.max(5,c.treasury*.12):Math.max(25,c.treasury*.4);
   // Defensive emergency funding is temporary and carries a political cost.
   if(threatened&&c.treasury<countryDivisionRecruitPrice(c,'militia')*3&&
@@ -430,7 +441,7 @@ function emergencyAiWarResponse(){
    c.stability=clamp(c.stability-2,5,99);
   }
   // Regular AI cannot replace a large army in a single emergency cycle.
-  const maxRecruit=threatened?(typeof aiChallenge!=='undefined'&&aiChallenge==='medium'?2:3):1;
+  const maxRecruit=threatened?(typeof aiChallenge!=='undefined'&&aiChallenge==='hard'?3:2):1;
   for(let n=0;n<maxRecruit&&own.length<desired;n++){
    const veteran=threatened&&c.treasury>countryDivisionRecruitPrice(c,'elite')+reserve&&own.filter(a=>a.quality==='elite').length<Math.ceil(own.length*.55);
    let quality=veteran?'elite':'militia';

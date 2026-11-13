@@ -55,7 +55,7 @@ function revenueEstimate(c){
  const economicBase=2+Math.sqrt(Math.max(0,s.economy))*1.35+s.pop*.34+Math.sqrt(Math.max(0,s.resources||0))*.75+Math.sqrt(Math.max(0,s.industry||0))*.65;
  const fatigue=1-Math.min(.42,(c.warExhaustion||0)*.0042);
  const difficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
- const playerDifficulty=gameMode==='player'&&c.id===humanId?(difficulty==='easy'?1.15:difficulty==='hard'?.9:1):1;
+ const playerDifficulty=gameMode==='player'&&c.id===humanId?(difficulty==='easy'?1.28:difficulty==='hard'?.82:1):1;
  const warLevy=(c.warTaxUntil||0)>daysElapsed?1.32:1;
  return economicBase*(1+c.industryBonus)*taxMultiplier*taxRate*fatigue*playerDifficulty*warLevy;
 }
@@ -75,7 +75,7 @@ function budgetExpense(c){
  const militaryBase=active.reduce((cost,a)=>cost+(.60+Math.max(0,a.strength)*.075)*(a.quality==='elite'?1.6:.55),0);
  const forceBurden=1+Math.max(0,active.length-8)*.03;
  const difficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
- const difficultyCost=gameMode==='player'&&c.id===humanId?({easy:.67,medium:1.08,hard:1.20})[difficulty]:(difficulty==='medium'?1.18:1);
+ const difficultyCost=gameMode==='player'&&c.id===humanId?({easy:.55,medium:1.08,hard:1.40})[difficulty]:({easy:1.10,medium:1.18,hard:.88})[difficulty];
  const military=militaryBase*forceBurden*(inWar?1.4:1)*militaryFunding*difficultyCost;
  // Governing a sprawling country costs increasingly more, especially when its
  // new regions have not been integrated into the national institutions.
@@ -273,6 +273,20 @@ function advanceCabinet(days){
   c.stability=clamp(c.stability+authorityEffects.stability*months,5,99);
   c.readiness=clamp(c.readiness+authorityEffects.readiness*months,5,100);
   if(spending.welfare>0&&c.warExhaustion>0)c.warExhaustion=Math.max(0,c.warExhaustion-spending.welfare*.13*funding);
+  // Player difficulty has a sustained political and mobilization effect,
+  // not merely a one-time cash bonus. Keep these gradual so decisions still matter.
+  if(gameMode==='player'&&c.id===humanId){
+   const level=typeof aiChallenge==='undefined'?'medium':aiChallenge;
+   if(level==='easy'){
+    c.stability=clamp(c.stability+.50*months,5,99);
+    c.readiness=clamp(c.readiness+.58*months,5,100);
+    c.warExhaustion=Math.max(0,(c.warExhaustion||0)-.35*months);
+   }else if(level==='hard'){
+    c.stability=clamp(c.stability-.26*months,5,99);
+    c.readiness=clamp(c.readiness-.22*months,5,100);
+    c.warExhaustion=clamp((c.warExhaustion||0)+.12*months,0,100);
+   }
+  }
   if(c.nationalAgenda==='prosperity'){c.baseEconomyFactor=clamp(c.baseEconomyFactor+.002*months,.45,1.8);c.readiness=clamp(c.readiness-.1*months,5,100)}
   if(c.nationalAgenda==='unity'){c.stability=clamp(c.stability+.38*months,5,99);c.warExhaustion=Math.max(0,c.warExhaustion-.2*months)}
   if(c.nationalAgenda==='defense'){c.readiness=clamp(c.readiness+.38*months,5,100);c.baseEconomyFactor=clamp(c.baseEconomyFactor-.001*months,.45,1.8)}

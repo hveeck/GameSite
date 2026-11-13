@@ -9,7 +9,7 @@ challengePicker.querySelector('select').onchange=e=>{aiChallenge=e.target.value}
 choiceOverlay.querySelector('#enterWorld').addEventListener('click',()=>{
  if(gameMode!=='player'||humanId===null)return;
  const c=countries[humanId];if(!c||!countryStats(c).holdings.length)return;
- const adjustment=aiChallenge==='easy'?{cash:40,stability:9,readiness:6}:aiChallenge==='hard'?{cash:-20,stability:-6,readiness:-5}:{cash:0,stability:0,readiness:0};
+ const adjustment=aiChallenge==='easy'?{cash:75,stability:18,readiness:17}:aiChallenge==='hard'?{cash:-35,stability:-12,readiness:-12}:{cash:0,stability:0,readiness:0};
  c.treasury=Math.max(0,(c.treasury||0)+adjustment.cash);
  c.stability=clamp(c.stability+adjustment.stability,5,99);
  c.readiness=clamp(c.readiness+adjustment.readiness,5,100);
