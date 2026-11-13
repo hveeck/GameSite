@@ -36,6 +36,15 @@
 <style>.tile-cribbage{--icon-color:#7A8D80;--icon-outline:#7A8D8077;--icon-surface:#7A8D8016;}</style>
 <style>.tile-trivia{--icon-color:#C49A53;--icon-outline:#C49A5377;--icon-surface:#C49A5316;}</style>
 <style>.tile-wheely-crazy{--icon-color:#C48158;--icon-outline:#C4815877;--icon-surface:#C4815816;}</style>
+<style id="gamesite-wheely-first">
+.browser-grid {display:grid !important;grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+ gap:20px !important;align-items:stretch;}
+.browser-grid > .card {box-sizing:border-box !important;width:100% !important;min-width:0 !important;
+ max-width:none !important;margin:0 !important;grid-column:auto !important;}
+.browser-grid > .featured-assassin {grid-column:1 / -1 !important;}
+@media(max-width:800px){.browser-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}}
+@media(max-width:540px){.browser-grid{grid-template-columns:minmax(0,1fr) !important;}}
+</style>
 </head>
 <body>
 
@@ -61,6 +70,20 @@
                 </div>
             </div>
             <a href="MyGames/SeniorAssassin/index.html" class="btn">Play</a>
+        </div>
+<div class="card tile tile-wheely-crazy">
+            <div class="card-top">
+                <svg class="card-icon" viewBox="0 0 24 24" role="img" aria-label="Wheely Crazy icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6"/></svg>
+                <div class="card-content">
+                    <h3>Wheely Crazy</h3>
+                    <p>Infinite runner coded in Winter 2024.</p>
+                <span class="platform-badge">Desktop Only</span>
+</div>
+            </div>
+            <div class="dual-btn-row">
+                <button class="btn" onclick="openSmartScreenWarning()">PC .zip</button>
+                <button class="btn" onclick="openMacModal()">Mac .app.zip</button>
+            </div>
         </div>
 <div class="card tile tile-a-house-divided">
             <div class="card-top">
@@ -163,8 +186,7 @@
             </div>
             <a href="MyGames/BudgetSlasher.html" class="btn">Play</a>
         </div>
-<div class="tile-pair">
-<div class="card tile tile-cribbage row-center-left">
+<div class="card tile tile-cribbage">
             <div class="card-top">
 
         <svg class="card-icon" viewBox="0 0 24 24" role="img" aria-label="Cribbage icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3.5 4.2-8.8 7.4-8.8 12a4.8 4.8 0 0 0 8.8 2 4.8 4.8 0 0 0 8.8-2C20.8 10.4 15.5 7.2 12 3Z"/><path d="M12 16v5M8 21h8"/></svg>
@@ -176,7 +198,7 @@
             </div>
             <a href="MyGames/Cribbage.html" class="btn">Play</a>
         </div>
-<div class="card tile tile-trivia row-center-right">
+<div class="card tile tile-trivia">
             <div class="card-top">
                 <svg class="card-icon" viewBox="0 0 24 24" role="img" aria-label="Trivia icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5M12 17v.2"/></svg>
                 <div class="card-content">
@@ -188,61 +210,7 @@
             <a href="MyGames/Trivia.html" class="btn">Play</a>
         </div>
 </div>
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="card tile tile-wheely-crazy row-center-single">
-            <div class="card-top">
-                <svg class="card-icon" viewBox="0 0 24 24" role="img" aria-label="Wheely Crazy icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6"/></svg>
-                <div class="card-content">
-                    <h3>Wheely Crazy</h3>
-                    <p>Infinite runner coded in Winter 2024.</p>
-                </div>
-            </div>
-            <div class="dual-btn-row">
-                <button class="btn" onclick="openSmartScreenWarning()">PC .zip</button>
-                <button class="btn" onclick="openMacModal()">Mac .app.zip</button>
-            </div>
-        </div>
-
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-</div>
-
-
-    <h2>Desktop Release</h2>
-    <div class="desktop-grid">
-        
-    </div>
-
-    <!-- Tongue-out Easter Egg Link -->
+<!-- Tongue-out Easter Egg Link -->
     <a href="https://www.youtube.com/watch?v=9Weko7OXfnc" target="_blank" rel="noopener" class="easter-egg-link" title="???">😜</a>
 
     <!-- Universal Desktop-Only Warning Modal -->
