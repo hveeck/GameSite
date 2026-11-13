@@ -1,0 +1,5 @@
+A House Divided v68 — Front assignment simplification
+
+Removed v67 Open/Assign Front dropdown. Existing war fronts now use +/− only, preserving the Military manpower counter and mercenary options. Newly assigned fronts begin with 100% Balanced orders. Declare wars in Diplomacy before assigning troops.
+
+Recruitable population calculation (units in millions): capacity = 0.006 + 0.017 × eligible county population; initial pool = 85% capacity; refill = 4.4% capacity monthly; militia consumes 1,080 people, veterans 1,800, mercenaries 0. Eligible counties are owned cores or at least 97%-integrated conquered counties.

@@ -396,8 +396,9 @@ renderNationalFront=function(){
   const returning=a.quality==='mercenary'?0:Math.max(0,a.strength)*.00012;
   c.treasury+=refund;
   const home=territories[a.county]?.owner===c.id?territories[a.county]:countryStats(c).holdings[0];
-  if(home)home.p+=returning;
-  if(a.quality!=='mercenary'){initManpower(c);c.manpowerPool=Math.min(manpowerCapacity(c),c.manpowerPool+returning*.7)}
+  // The soldiers were already counted in the country's population. Return
+  // surviving recruits only to the manpower pool, not a second time to civilians.
+  if(a.quality!=='mercenary')returnManpower(c,returning*.7);
   armies=armies.filter(x=>x!==a);
   for(const f of activeFronts(c)){
    f.armyIds=(f.armyIds||[]).filter(value=>value!==id);

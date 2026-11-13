@@ -3,12 +3,35 @@ function coreRecruitCounties(id){return typeof territories==='undefined'?[]:terr
 function countyIntegration(t){if(!t)return 0;return t.coreOwner===t.owner?1:t.integrationForOwner===t.owner?Math.max(0,Math.min(1,t.integrationProgress||0)):0}
 function integrationPressure(c){const held=countryStats(c).holdings;let foreign=0,unintegrated=0;for(const t of held){if(t.coreOwner===c.id)continue;foreign+=Math.max(.01,t.p);unintegrated+=Math.max(.01,t.p)*(1-countyIntegration(t));}return {foreign,unintegrated,ratio:unintegrated/Math.max(.01,countryStats(c).pop),count:held.filter(t=>t.coreOwner!==c.id&&countyIntegration(t)<.97).length};}
 function divisionStartStrength(quality){return quality==='mercenary'?20:quality==='elite'?15:9}
+// One reserve, measured in millions of people. Expansion alters the same reserve cap,
+// rather than creating a second population or a recurring monthly manpower payment.
 function manpowerCost(quality,strength=divisionStartStrength(quality)){return quality==='mercenary'?0:Math.max(0,strength)*.00012}
-function manpowerCapacity(c){const home=coreRecruitCounties(c.id).reduce((n,t)=>n+t.p,0);return .006+home*.017}
-function initManpower(c){if(c.manpowerPool===undefined)c.manpowerPool=manpowerCapacity(c)*.85}
-function resetManpower(c){c.manpowerPool=undefined;initManpower(c)}
+function recruitablePopulation(c){return coreRecruitCounties(c.id).reduce((n,t)=>n+t.p,0)}
+function manpowerCapacity(c){return recruitablePopulation(c)*(c.manpowerExpanded?.21:.13)}
+function initManpower(c){
+ if(c.manpowerUsed===undefined){
+  // Older saves may have a reserve but no consumption ledger.
+  c.manpowerUsed=c.manpowerPool===undefined?0:Math.max(0,manpowerCapacity(c)-c.manpowerPool);
+ }
+ c.manpowerPool=Math.max(0,manpowerCapacity(c)-c.manpowerUsed);
+}
+function resetManpower(c){c.manpowerUsed=0;c.manpowerExpanded=false;initManpower(c)}
 function canSupplyManpower(c,quality,strength){if(!c)return false;initManpower(c);return quality==='mercenary'||c.manpowerPool+1e-9>=manpowerCost(quality,strength)}
-function spendManpower(c,quality,strength){initManpower(c);if(quality==='mercenary')return;const cost=manpowerCost(quality,strength);c.manpowerPool=Math.max(0,c.manpowerPool-cost);const home=coreRecruitCounties(c.id),pop=home.reduce((n,t)=>n+t.p,0);if(pop)for(const t of home)t.p=Math.max(.00001,t.p-cost*t.p/pop);invalidate()}
+function spendManpower(c,quality,strength){
+ initManpower(c);if(quality==='mercenary')return;
+ c.manpowerUsed+=manpowerCost(quality,strength);
+ initManpower(c);
+ if(typeof invalidate==='function')invalidate();
+}
+function returnManpower(c,amount){initManpower(c);c.manpowerUsed=Math.max(0,c.manpowerUsed-Math.max(0,amount));initManpower(c)}
+function setExpandedRecruitment(c,enabled){
+ initManpower(c);
+ if(!!c.manpowerExpanded===!!enabled)return false;
+ c.manpowerExpanded=!!enabled;
+ if(enabled){c.stability=clamp(c.stability-5,5,99);}
+ initManpower(c);
+ return true;
+}
 const beforePopulationAdvance=advanceCabinet;
 advanceCabinet=function(days){
  beforePopulationAdvance(days);
@@ -29,7 +52,13 @@ advanceCabinet=function(days){
    t.integrationProgress=Math.min(1,(t.integrationProgress||0)+months*adminRate*peacePenalty*health);
   }
   initManpower(c);
-  c.manpowerPool=Math.min(manpowerCapacity(c),c.manpowerPool+manpowerCapacity(c)*.044*months);
+  // No automatic reserve refill: population growth and integration increase the
+  // shared pool capacity; disbanding surviving soldiers returns some recruits.
+  initManpower(c);
+  if(c.manpowerExpanded){
+   const strain=isPlayer&&difficulty==='hard'?1.25:.75;
+   c.stability=clamp(c.stability-strain*months,5,99);
+  }
   if(!isPlayer)continue;
   const deficit=typeof recurringLedger==='function'?Math.max(0,-recurringLedger(c).net):0;
   const lowStability=Math.max(0,45-c.stability),exhausted=Math.max(0,(c.warExhaustion||0)-30);

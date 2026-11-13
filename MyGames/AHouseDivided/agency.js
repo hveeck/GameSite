@@ -59,7 +59,7 @@ function revenueEstimate(c){
  const difficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
  const playerDifficulty=gameMode==='player'&&c.id===humanId?(difficulty==='easy'?1.28:difficulty==='hard'?.82:1):1;
  const warLevy=(c.warTaxUntil||0)>daysElapsed?1.32:1;
- return economicBase*(1+c.industryBonus)*taxMultiplier*taxRate*fatigue*playerDifficulty*warLevy;
+ return economicBase*(1+c.industryBonus)*taxMultiplier*taxRate*fatigue*playerDifficulty*warLevy*(c.manpowerExpanded?.86:1);
 }
 function recurringLedger(c){
  const revenue=revenueEstimate(c),civilAndArmy=budgetExpense(c),priority=c.nationalAgenda==='recovery'?1.25:0;

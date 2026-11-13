@@ -20,9 +20,3 @@
 .world-wars{margin-top:12px}
 .campaign-choice .challenge-picker{display:flex;flex-direction:column;gap:8px;margin:16px 0;color:#e8d0a2;font-size:12px;letter-spacing:.05em}
 .campaign-choice .challenge-picker select{max-width:100%;background:#203743;color:#f4e7cf;border:1px solid #789099;padding:11px;border-radius:5px;font-size:13px}
-
-/* v67: compact front setup is visible even before the first declaration of war. */
-.front-open-controls{padding:12px;margin:10px 0;border:1px solid rgba(135,160,180,.22);border-radius:10px;display:grid;gap:9px}
-.front-open-controls label{display:grid;gap:4px}
-.front-open-controls select{max-width:100%;width:100%}
-.front-open-controls button{min-height:36px}

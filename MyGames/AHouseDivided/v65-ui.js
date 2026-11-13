@@ -10,7 +10,7 @@
  const weightedIntegration = t => Math.round(countyIntegration(t)*100);
  function manpowerHtml(c) {
   initManpower(c);
-  return '<span class="v65-manpower-stat"><b>'+fmt(c.manpowerPool*1e6)+'</b> Recruitable population<small>Home and integrated land only</small></span>';
+  return '<span class="v65-manpower-stat"><b>'+fmt(c.manpowerPool*1e6)+'</b> Recruitable population<small>'+ (c.manpowerExpanded?'Expanded · 21%':'Normal · 13%')+' of home and fully integrated population; no monthly refill</small></span>';
  }
  function renderPopulationStat() {
   const c=current();
