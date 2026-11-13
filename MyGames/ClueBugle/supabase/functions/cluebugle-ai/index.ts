@@ -14,7 +14,7 @@ const validTeam = (s: unknown) => ['red', 'blue', 'neutral', 'assassin'].include
 const MODEL = Deno.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
 // The verifier only ranks publicly visible word associations. Keep the
 // stronger model for actual clues and detailed postgame reviews.
-const VERIFIER_MODEL = Deno.env.get('GEMINI_VERIFIER_MODEL') || 'gemini-2.5-flash-lite';
+const VERIFIER_MODEL = Deno.env.get('GEMINI_VERIFIER_MODEL') || 'gemini-3.5-flash-lite';
 // Best-effort per-worker throttling; Google free-tier quotas are the final
 // limit. A production, paid deployment should add durable DB-backed quotas.
 const traffic = new Map<string,{minute:number,count:number}>();
@@ -76,8 +76,13 @@ async function askGemini(key:string,model:string,prompt:string,temperature=.3,ma
         method:'POST',signal:controller.signal,
         headers:{'Content-Type':'application/json','x-goog-api-key':key},
         body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{
-          responseMimeType:'application/json',temperature,maxOutputTokens,
-          thinkingConfig:{thinkingBudget}}})
+          responseMimeType:'application/json',
+          maxOutputTokens,
+          ...(model.startsWith('gemini-3')
+            ? {thinkingConfig:{
+                thinkingLevel:model.includes('flash-lite')?'MINIMAL':'LOW'
+              }}
+            : {temperature,thinkingConfig:{thinkingBudget}})}})
       });
       if(response.ok){
         const raw=await response.json();
@@ -85,6 +90,12 @@ async function askGemini(key:string,model:string,prompt:string,temperature=.3,ma
         if(!answer)throw Error(`Gemini returned no text (${raw.candidates?.[0]?.finishReason||raw.promptFeedback?.blockReason||'unknown'})`);
         return parseJson(answer);
       }
+      const upstreamError = await response.text();
+      console.error("GEMINI UPSTREAM ERROR", JSON.stringify({
+        model,
+        status: response.status,
+        details: upstreamError.slice(0, 1500)
+      }));
       last=new Error(`Gemini request failed (${response.status})`);
       if(![429,500,502,503,504].includes(response.status))throw last;
     }catch(e){
