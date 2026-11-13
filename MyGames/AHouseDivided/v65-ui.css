@@ -9,3 +9,10 @@
 .v65-integration-actions button{flex:1 1 195px;white-space:normal;min-height:36px}
 .v65-integration small{opacity:.78;display:block;line-height:1.5}
 .v65-delay{font-size:11px;color:#e9bc8b}
+
+/* v66: instantly visible recruiting resource in the Military tab. */
+.military-manpower-display{display:flex;flex-direction:column;gap:4px;margin:12px 0 14px;padding:12px 13px;border:1px solid rgba(111,180,168,.47);border-radius:8px;background:rgba(56,119,101,.14);line-height:1.35}
+.military-manpower-display strong{font-size:11px;letter-spacing:.075em;color:#bbddc8}
+.military-manpower-display span{font-size:21px;font-weight:750;color:#f1eee1;font-variant-numeric:tabular-nums}
+.military-manpower-display small{font-size:11px;opacity:.8}
+.military-manpower-display span small{font-weight:450;font-size:12px}

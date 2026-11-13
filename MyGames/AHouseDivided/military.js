@@ -21,7 +21,7 @@ document.querySelector('.war-rail.right').prepend(armyRailButton);
 function selectedArmy(){return armies.find(a=>a.id===selectedArmyId&&a.owner===humanId)}
 function ownedArmies(id){return armies.filter(a=>a.owner===id)}
 function divisionRecruitPrice(quality='militia'){
- const cost={militia:{easy:14,medium:15,hard:32},elite:{easy:40,medium:65,hard:95},mercenary:{easy:225,medium:295,hard:380}};
+ const cost={militia:{easy:14,medium:15,hard:32},elite:{easy:40,medium:65,hard:95},mercenary:{easy:100,medium:130,hard:175}};
  return (cost[quality]||cost.militia)[typeof aiChallenge==='undefined'?'medium':aiChallenge];
 }
 // Recruitment pricing depends on who is paying. The Medium player retains
@@ -29,9 +29,9 @@ function divisionRecruitPrice(quality='militia'){
 function countryDivisionRecruitPrice(c,quality='militia'){
  const difficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
  if(gameMode!=='player'||c?.id!==humanId){
-  if(difficulty==='easy')return quality==='elite'?65:22;
-  if(difficulty==='medium')return quality==='elite'?100:30;
-  if(difficulty==='hard')return quality==='elite'?75:25;
+  if(difficulty==='easy')return quality==='mercenary'?155:quality==='elite'?65:22;
+  if(difficulty==='medium')return quality==='mercenary'?195:quality==='elite'?100:30;
+  if(difficulty==='hard')return quality==='mercenary'?155:quality==='elite'?75:25;
  }
  return divisionRecruitPrice(quality);
 }
@@ -48,7 +48,7 @@ function aiMilitaryRecruitmentCapacity(c,quality='militia',emergency=false){
  const factor=(inWar?1.4:1)*funding*({easy:1.10,medium:1.18,hard:.88})[upkeepDifficulty];
  const unit= a=>(.60+Math.max(0,a.strength)*.075)*(a.quality==='mercenary'?4.6:a.quality==='elite'?1.6:.55);
  const currentBase=force.reduce((total,a)=>total+unit(a),0);
- const added=unit({quality,strength:quality==='elite'?15:9});
+ const added=unit({quality,strength:divisionStartStrength(quality)});
  const oldBurden=1+Math.max(0,count-8)*.03;
  const newBurden=1+Math.max(0,count+1-8)*.03;
  const marginal=Math.max(.01,((currentBase+added)*newBurden-currentBase*oldBurden)*factor);

@@ -42,7 +42,11 @@ renderNationalFront=function(){
  const foeIds=[...new Set(enemies(c.id))].filter(id=>countries[id]&&countryStats(countries[id]).holdings.length);
  const assigned=new Set(fronts.flatMap(f=>f.armyIds||[]));
  const reserve=all.filter(a=>!assigned.has(a.id));
+ initManpower(c);
+ const availablePeople=Math.round(c.manpowerPool*1e6).toLocaleString('en-US');
+ const totalPeople=Math.round(manpowerCapacity(c)*1e6).toLocaleString('en-US');
  frontSection.innerHTML='<div class="quick-section-title">WAR FRONTS <small>'+all.length+' divisions · '+reserve.length+' reserve</small></div>'+
+ '<div class="military-manpower-display"><strong>RECRUITABLE POPULATION</strong><span>'+availablePeople+' <small>/ '+totalPeople+' available capacity</small></span><small>Militia and veterans use recruits · mercenaries do not</small></div>'+
  (foeIds.length?foeIds.map(id=>{
   const f=fronts.find(x=>x.target===id),n=f?.armyIds?.length||0;
   const mix=f?.mix||(f?{breakthrough:f.strategy==='breakthrough'?100:0,balanced:f.strategy==='balanced'?100:0,cautious:f.strategy==='cautious'?100:0,defend:0}:{breakthrough:0,balanced:0,cautious:0,defend:0});
@@ -53,7 +57,7 @@ renderNationalFront=function(){
  '<div class="front-mix-title">RECRUIT DIVISION</div><label>Type<select id="nationalQuality"><option value="militia" '+(selectedRecruitQuality==='militia'?'selected':'')+'>Militia · '+divisionRecruitPrice('militia')+'</option><option value="elite" '+(selectedRecruitQuality==='elite'?'selected':'')+'>Veterans · '+divisionRecruitPrice('elite')+'</option><option value="mercenary" '+(selectedRecruitQuality==='mercenary'?'selected':'')+'>Mercenaries · '+divisionRecruitPrice('mercenary')+' treasury</option></select></label><small id="recruitTraits"></small>'+
  '<button class="raise-national" id="raiseNationalForce">＋ Recruit selected division</button>';
  const qualityPicker=frontSection.querySelector('#nationalQuality'),recruitButton=frontSection.querySelector('#raiseNationalForce');
- function refreshRecruit(){const quality=qualityPicker.value,affordable=c.treasury>=divisionRecruitPrice(quality),manpower=canSupplyManpower(c,quality,divisionStartStrength(quality));recruitButton.disabled=!affordable||!manpower||!coreRecruitCounties(c.id).length;recruitButton.textContent='＋ Recruit '+divisionName(quality)+' · '+divisionRecruitPrice(quality)+' treasury';frontSection.querySelector('#recruitTraits').textContent={militia:'9 strength · fast, low upkeep · uses recruitable population',elite:'15 strength · durable frontline force · uses recruitable population',mercenary:'18 strength · 220% combat · highly durable · NO population required · extremely expensive upkeep'}[quality]+(!manpower?' · NOT ENOUGH RECRUITABLE POPULATION':'')}
+ function refreshRecruit(){const quality=qualityPicker.value,affordable=c.treasury>=divisionRecruitPrice(quality),manpower=canSupplyManpower(c,quality,divisionStartStrength(quality));recruitButton.disabled=!affordable||!manpower||!coreRecruitCounties(c.id).length;recruitButton.textContent='＋ Recruit '+divisionName(quality)+' · '+divisionRecruitPrice(quality)+' treasury';frontSection.querySelector('#recruitTraits').textContent={militia:'9 strength · fast, low upkeep · uses recruitable population',elite:'15 strength · durable frontline force · uses recruitable population',mercenary:'20 strength · 220% combat · highly durable · NO population required · extremely expensive upkeep'}[quality]+(!manpower?' · NOT ENOUGH RECRUITABLE POPULATION':'')}
  qualityPicker.onchange=()=>{selectedRecruitQuality=qualityPicker.value;refreshRecruit()};refreshRecruit();
  function adjust(id,delta){
   let f=activeFronts(c).find(x=>x.target===id);

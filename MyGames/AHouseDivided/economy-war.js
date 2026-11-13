@@ -393,7 +393,7 @@ renderNationalFront=function(){
   if(!a)return;
   const original=divisionStartStrength(a.quality);
   const refund=Math.floor(divisionRecruitPrice(a.quality)*.25*Math.min(1,a.strength/original));
-  const returning=a.quality==='mercenary'?0:Math.max(0,a.strength)*.00018;
+  const returning=a.quality==='mercenary'?0:Math.max(0,a.strength)*.00012;
   c.treasury+=refund;
   const home=territories[a.county]?.owner===c.id?territories[a.county]:countryStats(c).holdings[0];
   if(home)home.p+=returning;

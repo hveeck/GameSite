@@ -1,0 +1,9 @@
+A HOUSE DIVIDED · V66 — MERCENARY & MANPOWER BALANCE
+
+Mercenaries: 20 starting strength; 130 treasury on Regular (100 Easy / 175 Hard). No recruitable population spent. AI mercenary prices are higher to prevent exploitation (155 Easy / 195 Regular / 155 Hard).
+
+Manpower economy: recruitment uses one-third less population per division (0.00012 per strength vs 0.00018); reserve capacity increased to .006 + 1.7% of eligible population; starts at 85% full; recovers 4.4% of capacity monthly rather than 1.4%. Population continues to decline slightly with recruitment, and conquered territory must be integrated to supply recruits.
+
+UI: recruitable population shown prominently in Military > War Fronts near recruitment options, with available / capacity; also remains in Government. Version marker updated to v66 and cache strings changed.
+
+Note: mercenaries remain very powerful and have exceptionally high ongoing upkeep, so recruiting one is still a strategic commitment.
