@@ -18,6 +18,10 @@ const VERIFIER_MODEL = Deno.env.get('GEMINI_VERIFIER_MODEL') || 'gemini-3.5-flas
 // Best-effort per-worker throttling; Google free-tier quotas are the final
 // limit. A production, paid deployment should add durable DB-backed quotas.
 const traffic = new Map<string,{minute:number,count:number}>();
+// Best-effort per-isolate Google 429 cooldown. Not a global quota coordinator.
+const modelPauseUntil = new Map<string,number>();
+const quotaDelay=(model:string)=>Math.max(0,Math.ceil(((modelPauseUntil.get(model)||0)-Date.now())/1000));
+
 
 // Gemini normally returns a single JSON object, but occasionally appends a
 // second object, a code fence, or commentary despite responseMimeType. Parse
@@ -65,6 +69,8 @@ function parseJson(text: string): Record<string, unknown> {
 async function askGemini(key:string,model:string,prompt:string,temperature=.3,maxOutputTokens=950,
                          deadline=Date.now()+16000, thinkingBudget=256) {
   // Never stack four full-length waits. Every stage respects the SAME turn deadline.
+  const cooldown=quotaDelay(model);
+  if(cooldown>0)throw Error(`Gemini quota exceeded (429). Retry in ${cooldown}s.`);
   let last:Error=new Error('Gemini temporarily unavailable');
   for(let attempt=0; attempt<2; attempt++){
     const remaining=deadline-Date.now();
@@ -84,6 +90,16 @@ async function askGemini(key:string,model:string,prompt:string,temperature=.3,ma
               }}
             : {temperature,thinkingConfig:{thinkingBudget}})}})
       });
+      if(response.status===429){
+        // Google gives a retry-after duration in either header or error body.
+        const errorBody=await response.text();
+        const secondsFromBody=/retry in ([0-9.]+)s/i.exec(errorBody)?.[1];
+        const headerSeconds=Number(response.headers.get('retry-after'));
+        const pause=Math.min(120,Math.max(10,Number(secondsFromBody)||headerSeconds||30));
+        modelPauseUntil.set(model,Date.now()+pause*1000);
+        console.warn('ClueBugle Gemini quota reached',model,`cooldown ${Math.ceil(pause)}s`);
+        throw Error(`Gemini quota exceeded (429). Retry in ${Math.ceil(pause)}s.`);
+      }
       if(response.ok){
         const raw=await response.json();
         const answer=raw.candidates?.[0]?.content?.parts?.map((p:{text?:string})=>p.text||'').join('')||'';
@@ -141,21 +157,25 @@ function legalCandidate(c:any, board:string[], available:string[], own:string[],
 // and proposed clues. The spymaster evaluates its guesses against the key.
 async function verifyClues(key:string,model:string,available:string[],candidates:any[],deadline:number) {
   // Color-blind verifier: no secret identity data enters this request.
-  const prompt=`CODENAMES GUESSER. Rank the 5 most tempting guesses for each clue.
+  const prompt=`CODENAMES GUESSER. Rank the EIGHT most tempting guesses for each clue, in exact order of instinctive association.
 VISIBLE UNREVEALED WORDS: ${JSON.stringify(available)}
 CLUES: ${JSON.stringify(candidates.map(x=>({word:x.word,n:x.n})))}
-Respond with compact JSON ONLY: {"rankings":[{"word":"CLUE","guesses":["WORD1","WORD2","WORD3","WORD4","WORD5"]}]}
-Use only visible words. No explanation. Consider the most obvious connections, including dangerous distractors.`;
+Respond with compact JSON ONLY: {"rankings":[{"word":"CLUE","guesses":["WORD1","WORD2","WORD3","WORD4","WORD5","WORD6","WORD7","WORD8"]}]}
+Use only visible words. No explanation. Pretend you are a typical human who has NO knowledge of the intended targets.
+Think first about obvious real-world pairs and everyday objects (e.g. SHOWER strongly suggests TOWEL).
+Do not try to guess what the Spymaster hoped you would select. List the most tempting board words first.`;
   let result:Record<string,unknown>;
   try{result=await askGemini(key,VERIFIER_MODEL,prompt,.08,680,deadline,0)}
   catch(e){
-    if(!String(e).includes('(404)'))throw e;
-    result=await askGemini(key,model,prompt,.08,680,deadline,0);
+    const why=String(e);
+    if(!/(404|400|429)/.test(why) || model===VERIFIER_MODEL)throw e;
+    // Different model, separate quota. Still run independent color-blind check.
+    result=await askGemini(key,model,prompt,.08,750,deadline,0);
   }
   const rows=Array.isArray(result.rankings)?result.rankings:[];
   return new Map<string,string[]>(rows.map((x:any)=>[String(x.word||'').trim().toUpperCase(),
     Array.isArray(x.guesses)?[...new Set<string>(x.guesses.map((w:unknown)=>String(w).trim().toUpperCase()))]
-      .filter((w:string)=>available.includes(w)).slice(0,6):[]]));
+      .filter((w:string)=>available.includes(w)).slice(0,8):[]]));
 }
 
 Deno.serve(async req => {
@@ -255,6 +275,9 @@ FRIENDLY WORDS REMAINING: ${ours}.
 RISK: ${strategy} (avoid the assassin at every risk level).
 LESSONS FROM PRIOR MATCHES: ${JSON.stringify(lessons.slice(-4))}.
 Generate EXACTLY THREE DISTINCT, clever, LEGAL ordinary one-word clue options.
+Before responding, silently reject weak or vague target links (e.g. ENERGY for CREW),
+and everyday pairings where an enemy or assassin would be the obvious guess
+(e.g. SHOWER when TOWEL is an opponent). Never output this internal check.
 Prefer 2-3 intuitive friendly words, but 1 if necessary to protect from danger.
 Try unrelated meanings if one theme is too risky. Targets must be DISTINCT,
 UNREVEALED, FRIENDLY words only. Do NOT add clue numbers or explanations.
@@ -331,7 +354,8 @@ Return JSON: {"candidates":[{"word":"CLUE","targets":["FRIENDLY"]}]}`;
       },422);
       let rankings:Map<string,string[]>;
       try{rankings=await verifyClues(key,MODEL,available,candidates,deadline)}
-      catch(e){return json({error:'Clue verifier temporarily unavailable: '+String(e instanceof Error?e.message:e)},503)}
+      catch(e){const msg=String(e instanceof Error?e.message:e);
+        return json({error:'Clue verifier unavailable: '+msg,code:msg.includes('(429)')?'GEMINI_RATE_LIMIT':'VERIFIER_UNAVAILABLE'},msg.includes('(429)')?429:503)}
       const opposition=available.filter((w:string)=>data.keys[board.indexOf(w)]!==team);
       const lastChance=opposition.filter((w:string)=>data.keys[board.indexOf(w)]=== (team==='red'?'blue':'red')).length===1;
       const countFriendly=(words:string[])=>words.filter(w=>own.includes(w)).length;
@@ -350,8 +374,27 @@ Return JSON: {"candidates":[{"word":"CLUE","targets":["FRIENDLY"]}]}`;
           -(first.length<c.n?35:0);
         return {...c,score,predicted:guesses.slice(0,Math.max(5,c.n+1)),mistakes};
       });
-      assessments.sort((a:any,b:any)=>b.score-a.score);
-      const best=assessments[0];
+      // If a clue strongly suggests an opponent, don't select it merely
+      // because the intended friendly words sounded clever to the Spymaster.
+      const assassin=available.find((w:string)=>data.keys[board.indexOf(w)]==='assassin');
+      const qualified=assessments.flatMap((c:any)=>{
+        let safePrefix=0;
+        for(const w of c.predicted.slice(0,c.n)){
+          if(!own.includes(w) || !c.targets.includes(w))break;
+          safePrefix++;
+        }
+        if(!safePrefix)return [];
+        // Strongly avoid an assassin association, including the bonus guess.
+        if(assassin && c.predicted.slice(0,Math.min(safePrefix+1,c.predicted.length)).includes(assassin))return [];
+        // Keep the strongest safe prefix instead of abandoning a good 2/3 clue.
+        // The independent guesser, rather than the generator's stated count,
+        // determines how many cards are safe to advertise.
+        return [{...c,n:safePrefix,targets:c.predicted.slice(0,safePrefix),
+          score:c.score-(c.n-safePrefix)*20+safePrefix*4}];
+      });
+      qualified.sort((a:any,b:any)=>b.score-a.score);
+      const best=qualified[0];
+      if(!best)return json({error:'No clue passed the independent danger check',code:'NO_SAFE_CLUE'},422);
       // Every candidate is checked against a separate color-blind guesser.
       // If it anticipates a dangerous first guess, refuse to improvise a larger claim.
       if(!best.predicted.length||!own.includes(best.predicted[0])||
@@ -366,5 +409,9 @@ Return JSON: {"candidates":[{"word":"CLUE","targets":["FRIENDLY"]}]}`;
     if (!clean.length) return json({ error:'Gemini returned no legal guesses' }, 422);
     const stopAfter = Math.max(1,Math.min(clue.n+1,clean.length,Number(output.stopAfter)||clue.n));
     return json({ guesses:clean,stopAfter,reason:String(output.reason||'').slice(0,350),provider:'gemini' });
-  } catch (e) { return json({ error:e instanceof Error?e.message:'AI unavailable' }, 503); }
+  } catch (e) {
+    const message=e instanceof Error?e.message:'AI unavailable';
+    return json({error:message,code:message.includes('(429)')?'GEMINI_RATE_LIMIT':'GEMINI_UNAVAILABLE'},
+      message.includes('(429)')?429:503);
+  }
 });
