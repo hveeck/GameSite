@@ -35,7 +35,7 @@ async function publicState(me?: string, admin=false) {
   })));
   const own=all.find(p=>p.id===me);
   return {phase:s.phase,started_at:s.started_at,starts_at:s.starts_at,winner:s.winner_id?names.get(s.winner_id):null,invite_set:!!s.invite_code,
-    me:own?{id:own.id,name:own.full_name,alive:own.alive,kills:own.kills,cooldown_until:own.cooldown_until,shield_until:own.shield_until,last_accusation_date:own.last_accusation_date,target:own.alive&&own.target_id?names.get(own.target_id):null}:null,
+    me:own?{id:own.id,name:own.full_name,alive:own.alive,kills:own.kills,shield_until:own.shield_until,last_accusation_date:own.last_accusation_date,target:own.alive&&own.target_id?names.get(own.target_id):null}:null,
     players:all.map(p=>({id:p.id,name:p.full_name,alive:p.alive,kills:p.kills})),eliminations:mapped,events:events||[],announcements:announcements||[],is_admin:admin,
     ...(admin?{pending:mapped.filter(e=>e.status==='pending'||e.status==='disputed')}: {})};
 }
@@ -91,11 +91,30 @@ Deno.serve(async req=>{
     const sess=await session(token);if(!sess) return fail('Please log in again',401);
     if(action==='state') return reply(await publicState(sess.player_id,sess.is_admin));
     if(action==='logout') {check(await db.from('sa_sessions').delete().eq('token_hash',await hash(token)));return reply({ok:true});}
+    if(action==='chat_list') {
+      const result=await db.from('sa_chat_messages').select('id,author_name,body,created_at')
+        .order('created_at',{ascending:false}).order('id',{ascending:false}).limit(100);
+      check(result);
+      return reply({messages:(result.data??[]).reverse()});
+    }
+    if(action==='chat_send') {
+      const message=typeof body.message==='string'?body.message.trim():'';
+      if(!message||Array.from(message).length>500) return fail('Enter a message of 1–500 characters');
+      const author=sess.is_admin?'Game Master':(await player(sess.player_id)).full_name;
+      check(await db.from('sa_chat_messages').insert({player_id:sess.player_id,author_name:author,body:message}));
+      return reply({ok:true});
+    }
+    if(action==='chat_delete') {
+      if(!sess.is_admin) return fail('Organizer only',403);
+      const id=clean(body.id);
+      if(!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) return fail('Invalid message');
+      check(await db.from('sa_chat_messages').delete().eq('id',id));
+      return reply({ok:true});
+    }
     if(action==='submit') {
       if(sess.is_admin)return fail('Use a player account');
       const p=await player(sess.player_id);const s=await settings();
       if(s.phase!=='live'||!p.alive||!p.target_id)return fail('No active target');
-      if(p.cooldown_until && new Date(p.cooldown_until)>new Date())return fail('You are on cooldown');
       if(p.shield_until && new Date(p.shield_until)>new Date()){} // shield affects the target, not attacker
       const victim=await player(p.target_id);
       if(victim.shield_until&&new Date(victim.shield_until)>new Date()) return fail('Your target is protected');
@@ -120,10 +139,7 @@ Deno.serve(async req=>{
       if(!approve&&!sess.is_admin) {check(await db.from('sa_eliminations').update({status:'disputed'}).eq('id',id));return reply({ok:true,message:'Disputed. An admin will review.'});}
       return reply(await locked('resolve',{id,approve}));
     }
-    if(action==='failed_attempt') {
-      if(sess.is_admin)return fail('Use player login');
-      return reply(await locked('failed_attempt',{victim_id:sess.player_id}));
-    }
+
     if(!sess.is_admin)return fail('Admin only',403);
     if(action==='admin_data') {
       const configured=Deno.env.get('SA_ADMIN_PASSWORD');
@@ -131,7 +147,7 @@ Deno.serve(async req=>{
       const all=await players();const names=new Map(all.map(p=>[p.id,p.full_name]));
       const {data:accusations}=await db.from('sa_accusations').select('*').order('created_at',{ascending:false}).limit(100);
       const {data:allEvents}=await db.from('sa_events').select('*').order('created_at',{ascending:false}).limit(500);
-      return reply({admin_players:all.map(p=>({id:p.id,name:p.full_name,password:p.password_plain,alive:p.alive,target:names.get(p.target_id)||null,hunter:all.find(q=>q.alive&&q.target_id===p.id)?.full_name||null,kills:p.kills,cooldown_until:p.cooldown_until,shield_until:p.shield_until,created_at:p.created_at})),accusations:accusations||[],all_events:allEvents||[]});
+      return reply({admin_players:all.map(p=>({id:p.id,name:p.full_name,password:p.password_plain,alive:p.alive,target:names.get(p.target_id)||null,hunter:all.find(q=>q.alive&&q.target_id===p.id)?.full_name||null,kills:p.kills,shield_until:p.shield_until,created_at:p.created_at})),accusations:accusations||[],all_events:allEvents||[]});
     }
     if(action==='announce_create') {
       const title=clean(body.title).slice(0,110),text=clean(body.text).slice(0,3000);
@@ -156,7 +172,7 @@ Deno.serve(async req=>{
       const invite=clean(body.invite);if(invite.length<6)return fail('Code must be at least 6 characters');
       check(await db.from('sa_settings').update({invite_code:invite,updated_at:iso()}).eq('id',1));return reply({ok:true});
     }
-    if(action==='start'||action==='pause'||action==='resume'||action==='finish'||action==='admin_cooldown'||action==='admin_eliminate')return reply(await locked(action,{player_id:clean(body.player_id)}));
+    if(action==='start'||action==='pause'||action==='resume'||action==='finish'||action==='admin_eliminate')return reply(await locked(action,{player_id:clean(body.player_id)}));
     if(action==='reset_password') {
       const id=clean(body.player_id),pass=clean(body.password);if(pass.length<8)return fail('Minimum 8 characters');
       check(await db.from('sa_players').update({password_plain:pass,password_hash:await hash(pass)}).eq('id',id));

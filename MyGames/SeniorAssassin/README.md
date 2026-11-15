@@ -4,7 +4,7 @@ Mobile-first clothespin elimination game for fewer than 30 players. Static front
 
 **The packaged `index.html` is self-contained:** its styles and frontend JavaScript are embedded, so opening or copying that file alone still displays the full visual design. The separate `style.css`, `app.css`, `game.js`, and `config.js` are editable source files. After making source changes, run `node build-single-file.mjs` to regenerate `index.html`.
 
-The signed-in interface has four sections: **Home** (concealed target with a reveal/hide button and elimination submission), **Players** (complete roster with survival status and kills), **History** (confirmed photo feed and your pending claims), and **Rules**. On phones, navigation is fixed at the bottom.
+The signed-in interface has five sections: **Home** (concealed target with a reveal/hide button and elimination submission), **Players** (complete roster with survival status and kills), **History** (confirmed photo feed and your pending claims), **Chat** (shared messages for signed-in players and the organizer), and **Rules**. On phones, navigation is fixed at the bottom.
 
 ## Deployment
 
@@ -40,8 +40,8 @@ Replace the example secret before running it. Do not reuse a password from anoth
 - Log in from the ordinary Log in tab with full name `Game Master` and the `SA_ADMIN_PASSWORD` secret. The Home tab then becomes the organizer console: create/edit/pin/delete announcements, set the invitation code, resolve disputes and perform exceptional player removals. Click Unlock Game Data and re-enter your organizer password to reveal every assignment, who is targeting whom, and each player’s readable password; you can export a private `.txt` list. Lock it afterward. Do not share the file or commit it.
 - No attempts in the Shrine, on the Shrine lawn or patio, or in CATS. No pursuing players into private homes, particularly opposite-gender residences, or other invasive/dangerous behavior.
 - A successful elimination requires confirmation from the target or an admin. Only confirmed eliminations change the assignment chain.
-- The 30-second chase is a real-world rule; the site can provide a local stopwatch, but cannot adjudicate physical events. The 30-minute cooldown is set when a target reports a failed attempt, or by an admin.
-- A daily accusation can be made against another living player. Correct accusation disables the pursuer for 24 hours; incorrect accusation consumes the daily use. The accused assassin is revealed only to the accuser upon a correct accusation.
+- If a player catches an attempt in progress, that attempt ends immediately. The existing one-hour rule is tracked by players themselves.
+- Chat is visible to all signed-in players, including eliminated players, and to the organizer. The organizer can remove messages.
 - Players must follow local rules, respect safe zones, never grab or restrain others, and stop on request.
 
 ## Security and privacy
@@ -55,6 +55,24 @@ Replace the example secret before running it. Do not reuse a password from anoth
 
 Serve the `SeniorAssassin` directory with a static HTTP server (`python3 -m http.server 8080`) and open `http://localhost:8080`. Backend operations require a deployed Edge Function.
 
-## Upgrade notes
+## Update the existing live game
 
-This schema adds `sa_announcements` and moves a registering game to Sunday noon Eastern. Run the complete `schema.sql` in Supabase SQL Editor before deploying the updated function. Your existing `sa_` tables are preserved. Only the Senior Assassin Edge Function is replaced. Because the readable-password feature was explicitly requested, accounts carry a privacy risk despite being invite-only: tell players to use unique throwaway passwords, and keep the admin export offline.
+1. Open the [Games SQL Editor](https://supabase.com/dashboard/project/joqypdrkojtinlflbvur/sql/new) and run `DEPLOY_CHAT_UPDATE.sql`. It adds the chat table and replaces the Senior Assassin game function in the database. Existing registrations, assignments, eliminations and game settings are preserved.
+2. In your WSL portfolio checkout, copy the extracted `SeniorAssassin/` files into `MyGames/SeniorAssassin/`. Deploy only the Senior Assassin Edge Function from that directory.
+
+   ```bash
+   cd /mnt/c/Users/hveec/OneDrive/Desktop/portfolio/MyGames/SeniorAssassin
+   npx supabase functions deploy senior-assassin --project-ref joqypdrkojtinlflbvur --no-verify-jwt
+   ```
+
+3. From the portfolio root, stage only the updated files. Review the staged diff before committing and pushing.
+
+   ```bash
+   cd /mnt/c/Users/hveec/OneDrive/Desktop/portfolio
+   git add MyGames/SeniorAssassin/{index.html,standalone.html,game.js,app.css,page.template.html,README.md,DEPLOY_CHAT_UPDATE.sql,supabase/schema.sql,supabase/functions/senior-assassin/index.ts}
+   git diff --cached --stat
+   git commit -m "Add Senior Assassin chat and remove site cooldowns"
+   git push origin main
+   ```
+
+4. Reload the [game](https://hveeck.github.io/GameSite/MyGames/SeniorAssassin/). Sign in to open Chat and post a message.

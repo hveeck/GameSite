@@ -7,18 +7,45 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;ba
 .hero{position:relative;isolation:isolate}.hero::before{content:"";position:absolute;z-index:-1;width:330px;height:330px;border:1px dashed #d7b9773b;border-radius:50%;left:50%;top:8px;transform:translateX(-50%);box-shadow:0 0 0 35px #d7b97706,0 0 0 70px #d7b97704}.hero::after{content:"✕";position:absolute;z-index:-1;color:#f46b5b24;font:700 290px Oswald;top:10px;left:50%;transform:translateX(-50%) rotate(-18deg);pointer-events:none}
 .hero h1{text-shadow:0 8px 40px #0008}.hero h1 em{background:linear-gradient(120deg,#ff9a70,#f46b5b 60%,#cc534d);background-clip:text;-webkit-text-fill-color:transparent}.authbox{backdrop-filter:blur(18px);background:linear-gradient(145deg,#283d49f2,#172633f5);border-color:#7d89906b;box-shadow:0 32px 80px #0007,0 1px 0 #ffffff12 inset}.primary{box-shadow:0 4px 0 #a64039;transition:transform .14s,filter .14s}.primary:hover{filter:brightness(1.1);transform:translateY(-2px)}.primary:active{transform:translateY(2px);box-shadow:none}.card{position:relative;overflow:hidden}.card::before{content:"";position:absolute;left:0;top:0;right:0;height:3px;background:linear-gradient(90deg,var(--red),var(--gold),transparent)}.stats>div{box-shadow:0 7px 30px #0003;position:relative;overflow:hidden}.stats>div::after{content:"+";position:absolute;right:12px;top:3px;font:20px Oswald;color:#ffffff14}button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 
+/* Logged-in game interface */
+.assignment-card{border-color:#667587;min-height:345px;background:radial-gradient(circle at 50% 30%,#334f5f,#1b2d3a 75%)}
+.assignment-center{text-align:center;padding:22px 12px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:265px}
+.assignment-center h2{font-size:31px;margin:12px 0 7px}.assignment-center p{max-width:325px;line-height:1.55}.assignment-center button{max-width:330px;margin-top:17px}
+.target-lock{width:80px;height:80px;display:grid;place-items:center;border:2px solid #d7b97780;border-radius:50%;font:500 46px Oswald;color:var(--gold);background:#d7b97713;box-shadow:0 0 0 10px #d7b97708}
+.assignment-center .target{font-size:clamp(31px,6vw,49px);margin:9px 0;word-break:break-word}
+.action-main{margin-bottom:18px;min-height:58px;font-size:16px;letter-spacing:.3px}.compact{padding:7px 10px;font-size:12px}
+.roster-card h2,.feed-card h2{margin:4px 0 8px}.roster-card>p,.feed-card>p{margin:4px 0 20px}
+.roster-row{display:flex;align-items:center;gap:15px;padding:16px 4px;border-top:1px solid var(--line)}.roster-rank{font:500 25px Oswald;color:var(--gold);width:30px}.roster-person{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}.roster-person strong{font-size:16px;overflow-wrap:anywhere}.roster-person>span{font-size:12px;color:var(--muted)}
+.kill-post{border:1px solid #546877;background:#172a38;border-radius:13px;overflow:hidden;margin:18px 0;padding:16px}.kill-post-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}.kill-post-head>div:nth-child(2){flex:1;min-width:0}.kill-post-head strong{font-size:15px}.kill-post-head p{margin:6px 0 0}.kill-icon{width:38px;height:38px;border-radius:50%;background:#743934;color:#ffb0a3;font:24px Oswald;display:grid;place-items:center;flex-shrink:0}.kill-post-head .status{flex-shrink:0}.kill-post-head .pending{background:#635338;color:#f4db9c}.evidence-photo{display:block;width:100%;max-height:460px;object-fit:cover;border-radius:9px}.photo-placeholder{height:130px;border:1px dashed #6a7782;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:30px;gap:7px}.photo-placeholder span{font-size:12px}.kill-caption{font-size:15px;line-height:1.6;color:#f6ede1;padding:4px 2px}
+.nav-icon{display:none}
+@media(max-width:700px){main{padding-bottom:110px}.topline{padding-bottom:5px}.topline h1{margin-bottom:15px}.stats{gap:8px;margin-bottom:20px}.stats>div{padding:13px 6px}nav{position:fixed;z-index:8;left:0;right:0;bottom:0;margin:0;padding:7px max(8px,env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom));background:#142735f6;backdrop-filter:blur(18px);border-top:1px solid #587183;border-bottom:0;justify-content:space-around;box-shadow:0 -12px 28px #0005}nav button{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:0;padding:5px 3px 8px;font-size:11px!important;border-radius:8px}nav button.active{box-shadow:none;background:#344b5d;color:#fff}.nav-icon{display:block;font-size:22px;height:25px;line-height:25px}.assignment-card{min-height:320px}.assignment-center{min-height:250px}.kill-post{padding:12px}.kill-post-head{gap:8px}.kill-post-head .status{font-size:9px;padding:4px 6px}}
+
+/* Organizer notices */
+.announcements{margin-top:18px}.announcement{margin-top:12px;padding:16px;background:#213748;border:1px solid #4d6171;border-radius:10px}.announcement .row{align-items:center;gap:10px}.announcement-body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;margin-bottom:0}.checkrow{display:flex!important;align-items:center;gap:10px;margin:12px 0}.checkrow input{width:auto!important;margin:0!important}.card textarea{width:100%;background:#112230;border:1px solid #70808b;border-radius:7px;color:white;padding:12px;font:inherit;resize:vertical}.item code{overflow-wrap:anywhere}
+
+[hidden]{display:none!important}
+.chat-card{max-width:760px;margin-inline:auto}
+.chat-log{height:clamp(180px,42dvh,420px);overflow-y:auto;padding:12px;background:#0f202e;border:1px solid var(--line);border-radius:8px}
+.chat-message{padding:10px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+.chat-message p{margin:6px 0;white-space:pre-wrap}
+.chat-message time{text-align:right}
+#chatForm label{margin-bottom:8px}
+#chatForm textarea{resize:vertical;margin-bottom:12px}
+#chatStatus:empty{display:none}
+#chatForm{margin-top:15px}
+
 </style></head><body>
 <header><div class="brand"><span class="mark">✦</span><span>SENIOR <b>ASSASSIN</b><small>THE CLOTHESPIN HUNT</small></span></div><span id="phaseBadge" class="badge">REGISTRATION</span></header>
 <main>
   <section id="authView" class="hero"><div class="eyebrow">A GAME OF STEALTH & STRATEGY</div><h1>Trust no one.<br><em>Clip your target.</em></h1><p>One secret target. One wooden clothespin. One survivor.</p>
-    <div class="authbox"><div class="tabs"><button id="loginTab" class="active">Log in</button><button id="registerTab">Join the game</button><button id="adminTab">Game master</button></div>
-      <form id="authForm"><label id="nameLabel">Full name<input id="authName" autocomplete="username" maxlength="60" required placeholder="Your full name"></label><label>Password<input id="authPassword" type="password" minlength="8" autocomplete="current-password" required placeholder="Your password"></label><label id="inviteLabel" hidden>Invitation code<input id="authInvite" placeholder="Private game code"></label><p id="authHint" class="muted small">Use your name and the password you registered with.</p><button class="primary wide" id="authSubmit">Enter the hunt →</button></form>
-    </div>
+    <div class="authbox"><div class="tabs"><button id="loginTab">Log in</button><button id="registerTab" class="active">Join the game</button></div>
+      <form id="authForm"><div id="inviteStep"><label>Private invitation code<input id="authInvite" placeholder="Enter your game code" autocomplete="off"></label><button class="primary wide" id="verifyInvite" type="button">Continue →</button></div><div id="accountStep" hidden><label>Full name<input id="authName" autocomplete="username" maxlength="60" placeholder="Your full name"></label><label>Password<input id="authPassword" type="password" minlength="8" autocomplete="current-password" placeholder="Your password"></label><p id="authHint" class="muted small">Choose a throwaway password you don't use anywhere else.</p><button class="primary wide" id="authSubmit">Create account →</button></div></form>
+    </div><p class="muted small" id="startNotice">Registration closes Sunday, November 15 at 12:00 PM Eastern.</p>
   </section>
   <section id="appView" hidden>
     <div class="topline"><div><span class="eyebrow">LIVE OPERATIONS</span><h1 id="welcome">The Hunt</h1></div><button class="ghost" id="logout">Log out</button></div>
     <div class="stats"><div><strong id="aliveCount">–</strong><span>ALIVE</span></div><div><strong id="killCount">–</strong><span>YOUR KILLS</span></div><div><strong id="outCount">–</strong><span>ELIMINATED</span></div></div>
-    <nav><button data-view="dashboard" class="active">Dashboard</button><button data-view="feed">Kill feed</button><button data-view="players">Leaderboard</button><button data-view="rules">Rules</button><button data-view="admin" id="adminNav" hidden>Game master</button></nav>
+    <nav aria-label="Game navigation"><button data-view="dashboard" class="active"><span class="nav-icon">⌂</span><span>Home</span></button><button data-view="players"><span class="nav-icon">♙</span><span>Players</span></button><button data-view="feed"><span class="nav-icon">◷</span><span>History</span></button><button data-view="chat"><span class="nav-icon" aria-hidden="true">☏</span><span>Chat</span></button><button data-view="rules"><span class="nav-icon">▤</span><span>Rules</span></button></nav>
     <div id="content"></div>
   </section>
 </main><div id="toast" aria-live="polite"></div><script>
@@ -29,79 +56,148 @@ window.SA_CONFIG = {
 </script><script>
 const $=id=>document.getElementById(id);
 const tokenKey='senior-assassin-session';
-let token=localStorage.getItem(tokenKey)||'',mode='login',view='dashboard',state=null,loading=false;
+let token=localStorage.getItem(tokenKey)||'',mode='register',view='dashboard',state=null,loading=false,inviteVerified=false,targetRevealed=false,unlockedData=null;
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const date=s=>s?new Date(s).toLocaleString():'—';
-const remaining=s=>!s?'':Math.max(0,Math.ceil((new Date(s)-Date.now())/1000));
 const toast=s=>{$('toast').textContent=s;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',4400)};
 async function api(action,body={}){
   const response=await fetch(window.SA_CONFIG.endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,token,...body})});
   const result=await response.json();if(!response.ok||result.error)throw Error(result.error||'Request failed');return result;
 }
 async function refresh(){
-  try {state=await api('state');showApp();render()}catch(e){if(String(e.message).includes('log in'))logout(false);else toast(e.message)}
+  try {const currentToken=token;const next=await api('state');if(token!==currentToken)return;state=next;showApp();if(view!=='chat'||!$('chatForm'))render()}catch(e){if(String(e.message).includes('log in'))logout(false);else toast(e.message)}
 }
-function logout(remote=true){if(remote&&token)api('logout').catch(()=>{});token='';localStorage.removeItem(tokenKey);state=null;$('appView').hidden=true;$('authView').hidden=false}
-function setMode(m){mode=m;for(const x of ['login','register','admin'])$(x+'Tab').classList.toggle('active',x===m);$('nameLabel').hidden=m==='admin';$('authName').required=m!=='admin';$('inviteLabel').hidden=m!=='register';$('authInvite').required=m==='register';$('authSubmit').textContent=m==='register'?'Create account →':m==='admin'?'Enter command center →':'Enter the hunt →';$('authHint').textContent=m==='register'?'Choose a throwaway password you do not use on any other site. The game master can help recover it.':m==='admin'?'Enter your separate game-master password.':'Use your full name and password.'}
-['login','register','admin'].forEach(m=>$(m+'Tab').onclick=()=>setMode(m));
-$('authForm').onsubmit=async e=>{e.preventDefault();if(loading)return;loading=true;$('authSubmit').disabled=true;try{const data=await api(mode==='register'?'register':mode==='admin'?'admin_login':'login',{name:$('authName').value,password:$('authPassword').value,invite:$('authInvite').value});token=data.token;localStorage.setItem(tokenKey,token);$('authPassword').value='';await refresh()}catch(err){toast(err.message)}finally{loading=false;$('authSubmit').disabled=false}};
+function logout(remote=true){if(remote&&token)api('logout').catch(()=>{});token='';view='dashboard';$('content').replaceChildren();targetRevealed=false;unlockedData=null;localStorage.removeItem(tokenKey);state=null;$('appView').hidden=true;$('authView').hidden=false}
+function setMode(m){mode=m;inviteVerified=false;for(const x of ['login','register'])$(x+'Tab').classList.toggle('active',x===m);$('inviteStep').hidden=m!=='register';$('accountStep').hidden=m==='register';$('authName').required=m==='login';$('authPassword').required=m==='login';$('authSubmit').textContent=m==='register'?'Create account →':'Log in →';$('authHint').textContent=m==='register'?'Choose a throwaway password you do not use on any other site.':'Use your full name and password.'}
+['login','register'].forEach(m=>$(m+'Tab').onclick=()=>setMode(m));
+$('verifyInvite').onclick=async()=>{try{await api('check_invite',{invite:$('authInvite').value});inviteVerified=true;$('inviteStep').hidden=true;$('accountStep').hidden=false;$('authName').required=true;$('authPassword').required=true;toast('Invitation accepted! Create your account.')}catch(e){toast(e.message)}};
+$('authForm').onsubmit=async e=>{e.preventDefault();if(loading)return;if(mode==='register'&&!inviteVerified)return toast('Enter the invitation code first');loading=true;$('authSubmit').disabled=true;try{const data=await api(mode==='register'?'register':'login',{name:$('authName').value,password:$('authPassword').value,invite:$('authInvite').value});token=data.token;localStorage.setItem(tokenKey,token);$('authPassword').value='';await refresh()}catch(err){toast(err.message)}finally{loading=false;$('authSubmit').disabled=false}};
+async function publicStatus(){try{const s=await api('status');const closed=s.phase!=='registration'||Date.now()>=new Date(s.starts_at).getTime();$('phaseBadge').textContent=closed?'GAME LIVE':s.phase.toUpperCase();$('startNotice').textContent=!closed?`${s.players} player${s.players===1?'':'s'} joined · Registration closes ${date(s.starts_at)}`:'Registration is closed. Log in to play.';if(closed){setMode('login');$('registerTab').hidden=true}}catch(e){/* backend may not be connected yet */}}
 $('logout').onclick=()=>logout();
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{view=b.dataset.view;render()});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{view=b.dataset.view;targetRevealed=false;render();window.scrollTo({top:0,behavior:'smooth'})});
 function showApp(){$('authView').hidden=true;$('appView').hidden=false}
 function render(){
   if(!state)return;
   $('phaseBadge').textContent=state.phase.toUpperCase();$('welcome').textContent=state.me?'Welcome, '+state.me.name.split(' ')[0]:'Command center';
   const alive=state.players.filter(p=>p.alive).length;$('aliveCount').textContent=alive;$('outCount').textContent=state.players.length-alive;$('killCount').textContent=state.me?.kills??'—';
-  $('adminNav').hidden=!state.admin_players;
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
-  const renderers={dashboard,feed,players:leaderboard,rules,admin};$('content').innerHTML=(renderers[view]||dashboard)();bind();
+  const renderers={dashboard,feed,players:leaderboard,chat,rules};$('content').innerHTML=(renderers[view]||dashboard)();bind();if(view==='chat')bindChat();
+}
+function chat(){
+  return `<section class="card chat-card"><h2>Game chat</h2><div id="chatLog" class="chat-log" tabindex="0" role="log" aria-label="Game messages"></div><p id="chatStatus" class="small muted" role="status">Loading messages…</p><form id="chatForm"><label for="chatInput">Message</label><textarea id="chatInput" maxlength="500" rows="2" required placeholder="Write a message"></textarea><button class="primary" type="submit">Send</button></form></section>`;
+}
+let chatRequest=0;
+async function loadChat(){
+  const log=$('chatLog'), currentToken=token;
+  if(!log||!currentToken||view!=='chat')return;
+  const request=++chatRequest;
+  try {
+    const {messages}=await api('chat_list');
+    if(request!==chatRequest||$('chatLog')!==log||token!==currentToken)return;
+    const ids=messages.map(message=>message.id).join(',');
+    if(log.dataset.messages!==ids){
+      const atBottom=log.scrollHeight-log.scrollTop-log.clientHeight<30;
+      log.innerHTML=messages.map(message=>`<article class="chat-message"><div class="row"><strong>${escapeHtml(message.author_name)}</strong><time class="small muted">${escapeHtml(date(message.created_at))}</time></div><p>${escapeHtml(message.body)}</p>${state.is_admin?`<button class="ghost compact" data-chat-delete="${escapeHtml(message.id)}" type="button">Delete</button>`:''}</article>`).join('')||'<p class="muted">No messages yet.</p>';
+      log.dataset.messages=ids;
+      if(atBottom)log.scrollTop=log.scrollHeight;
+    }
+    if(!$('chatStatus').dataset.actionError)$('chatStatus').textContent='';
+  }catch(error){
+    if(request===chatRequest&&$('chatLog')===log&&token===currentToken)$('chatStatus').textContent=error.message;
+  }
+}
+function bindChat(){
+  const form=$('chatForm'), input=$('chatInput'), status=$('chatStatus'), log=$('chatLog');
+  form.onsubmit=async event=>{
+    event.preventDefault();
+    const button=form.querySelector('button'), message=input.value.trim();
+    if(!message||button.disabled)return;
+    button.disabled=true;
+    delete status.dataset.actionError;
+    try {
+      await api('chat_send',{message});
+      if(input.value.trim()===message)input.value='';
+      await loadChat();
+    }catch(error){status.dataset.actionError='true';status.textContent=error.message}
+    finally{button.disabled=false}
+  };
+  log.onclick=async event=>{
+    const button=event.target.closest('[data-chat-delete]');
+    if(!button||button.disabled||!confirm('Delete this message?'))return;
+    button.disabled=true;
+    delete status.dataset.actionError;
+    try{await api('chat_delete',{id:button.dataset.chatDelete});await loadChat()}
+    catch(error){status.dataset.actionError='true';status.textContent=error.message}
+    finally{button.disabled=false}
+  };
+  loadChat();
+}
+setInterval(()=>{if(view==='chat'&&!document.hidden)loadChat()},4000);
+function announcements(){
+  const items=state.announcements||[];
+  return `<section class="card announcements"><div class="row"><h2>📣 ANNOUNCEMENTS</h2><span class="pill">${items.length} updates</span></div>${items.length?items.map(a=>`<article class="announcement"><div class="row"><strong>${escapeHtml(a.title)}</strong>${a.pinned?'<span class="status">PINNED</span>':''}</div><p class="small muted">${date(a.created_at)}</p><p class="announcement-body">${escapeHtml(a.body)}</p></article>`).join(''):'<p class="muted">No announcements yet.</p>'}</section>`;
+}
+function admin(){
+  const players=unlockedData?.admin_players||[];
+  return `<div class="grid"><div><section class="card"><span class="eyebrow">ORGANIZER</span><h2>Post an update</h2><p class="muted">Players will see announcements on Home. Use this for rule changes, safety notices and game news.</p><label>Headline<input id="announceTitle" maxlength="110" placeholder="Important game update"></label><label>Announcement<textarea id="announceText" rows="5" maxlength="3000" placeholder="Write your message..."></textarea></label><label class="checkrow"><input type="checkbox" id="announcePin"> Pin to top</label><button class="primary wide" data-action="announce_publish">Publish announcement</button></section>${announcements()}<section class="card"><h2>Manage announcements</h2>${(state.announcements||[]).map(a=>`<div class="item"><strong>${escapeHtml(a.title)}</strong><div class="actions"><button class="secondary compact" data-ann-edit="${a.id}">Edit</button><button class="danger compact" data-ann-delete="${a.id}">Delete</button></div></div>`).join('')||'<p class="muted">No announcements yet.</p>'}</section></div><div><section class="card"><h2>Organizer controls</h2><p class="muted">Your private organizer account. Targets, passwords and full game data stay locked until you unlock them below.</p><label>Invitation code<input id="inviteCode" placeholder="At least 6 characters"></label><button class="secondary" data-action="invite" ${state.phase!=='registration'?'disabled':''}>Save invitation code</button><div class="actions"><button class="secondary" data-action="start" ${state.phase!=='registration'?'disabled':''}>Start game (after deadline)</button><button class="secondary" data-action="${state.phase==='paused'?'resume':'pause'}" ${!['live','paused'].includes(state.phase)?'disabled':''}>${state.phase==='paused'?'Resume':'Pause'}</button><button class="danger" data-action="finish" ${state.phase==='finished'?'disabled':''}>End game</button></div></section><section class="card"><h2>Pending elimination claims</h2>${(state.pending||[]).length?state.pending.map(e=>`<div class="item"><strong>${escapeHtml(e.assassin)} → ${escapeHtml(e.victim)}</strong><p>${escapeHtml(e.caption)} · ${escapeHtml(e.status)}</p>${e.photo_url?`<img class="evidence-photo" src="${escapeHtml(e.photo_url)}" alt="Evidence">`:''}<div class="actions"><button class="primary" data-resolve="${e.id}" data-approve="true">Approve</button><button class="danger" data-resolve="${e.id}" data-approve="false">Reject</button></div></div>`).join(''):'<p class="muted">No pending claims.</p>'}</section><section class="card"><h2>🔒 Full game data</h2>${!unlockedData?'<p class="muted">Reveal assignments, who is hunting whom, all player passwords, and game history.</p><button class="primary wide" data-action="unlock_data">Unlock Game Data</button>':`<div class="actions"><button class="secondary" data-action="lock_data">Lock Game Data</button><button class="secondary" data-action="export">Download password list .txt</button></div><p class="small muted">Sensitive information: keep it private. Don't upload it to GitHub.</p>${players.map(p=>`<div class="item"><strong>${escapeHtml(p.name)}</strong><p class="small">${p.alive?'ALIVE':'OUT'} · Kills: ${p.kills}</p><p>Target: <b>${escapeHtml(p.target||'—')}</b><br>Hunted by: <b>${escapeHtml(p.hunter||'—')}</b><br>Password: <code>${escapeHtml(p.password||'—')}</code></p><div class="actions"><button class="ghost" data-reset="${p.id}">Reset password</button><button class="danger" data-eliminate="${p.id}" ${!p.alive?'disabled':''}>Remove</button></div></div>`).join('')}<h3>Full activity history</h3>${(unlockedData.all_events||[]).map(e=>`<p class="small">${date(e.created_at)} · ${escapeHtml(e.description)}</p>`).join('')||'<p class="muted">No events yet.</p>'}`}</section></div></div>`;
 }
 function dashboard(){const me=state.me,alive=state.players.filter(p=>p.alive).length;
-  if(!me)return `<div class="card"><h2>Game master</h2><p>Manage registrations, launch the game, and review elimination claims from your command center.</p><button class="primary" data-goto="admin">Open command center →</button></div>`;
-  return `<div class="grid"><div><section class="card"><span class="eyebrow">YOUR SECRET ASSIGNMENT</span>${state.phase==='registration'?`<h2>Awaiting deployment</h2><p class="muted">The game master will assign targets when everyone has joined.</p>`:!me.alive?`<h2 class="red">Eliminated</h2><p>You can still follow the hunt and enjoy the feed.</p>`:state.phase==='finished'?`<h2>Hunt complete</h2><p>Winner: ${escapeHtml(state.winner)}</p>`:`<div class="target">${escapeHtml(me.target||'No target')}</div><span class="status">TARGET ACTIVE</span><p class="muted">Secretly attach a wooden clothespin. If caught, you have 30 seconds to finish the attempt.</p>${remaining(me.cooldown_until)?`<div class="notice">Cooldown: ${Math.ceil(remaining(me.cooldown_until)/60)} minutes remaining.</div>`:''}${remaining(me.shield_until)?`<div class="notice">You are protected for ${Math.ceil(remaining(me.shield_until)/60)} more minutes.</div>`:''}<div class="actions"><button class="primary" data-action="claim" ${state.phase!=='live'||remaining(me.cooldown_until)?'disabled':''}>Submit elimination</button><button class="secondary" data-action="timer">30-sec timer</button></div>`}</section>
-    ${state.phase==='live'&&me.alive?`<section class="card"><h2>Defense station</h2><p class="muted">Caught your assassin but escaped the 30-second pursuit? Report the failed attempt to start their 30-minute cooldown.</p><div class="actions"><button class="secondary" data-action="failed">Report failed attempt</button><button class="ghost" data-action="accuse" ${me.last_accusation_date===new Date().toISOString().slice(0,10)?'disabled':''}>Make daily accusation</button></div></section>`:''}</div><div><section class="card"><h2>Hunt status</h2><div class="row"><span>Players remaining</span><b class="gold">${alive} / ${state.players.length}</b></div><div class="row" style="margin-top:13px"><span>Game status</span><span class="status">${escapeHtml(state.phase.toUpperCase())}</span></div>${state.winner?`<div class="notice">Last survivor: ${escapeHtml(state.winner)}</div>`:''}</section><section class="card"><h2>Latest activity</h2>${state.events.slice(0,5).map(e=>`<div class="item"><strong>${escapeHtml(e.description)}</strong><p class="small">${date(e.created_at)}</p></div>`).join('')||'<div class="empty">Quiet... for now.</div>'}</section></div></div>`;
+  if(!me)return admin();
+  const live=state.phase==='live';
+  const assignment=state.phase==='registration'
+    ? `<div class="target-lock">◷</div><h2>THE HUNT BEGINS SUNDAY</h2><p class="muted">November 15 at 12:00 PM Eastern. Your secret assignment will appear here.</p>`
+    : !me.alive?`<div class="target-lock red">✕</div><h2 class="red">YOU'VE BEEN ELIMINATED</h2><p class="muted">You can still follow the competition and view the elimination feed.</p>`
+    : state.phase==='finished'?`<div class="target-lock gold">★</div><h2>THE HUNT IS OVER</h2><p>Winner: <b class="gold">${escapeHtml(state.winner)}</b></p>`
+    : targetRevealed?`<div class="target-lock gold">◎</div><div class="target">${escapeHtml(me.target||'No target')}</div><p class="muted">Your current target. Keep this confidential.</p><button class="secondary wide" data-action="hide_target">◉ Hide target</button>`
+    : `<div class="target-lock">♧</div><h2>TARGET CONCEALED</h2><p class="muted">Make sure nobody is looking at your screen.</p><button class="primary wide" data-action="reveal_target">◉ Reveal my target</button>`;
+  return `<div class="grid"><div><section class="card assignment-card"><span class="eyebrow">YOUR SECRET ASSIGNMENT</span><div class="assignment-center">${assignment}</div></section>
+    ${live&&me.alive?`<button class="primary wide action-main" data-action="claim">▣ &nbsp; Submit an elimination</button>`:''}</div>
+    <div><section class="card"><span class="eyebrow">HUNT STATUS</span><h2>${alive} PLAYERS REMAIN</h2><p class="muted">${state.players.length-alive} eliminated of ${state.players.length} total players.</p>${state.winner?`<div class="notice">Last survivor: ${escapeHtml(state.winner)}</div>`:''}</section><section class="card"><div class="row"><h2>RECENT ACTIVITY</h2><button class="ghost compact" data-goto="feed">See all</button></div>${state.events.slice(0,5).map(e=>`<div class="item"><strong>${escapeHtml(e.description)}</strong><p class="small">${date(e.created_at)}</p></div>`).join('')||'<div class="empty">The hunt is quiet... for now.</div>'}</section>${announcements()}</div></div>`;
 }
-function feed(){return `<section class="card"><span class="eyebrow">THE HUNT ARCHIVE</span><h2>Elimination feed</h2>${state.eliminations.length?state.eliminations.map(e=>`<article class="item"><div class="itemhead"><strong>${escapeHtml(e.assassin)} → ${escapeHtml(e.victim)}</strong><span class="pill">${escapeHtml(e.status)}</span></div><p class="small">${date(e.submitted_at)}</p>${e.caption?`<p>${escapeHtml(e.caption)}</p>`:''}${e.photo_url?`<img src="${escapeHtml(e.photo_url)}" alt="Submitted elimination evidence" loading="lazy">`:''}${state.me?.id===e.victim_id&&['pending','disputed'].includes(e.status)?`<div class="actions"><button class="primary" data-resolve="${e.id}" data-approve="true">Confirm elimination</button><button class="danger" data-resolve="${e.id}" data-approve="false">Dispute</button></div>`:''}</article>`).join(''):'<div class="empty">No eliminations yet. Be the first.</div>'}</section>`}
-function leaderboard(){return `<section class="card"><span class="eyebrow">THE COMPETITION</span><h2>Leaderboard</h2>${[...state.players].sort((a,b)=>Number(b.alive)-Number(a.alive)||b.kills-a.kills||a.name.localeCompare(b.name)).map((p,i)=>`<div class="item row"><div><span class="gold">#${i+1}</span> &nbsp; <strong>${escapeHtml(p.name)}</strong><p class="small">${p.kills} elimination${p.kills===1?'':'s'}</p></div><span class="status ${p.alive?'':'dead'}">${p.alive?'ALIVE':'OUT'}</span></div>`).join('')}</section>`}
+function feed(){const events=state.eliminations;return `<section class="card feed-card"><div class="row"><div><span class="eyebrow">THE HUNT ARCHIVE</span><h2>GAME HISTORY</h2></div><span class="pill">${events.filter(e=>e.status==='confirmed').length} confirmed</span></div><p class="muted">Confirmed eliminations appear for everyone. Your pending claims and confirmation requests appear here too.</p>${events.length?events.map(e=>`<article class="kill-post"><div class="kill-post-head"><div class="kill-icon">✕</div><div><strong>${escapeHtml(e.assassin)} <span class="red">eliminated</span> ${escapeHtml(e.victim)}</strong><p class="small muted">${date(e.submitted_at)}</p></div><span class="status ${e.status==='confirmed'?'':'pending'}">${escapeHtml(e.status.toUpperCase())}</span></div>${e.photo_url?`<img class="evidence-photo" src="${escapeHtml(e.photo_url)}" alt="Clothespin elimination evidence" loading="lazy">`:`<div class="photo-placeholder">▧<span>No photo submitted</span></div>`}${e.caption?`<p class="kill-caption">“${escapeHtml(e.caption)}”</p>`:''}${state.me?.id===e.victim_id&&['pending','disputed'].includes(e.status)?`<div class="actions"><button class="primary" data-resolve="${e.id}" data-approve="true">Confirm elimination</button><button class="danger" data-resolve="${e.id}" data-approve="false">Dispute</button></div>`:''}</article>`).join(''):'<div class="empty">No eliminations yet. The first photo will appear here after confirmation.</div>'}</section>`}
+function leaderboard(){const sorted=[...state.players].sort((a,b)=>Number(b.alive)-Number(a.alive)||b.kills-a.kills||a.name.localeCompare(b.name));return `<section class="card roster-card"><div class="row"><div><span class="eyebrow">THE COMPETITION</span><h2>ALL PLAYERS</h2></div><span class="pill">${sorted.length} registered</span></div><p class="muted">Everyone in the game, living or eliminated. Secret assignments stay private.</p>${sorted.map((p,i)=>`<div class="roster-row"><div class="roster-rank">${String(i+1).padStart(2,'0')}</div><div class="roster-person"><strong>${escapeHtml(p.name)}${p.id===state.me?.id?' <span class="gold">(you)</span>':''}</strong><span>${p.kills} elimination${p.kills===1?'':'s'}</span></div><span class="status ${p.alive?'':'dead'}">${p.alive?'ALIVE':'OUT'}</span></div>`).join('')}</section>`}
 function rules(){return `<section class="card"><span class="eyebrow">OFFICIAL RULES</span><h2>Rules of the hunt</h2>${[
   ['The mission','Each player receives exactly one secret target. Never share someone else’s assignment.'],
   ['The elimination','Secretly attach a normal clothespin to your target’s outer clothing or bag. Avoid skin, hair, and private areas.'],
-  ['Caught in the act','If your target catches you before you complete the stealth elimination, you have 30 seconds to attempt a tag. No grabbing, blocking, tackling, or physical restraint.'],
-  ['Cooldown','If the attempt fails, you must wait 30 minutes before trying again. The target reports the failed attempt.'],
-  ['Proof and confirmation','Submit a picture if available and a short description. The target confirms or disputes. Disputes go to the game master.'],
+  ['Caught in the act','If your target notices you trying to attach the clothespin before it is attached, the attempt fails immediately. No chasing, grabbing, blocking, tackling, or physical restraint.'],
+  ['Proof and confirmation','Submit a picture if available and a short description. The target confirms or disputes. Disputed claims are held until the organizer settles them.'],
   ['Inheritance','After a confirmed elimination, you automatically inherit the eliminated player’s target.'],
-  ['Accusations','Once per day, you can identify who you think is hunting you. A correct guess provides 24-hour protection; a wrong guess uses the accusation.'],
-  ['Safe zones','No attempts in classrooms during class, bathrooms, religious services, work shifts, while driving, or in private spaces without permission. No running through roads, staircases, or crowded areas.'],
-  ['Consent and common sense','Everyone can decline an interaction or stop an attempt. Respect campus policies and bystanders. Do not pursue anyone who asks you to stop.'],
+  ['Shrine, CATS and prayer','No clipping in the Shrine, on the Shrine lawn, on the Shrine patio, anywhere in CATS, or during any prayer time, wherever it takes place. These are completely off limits.'],
+  ['No creepy behavior','Do not go to someone of another gender’s house or living space to hunt them. No stalking, following someone home, waiting outside bedrooms, entering residences uninvited, or any other invasive behavior.'],
+  ['Other safety restrictions','No attempts in bathrooms, during prayer or religious services, or while someone is driving. Never enter a residence without permission.'],
+  ['Consent and common sense','Everyone can decline an interaction or stop an attempt. Respect campus policies and bystanders. Do not pursue anyone who asks you to stop. No force, harassment, or dangerous chases.'],
   ['Victory','The last living player wins. Most eliminations earns a separate title.']].map(([h,p])=>`<div class="rule"><b>${h}</b><p>${p}</p></div>`).join('')}</section>`}
-function admin(){if(!state.admin_players)return dashboard();return `<div class="grid"><div><section class="card"><span class="eyebrow">GAME CONTROL</span><h2>Command center</h2><p class="muted">Phase: ${escapeHtml(state.phase)}</p><label>Registration invitation code<input id="inviteCode" placeholder="At least 6 characters"></label><button class="secondary" data-action="invite" ${state.phase!=='registration'?'disabled':''}>Save invite code</button><div class="actions"><button class="primary" data-action="start" ${state.phase!=='registration'?'disabled':''}>Start game</button><button class="secondary" data-action="${state.phase==='paused'?'resume':'pause'}" ${!['live','paused'].includes(state.phase)?'disabled':''}>${state.phase==='paused'?'Resume':'Pause'}</button><button class="danger" data-action="finish" ${state.phase==='finished'?'disabled':''}>End game</button></div></section><section class="card"><h2>Pending claims</h2>${state.pending.length?state.pending.map(e=>`<div class="item"><strong>${escapeHtml(e.assassin)} → ${escapeHtml(e.victim)}</strong><p>${escapeHtml(e.caption)} · ${escapeHtml(e.status)}</p>${e.photo_url?`<img src="${escapeHtml(e.photo_url)}" alt="Evidence">`:''}<div class="actions"><button class="primary" data-resolve="${e.id}" data-approve="true">Approve</button><button class="danger" data-resolve="${e.id}" data-approve="false">Reject</button></div></div>`).join(''):'<p class="muted">No pending claims.</p>'}</section></div><div><section class="card"><h2>Player accounts</h2><p class="muted small">You can export the requested password list to a private text file. Never upload it to GitHub.</p><button class="secondary wide" data-action="export">Download password list .txt</button>${state.admin_players.map(p=>`<div class="item"><strong>${escapeHtml(p.name)}</strong><p class="small">${p.alive?'Alive':'Out'} · Target: ${escapeHtml(p.target||'—')} · Kills: ${p.kills}</p><div class="actions"><button class="ghost" data-reset="${p.id}">Reset password</button><button class="ghost" data-cooldown="${p.id}" ${!p.alive?'disabled':''}>Cooldown</button><button class="danger" data-eliminate="${p.id}" ${!p.alive?'disabled':''}>Remove</button></div></div>`).join('')}</section></div></div>`}
+
 function bind(){
   document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>{view=b.dataset.goto;render()});
   document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>doAction(b.dataset.action));
   document.querySelectorAll('[data-resolve]').forEach(b=>b.onclick=()=>perform('resolve',{id:b.dataset.resolve,approve:b.dataset.approve==='true'},'Claim updated'));
+  document.querySelectorAll('[data-ann-edit]').forEach(b=>b.onclick=()=>{const a=state.announcements.find(x=>x.id===b.dataset.annEdit);if(!a)return;const title=prompt('Announcement headline',a.title);if(title===null)return;const text=prompt('Announcement message',a.body);if(text===null)return;const pinned=confirm('Pin this announcement to the top?');perform('announce_update',{id:a.id,title,text,pinned},'Announcement updated')});
+  document.querySelectorAll('[data-ann-delete]').forEach(b=>b.onclick=()=>{if(confirm('Delete this announcement?'))perform('announce_delete',{id:b.dataset.annDelete},'Announcement deleted')});
   document.querySelectorAll('[data-reset]').forEach(b=>b.onclick=async()=>{const pass=prompt('New temporary password (at least 8 characters):');if(pass)await perform('reset_password',{player_id:b.dataset.reset,password:pass},'Password reset')});
-  document.querySelectorAll('[data-cooldown]').forEach(b=>b.onclick=()=>perform('admin_cooldown',{player_id:b.dataset.cooldown},'Cooldown added'));
   document.querySelectorAll('[data-eliminate]').forEach(b=>b.onclick=()=>{if(confirm('Remove this player from the game?'))perform('admin_eliminate',{player_id:b.dataset.eliminate},'Player removed')});
 }
-async function perform(action,payload,message){try{const out=await api(action,payload);toast(out.message||message||'Done');await refresh()}catch(e){toast(e.message)}}
+async function perform(action,payload,message){try{const out=await api(action,payload);if(['reset_password','admin_eliminate'].includes(action))unlockedData=null;toast(out.message||message||'Done');await refresh()}catch(e){toast(e.message)}}
 async function doAction(action){
+  if(action==='announce_publish')return perform('announce_create',{title:$('announceTitle').value,text:$('announceText').value,pinned:$('announcePin').checked},'Announcement published');
+  if(action==='unlock_data'){const password=prompt('Organizer password to unlock full game data:');if(!password)return;try{unlockedData=await api('admin_data',{password});render();toast('Full game data unlocked')}catch(e){toast(e.message)}return}
+  if(action==='lock_data'){unlockedData=null;render();return}
+  if(action==='reveal_target'){targetRevealed=true;render();return}
+  if(action==='hide_target'){targetRevealed=false;render();return}
   if(action==='claim'){
     const photo=document.createElement('input');photo.type='file';photo.accept='image/jpeg,image/png,image/webp';photo.capture='environment';
     const caption=prompt('Describe the elimination (optional):');if(caption===null)return;
     photo.onchange=async()=>{const f=photo.files?.[0];if(f&&f.size>5*1024*1024)return toast('Photo must be under 5 MB');let encoded=null;if(f)encoded=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(f)});await perform('submit',{caption,photo:encoded},'Submitted')};
     if(confirm('Attach a photo? Choose Cancel to submit your description without a photo.'))photo.click();else await perform('submit',{caption},'Submitted');return;
   }
-  if(action==='timer'){let left=30;const b=document.querySelector('[data-action="timer"]');if(!b)return;b.disabled=true;b.textContent='30 seconds';const t=setInterval(()=>{left--;b.textContent=`${left} seconds`;if(left<=0){clearInterval(t);b.textContent='Time expired';setTimeout(()=>{b.textContent='30-sec timer';b.disabled=false},2000)}},1000);return}
-  if(action==='failed'&&!confirm('Did your assassin fail to attach a clothespin within the 30-second period?'))return;
-  if(action==='failed')return perform('failed_attempt',{},'30-minute cooldown started');
-  if(action==='accuse'){const choices=state.players.filter(p=>p.alive&&p.id!==state.me?.id);const name=prompt('Who is your assassin? Enter their exact full name:\n'+choices.map(p=>p.name).join('\n'));if(!name)return;const found=choices.find(p=>p.name.toLowerCase()===name.toLowerCase().trim());if(!found)return toast('Name not found');return perform('accuse',{accused_id:found.id},'Accusation recorded')}
   if(action==='invite')return perform('set_invite',{invite:$('inviteCode').value},'Invite code saved');
-  if(action==='export'){const lines=['SENIOR ASSASSIN — PRIVATE PASSWORD LIST','Do not share this file or upload it to GitHub.','',...state.admin_players.map(p=>`${p.name} | ${p.password}`)];const blob=new Blob([lines.join('\n')],{type:'text/plain'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='senior-assassin-private-passwords.txt';a.click();URL.revokeObjectURL(url);return}
+  if(action==='export'){const lines=['SENIOR ASSASSIN — PRIVATE PASSWORD LIST','Do not share this file or upload it to GitHub.','',...(unlockedData?.admin_players||[]).map(p=>`${p.name} | ${p.password}`)];const blob=new Blob([lines.join('\n')],{type:'text/plain'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='senior-assassin-private-passwords.txt';a.click();URL.revokeObjectURL(url);return}
   if(action==='start'&&!confirm('Start the game and secretly assign targets to every registered player?'))return;
   if(action==='finish'&&!confirm('End the game now?'))return;
   return perform(action,{},'Game updated');
 }
-if(token)refresh();else setMode('login');
+if(token)refresh();else setMode('register');
+publicStatus();
 setInterval(()=>{if(token&&state)refresh()},30000);
 
 </script></body></html>

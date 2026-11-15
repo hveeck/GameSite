@@ -82,6 +82,22 @@ on conflict (id) do nothing;
 
 -- Service-role-only transactional game engine. All changes serialize against
 -- the settings row, preventing conflicting inheritance updates.
+-- Shared chat is accessible only through authenticated game sessions.
+create table if not exists public.sa_chat_messages (
+  id uuid primary key default gen_random_uuid(),
+  player_id uuid references public.sa_players(id) on delete set null,
+  author_name text not null,
+  body text not null check (char_length(btrim(body)) between 1 and 500),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists sa_chat_messages_recent_idx
+  on public.sa_chat_messages (created_at desc, id desc);
+
+alter table public.sa_chat_messages enable row level security;
+revoke all on public.sa_chat_messages from public, anon, authenticated;
+grant select, insert, delete on public.sa_chat_messages to service_role;
+
 create or replace function public.sa_mutate(p_action text,p_data jsonb)
 returns jsonb language plpgsql security definer set search_path=public as $$
 declare
@@ -137,7 +153,6 @@ begin
     if not a.alive or not v.alive or a.target_id<>v.id then
       return jsonb_build_object('error','Target chain changed; reject and review this claim');
     end if;
-    if a.cooldown_until is not null and cl.submitted_at<a.cooldown_until then return jsonb_build_object('error','Claim was during cooldown'); end if;
     update public.sa_eliminations set status='confirmed',resolved_at=now() where id=cl.id;
     update public.sa_players set alive=false,target_id=null where id=v.id;
     update public.sa_players set kills=kills+1,target_id=case when v.target_id=a.id then null else v.target_id end where id=a.id;
@@ -147,17 +162,6 @@ begin
       update public.sa_settings set phase='finished',winner_id=a.id where id=1;
       insert into public.sa_events(type,description) values ('win',a.full_name||' is the last survivor!');
     end if;
-    return '{"ok":true}'::jsonb;
-  elsif p_action='failed_attempt' then
-    if s.phase<>'live' then return jsonb_build_object('error','Game is not live'); end if;
-    select * into v from public.sa_players where id=(p_data->>'victim_id')::uuid for update;
-    if not v.alive then return jsonb_build_object('error','You are eliminated'); end if;
-    select * into a from public.sa_players where target_id=v.id and alive for update;
-    if a.id is null then return jsonb_build_object('error','No assassin found'); end if;
-    update public.sa_players set cooldown_until=now()+interval '1 hour' where id=a.id;
-    return '{"ok":true}'::jsonb;
-  elsif p_action='admin_cooldown' then
-    update public.sa_players set cooldown_until=now()+interval '1 hour' where id=(p_data->>'player_id')::uuid;
     return '{"ok":true}'::jsonb;
   elsif p_action='admin_eliminate' then
     if s.phase not in ('live','paused') then return jsonb_build_object('error','Game not active'); end if;
