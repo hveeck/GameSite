@@ -102,13 +102,12 @@ function feed(){const events=state.eliminations;return `<section class="card fee
 function leaderboard(){const sorted=[...state.players].sort((a,b)=>Number(b.alive)-Number(a.alive)||b.kills-a.kills||a.name.localeCompare(b.name));return `<section class="card roster-card"><div class="row"><div><span class="eyebrow">THE COMPETITION</span><h2>ALL PLAYERS</h2></div><span class="pill">${sorted.length} registered</span></div><p class="muted">Everyone in the game, living or eliminated. Secret assignments stay private.</p>${sorted.map((p,i)=>`<div class="roster-row"><div class="roster-rank">${String(i+1).padStart(2,'0')}</div><div class="roster-person"><strong>${escapeHtml(p.name)}${p.id===state.me?.id?' <span class="gold">(you)</span>':''}</strong><span>${p.kills} elimination${p.kills===1?'':'s'}</span></div><span class="status ${p.alive?'':'dead'}">${p.alive?'ALIVE':'OUT'}</span></div>`).join('')}</section>`}
 function rules(){return `<section class="card"><span class="eyebrow">OFFICIAL RULES</span><h2>Rules of the hunt</h2>${[
   ['The mission','Each player receives exactly one secret target. Never share someone else’s assignment.'],
-  ['The elimination','Secretly attach a normal clothespin to your target’s outer clothing or bag. Avoid skin, hair, and private areas.'],
+  ['The elimination','Secretly attach a normal clothespin to your target’s outer clothing, bag, or hair.'],
   ['Caught in the act','If your target notices you trying to attach the clothespin before it is attached, the attempt fails immediately. No chasing, grabbing, blocking, tackling, or physical restraint.'],
   ['Proof and confirmation','Submit a picture if available and a short description. The target confirms or disputes. Disputed claims are held until the organizer settles them.'],
   ['Inheritance','After a confirmed elimination, you automatically inherit the eliminated player’s target.'],
-  ['Shrine, CATS and prayer','No clipping in the Shrine, on the Shrine lawn, on the Shrine patio, anywhere in CATS, or during any prayer time, wherever it takes place. These are completely off limits.'],
+  ['Shrine, CATS and prayer','No clipping in the Shrine, on the Shrine lawn, on the Shrine patio, anywhere in CATS, or during any organized prayer time, or during organized CCM events. These are completely off limits.'],
   ['No creepy behavior','Do not go to someone of another gender’s house or living space to hunt them. No stalking, following someone home, waiting outside bedrooms, entering residences uninvited, or any other invasive behavior.'],
-  ['Other safety restrictions','No attempts in bathrooms, during prayer or religious services, or while someone is driving. Never enter a residence without permission.'],
   ['Consent and common sense','Everyone can decline an interaction or stop an attempt. Respect campus policies and bystanders. Do not pursue anyone who asks you to stop. No force, harassment, or dangerous chases.'],
   ['Victory','The last living player wins. Most eliminations earns a separate title.']].map(([h,p])=>`<div class="rule"><b>${h}</b><p>${p}</p></div>`).join('')}</section>`}
 
