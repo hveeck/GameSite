@@ -11,7 +11,7 @@ async function api(action,body={}){
 async function refresh(){
   try {const currentToken=token;const next=await api('state');if(token!==currentToken)return;state=next;showApp();if(view!=='chat'||!$('chatForm'))render()}catch(e){if(String(e.message).includes('log in'))logout(false);else toast(e.message)}
 }
-function logout(remote=true){if(remote&&token)api('logout').catch(()=>{});token='';view='dashboard';$('content').replaceChildren();targetRevealed=false;unlockedData=null;localStorage.removeItem(tokenKey);state=null;$('appView').hidden=true;$('authView').hidden=false}
+function logout(remote=true){$('eliminationDialog')?.close();if(remote&&token)api('logout').catch(()=>{});token='';view='dashboard';$('content').replaceChildren();targetRevealed=false;unlockedData=null;localStorage.removeItem(tokenKey);state=null;$('appView').hidden=true;$('authView').hidden=false}
 function setMode(m){mode=m;inviteVerified=false;for(const x of ['login','register'])$(x+'Tab').classList.toggle('active',x===m);$('inviteStep').hidden=m!=='register';$('accountStep').hidden=m==='register';$('authName').required=m==='login';$('authPassword').required=m==='login';$('authSubmit').textContent=m==='register'?'Create account →':'Log in →';$('authHint').textContent=m==='register'?'Choose a throwaway password you do not use on any other site.':'Use your full name and password.'}
 ['login','register'].forEach(m=>$(m+'Tab').onclick=()=>setMode(m));
 $('verifyInvite').onclick=async()=>{try{await api('check_invite',{invite:$('authInvite').value});inviteVerified=true;$('inviteStep').hidden=true;$('accountStep').hidden=false;$('authName').required=true;$('authPassword').required=true;toast('Invitation accepted! Create your account.')}catch(e){toast(e.message)}};
@@ -98,13 +98,13 @@ function dashboard(){const me=state.me,alive=state.players.filter(p=>p.alive).le
     ${live&&me.alive?`<button class="primary wide action-main" data-action="claim">▣ &nbsp; Submit an elimination</button>`:''}</div>
     <div><section class="card"><span class="eyebrow">HUNT STATUS</span><h2>${alive} PLAYERS REMAIN</h2><p class="muted">${state.players.length-alive} eliminated of ${state.players.length} total players.</p>${state.winner?`<div class="notice">Last survivor: ${escapeHtml(state.winner)}</div>`:''}</section><section class="card"><div class="row"><h2>RECENT ACTIVITY</h2><button class="ghost compact" data-goto="feed">See all</button></div>${state.events.slice(0,5).map(e=>`<div class="item"><strong>${escapeHtml(e.description)}</strong><p class="small">${date(e.created_at)}</p></div>`).join('')||'<div class="empty">The hunt is quiet... for now.</div>'}</section>${announcements()}</div></div>`;
 }
-function feed(){const events=state.eliminations;return `<section class="card feed-card"><div class="row"><div><span class="eyebrow">THE HUNT ARCHIVE</span><h2>GAME HISTORY</h2></div><span class="pill">${events.filter(e=>e.status==='confirmed').length} confirmed</span></div><p class="muted">Confirmed eliminations appear for everyone. Your pending claims and confirmation requests appear here too.</p>${events.length?events.map(e=>`<article class="kill-post"><div class="kill-post-head"><div class="kill-icon">✕</div><div><strong>${escapeHtml(e.assassin)} <span class="red">eliminated</span> ${escapeHtml(e.victim)}</strong><p class="small muted">${date(e.submitted_at)}</p></div><span class="status ${e.status==='confirmed'?'':'pending'}">${escapeHtml(e.status.toUpperCase())}</span></div>${e.photo_url?`<img class="evidence-photo" src="${escapeHtml(e.photo_url)}" alt="Clothespin elimination evidence" loading="lazy">`:`<div class="photo-placeholder">▧<span>No photo submitted</span></div>`}${e.caption?`<p class="kill-caption">“${escapeHtml(e.caption)}”</p>`:''}${state.me?.id===e.victim_id&&['pending','disputed'].includes(e.status)?`<div class="actions"><button class="primary" data-resolve="${e.id}" data-approve="true">Confirm elimination</button><button class="danger" data-resolve="${e.id}" data-approve="false">Dispute</button></div>`:''}</article>`).join(''):'<div class="empty">No eliminations yet. The first photo will appear here after confirmation.</div>'}</section>`}
+function feed(){const events=state.eliminations;return `<section class="card feed-card"><div class="row"><div><span class="eyebrow">THE HUNT ARCHIVE</span><h2>GAME HISTORY</h2></div><span class="pill">${events.filter(e=>e.status==='confirmed').length} confirmed</span></div><p class="muted">Confirmed eliminations appear here. Reports awaiting review are visible to the players involved and the Game Master.</p>${events.length?events.map(e=>`<article class="kill-post"><div class="kill-post-head"><div class="kill-icon">✕</div><div><strong>${escapeHtml(e.assassin)} <span class="red">${e.status==='voided'?'reported an elimination of':'eliminated'}</span> ${escapeHtml(e.victim)}</strong><p class="small muted">${date(e.submitted_at)}</p></div><span class="status ${e.status==='confirmed'?'':'pending'}">${escapeHtml(e.status.toUpperCase())}</span></div>${e.photo_url?`<img class="evidence-photo" src="${escapeHtml(e.photo_url)}" alt="Clothespin elimination evidence" loading="lazy">`:`<div class="photo-placeholder">▧<span>No photo submitted</span></div>`}${e.caption?`<p class="kill-caption">“${escapeHtml(e.caption)}”</p>`:''}${e.can_void?`<div class="actions"><button class="danger" data-void="${e.id}">Void elimination</button></div>`:state.me?.id===e.victim_id&&['pending','disputed'].includes(e.status)?`<div class="actions"><button class="primary" data-resolve="${e.id}" data-approve="true">Confirm elimination</button><button class="danger" data-resolve="${e.id}" data-approve="false">Dispute</button></div>`:''}</article>`).join(''):'<div class="empty">No eliminations yet. The first photo will appear here after confirmation.</div>'}</section>`}
 function leaderboard(){const sorted=[...state.players].sort((a,b)=>Number(b.alive)-Number(a.alive)||b.kills-a.kills||a.name.localeCompare(b.name));return `<section class="card roster-card"><div class="row"><div><span class="eyebrow">THE COMPETITION</span><h2>ALL PLAYERS</h2></div><span class="pill">${sorted.length} registered</span></div><p class="muted">Everyone in the game, living or eliminated. Secret assignments stay private.</p>${sorted.map((p,i)=>`<div class="roster-row"><div class="roster-rank">${String(i+1).padStart(2,'0')}</div><div class="roster-person"><strong>${escapeHtml(p.name)}${p.id===state.me?.id?' <span class="gold">(you)</span>':''}</strong><span>${p.kills} elimination${p.kills===1?'':'s'}</span></div><span class="status ${p.alive?'':'dead'}">${p.alive?'ALIVE':'OUT'}</span></div>`).join('')}</section>`}
 function rules(){return `<section class="card"><span class="eyebrow">OFFICIAL RULES</span><h2>Rules of the hunt</h2>${[
   ['The mission','Each player receives exactly one secret target. Never share someone else’s assignment.'],
   ['The elimination','Secretly attach a normal clothespin to your target’s outer clothing, bag, or hair.'],
   ['Caught in the act','If your target notices you trying to attach the clothespin before it is attached, the attempt fails immediately. No chasing, grabbing, blocking, tackling, or physical restraint.'],
-  ['Proof and confirmation','Submit a picture if available and a short description. The target confirms or disputes. Disputed claims are held until the organizer settles them.'],
+  ['Proof and confirmation','Use Submit an elimination to send a short description and an optional photo. Check History for the result.'],
   ['Inheritance','After a confirmed elimination, you automatically inherit the eliminated player’s target.'],
   ['Shrine, CATS and prayer','No clipping in the Shrine, on the Shrine lawn, on the Shrine patio, anywhere in CATS, or during any organized prayer time, or during organized CCM events. These are completely off limits.'],
   ['No creepy behavior','Do not go to someone of another gender’s house or living space to hunt them. No stalking, following someone home, waiting outside bedrooms, entering residences uninvited, or any other invasive behavior.'],
@@ -114,25 +114,83 @@ function rules(){return `<section class="card"><span class="eyebrow">OFFICIAL RU
 function bind(){
   document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>{view=b.dataset.goto;render()});
   document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>doAction(b.dataset.action));
+  document.querySelectorAll('[data-void]').forEach(b=>b.onclick=async()=>{
+    if(b.disabled||!confirm('Void this elimination and restore the assignments?'))return;
+    b.disabled=true;
+    try{await perform('void_elimination',{id:b.dataset.void},'Elimination voided')}
+    finally{b.disabled=false}
+  });
   document.querySelectorAll('[data-resolve]').forEach(b=>b.onclick=()=>perform('resolve',{id:b.dataset.resolve,approve:b.dataset.approve==='true'},'Claim updated'));
   document.querySelectorAll('[data-ann-edit]').forEach(b=>b.onclick=()=>{const a=state.announcements.find(x=>x.id===b.dataset.annEdit);if(!a)return;const title=prompt('Announcement headline',a.title);if(title===null)return;const text=prompt('Announcement message',a.body);if(text===null)return;const pinned=confirm('Pin this announcement to the top?');perform('announce_update',{id:a.id,title,text,pinned},'Announcement updated')});
   document.querySelectorAll('[data-ann-delete]').forEach(b=>b.onclick=()=>{if(confirm('Delete this announcement?'))perform('announce_delete',{id:b.dataset.annDelete},'Announcement deleted')});
   document.querySelectorAll('[data-reset]').forEach(b=>b.onclick=async()=>{const pass=prompt('New temporary password (at least 8 characters):');if(pass)await perform('reset_password',{player_id:b.dataset.reset,password:pass},'Password reset')});
   document.querySelectorAll('[data-eliminate]').forEach(b=>b.onclick=()=>{if(confirm('Remove this player from the game?'))perform('admin_eliminate',{player_id:b.dataset.eliminate},'Player removed')});
 }
-async function perform(action,payload,message){try{const out=await api(action,payload);if(['reset_password','admin_eliminate'].includes(action))unlockedData=null;toast(out.message||message||'Done');await refresh()}catch(e){toast(e.message)}}
+async function perform(action,payload,message){try{const out=await api(action,payload);if(['reset_password','admin_eliminate','void_elimination'].includes(action))unlockedData=null;toast(out.message||message||'Done');await refresh()}catch(e){toast(e.message)}}
+function openEliminationForm(){
+  if($('eliminationDialog'))return;
+  const {target,target_id}=state.me;
+  if(!target)return toast('Reload to check your current target.');
+  const sessionToken=token;
+  const dialog=document.createElement('dialog');
+  dialog.id='eliminationDialog';
+  dialog.className='elimination-dialog card';
+  dialog.setAttribute('aria-labelledby','eliminationTitle');
+  dialog.innerHTML=`<form><h2 id="eliminationTitle">Submit elimination</h2><p>Target: <b>${escapeHtml(target)}</b></p><p class="muted">${target_id?'This elimination counts immediately.':'Your report will appear in History for review.'}</p><label>Description <span class="muted">(optional)</span><textarea name="caption" maxlength="400" rows="3"></textarea></label><label>Photo <span class="muted">(optional, JPG, PNG or WebP up to 5 MB)</span><input name="photo" type="file" accept="image/jpeg,image/png,image/webp"></label><button class="ghost compact" type="button" data-clear-photo hidden>Remove photo</button><p class="elimination-status" role="status" aria-live="polite"></p><div class="actions"><button class="secondary" type="button" data-cancel>Cancel</button><button class="primary" type="submit">Submit elimination</button></div></form>`;
+  const form=dialog.querySelector('form');
+  const submit=form.querySelector('[type="submit"]');
+  const cancel=form.querySelector('[data-cancel]');
+  const clearPhoto=form.querySelector('[data-clear-photo]');
+  const status=form.querySelector('[role="status"]');
+  const photoInput=form.elements.namedItem('photo');
+  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+  dialog.addEventListener('cancel',event=>{if(submit.disabled)event.preventDefault()});
+  cancel.onclick=()=>dialog.close();
+  photoInput.onchange=()=>{status.textContent='';clearPhoto.hidden=!photoInput.files.length};
+  clearPhoto.onclick=()=>{photoInput.value='';photoInput.onchange()};
+  form.onsubmit=async event=>{
+    event.preventDefault();
+    if(submit.disabled||token!==sessionToken)return;
+    const photo=photoInput.files[0];
+    if(photo&&photo.size>5*1024*1024){status.textContent='Photo exceeds 5 MB. Choose a smaller photo or clear the attachment.';return}
+    if(photo&&!['image/jpeg','image/png','image/webp'].includes(photo.type)){
+      status.textContent='Choose a JPG, PNG, or WebP photo, or clear the attachment.';
+      return;
+    }
+    const caption=form.elements.namedItem('caption').value;
+    submit.disabled=cancel.disabled=true;
+    status.textContent='Submitting…';
+    try{
+      const encoded=photo?await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>resolve(reader.result);
+        reader.onerror=reader.onabort=()=>reject(new Error('Could not read the photo. Choose another file or clear the attachment.'));
+        reader.readAsDataURL(photo);
+      }):null;
+      if(token!==sessionToken)return;
+      const result=await api('submit',{target_id,caption,photo:encoded});
+      if(token!==sessionToken)return;
+      dialog.close();
+      targetRevealed=false;
+      view='feed';
+      toast(result.message||'Elimination submitted.');
+      await refresh();
+    }catch(error){
+      status.textContent=error.message==='Failed to fetch'
+        ?'Connection interrupted. Check History before trying again.'
+        :error.message;
+    }finally{submit.disabled=cancel.disabled=false}
+  };
+  document.body.append(dialog);
+  dialog.showModal();
+}
 async function doAction(action){
   if(action==='announce_publish')return perform('announce_create',{title:$('announceTitle').value,text:$('announceText').value,pinned:$('announcePin').checked},'Announcement published');
   if(action==='unlock_data'){const password=prompt('Organizer password to unlock full game data:');if(!password)return;try{unlockedData=await api('admin_data',{password});render();toast('Full game data unlocked')}catch(e){toast(e.message)}return}
   if(action==='lock_data'){unlockedData=null;render();return}
   if(action==='reveal_target'){targetRevealed=true;render();return}
   if(action==='hide_target'){targetRevealed=false;render();return}
-  if(action==='claim'){
-    const photo=document.createElement('input');photo.type='file';photo.accept='image/jpeg,image/png,image/webp';photo.capture='environment';
-    const caption=prompt('Describe the elimination (optional):');if(caption===null)return;
-    photo.onchange=async()=>{const f=photo.files?.[0];if(f&&f.size>5*1024*1024)return toast('Photo must be under 5 MB');let encoded=null;if(f)encoded=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(f)});await perform('submit',{caption,photo:encoded},'Submitted')};
-    if(confirm('Attach a photo? Choose Cancel to submit your description without a photo.'))photo.click();else await perform('submit',{caption},'Submitted');return;
-  }
+  if(action==='claim')return openEliminationForm();
   if(action==='invite')return perform('set_invite',{invite:$('inviteCode').value},'Invite code saved');
   if(action==='export'){const lines=['SENIOR ASSASSIN — PRIVATE PASSWORD LIST','Do not share this file or upload it to GitHub.','',...(unlockedData?.admin_players||[]).map(p=>`${p.name} | ${p.password}`)];const blob=new Blob([lines.join('\n')],{type:'text/plain'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='senior-assassin-private-passwords.txt';a.click();URL.revokeObjectURL(url);return}
   if(action==='start'&&!confirm('Start the game and secretly assign targets to every registered player?'))return;

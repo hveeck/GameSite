@@ -24,3 +24,8 @@
 #chatForm textarea{resize:vertical;margin-bottom:12px}
 #chatStatus:empty{display:none}
 #chatForm{margin-top:15px}
+.elimination-dialog{box-sizing:border-box;width:min(560px,calc(100% - 24px));max-height:calc(100dvh - 30px);margin:auto;color:var(--text);overflow:auto}
+.elimination-dialog::backdrop{background:#07121bd9}
+.elimination-dialog textarea{resize:vertical}
+.elimination-status{color:#ffd0c7;min-height:1.25em;margin:0}
+.elimination-dialog input[type=file]{max-width:100%}
