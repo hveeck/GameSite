@@ -1,0 +1,9 @@
+A HOUSE DIVIDED v71 — PASSIVE REGIONAL INTEGRATION
+
+• Starting homeland counties count as 100% integrated.
+• One passive integration summary in Government; removed redundant panels and manual county/national buttons.
+• County integration grows automatically through Administration & diplomacy funding, authority policy, ideology alignment, and the Regional Integration initiative.
+• Centralization: +35% assimilation speed, +45% occupation unrest. Decentralization: +15% speed, -28% occupation unrest, -5% tax efficiency.
+• Integration gradually opens recruitable population instead of waiting for 97%; deployment origins still require homeland or fully integrated county.
+• Existing tax efficiency and rebellion pressure scale with assimilation.
+• Existing front assignment, manpower and mercenary mechanics retained.

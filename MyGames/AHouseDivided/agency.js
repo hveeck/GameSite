@@ -12,7 +12,7 @@ const cabinetBudgetAreas={
  welfare:{name:'Health & welfare',desc:'Stability and relief from war exhaustion'},
  industry:{name:'Industry & research',desc:'Productivity and long-run revenue growth'},
  defense:{name:'Defense & logistics',desc:'Monthly military strength improvements'},
- diplomacy:{name:'Administration & diplomacy',desc:'Stability and integration of conquered territory'}
+ diplomacy:{name:'Administration & diplomacy',desc:'Stability and faster integration of conquered territory'}
 };
 function effectiveDepartmentFunding(level){
  const values=[0,1,1.85,2.6,3.3,3.9];
@@ -53,7 +53,7 @@ function revenueEstimate(c){
  // Resource-bearing and industrial counties also generate taxable production,
  // so capturing a productive county has value beyond its raw headcount.
  const taxablePop=s.holdings.reduce((n,t)=>n+t.p*(.20+.80*countyIntegration(t)),0);
- const taxEfficiency=s.pop>0?.65+.35*taxablePop/s.pop:1;
+ const taxEfficiency=(s.pop>0?.65+.35*taxablePop/s.pop:1)*(c.authorityPolicy==='decentralized'?.95:1);
  const economicBase=2+(Math.sqrt(Math.max(0,s.economy))*1.35+Math.sqrt(Math.max(0,s.resources||0))*.75+Math.sqrt(Math.max(0,s.industry||0))*.65)*taxEfficiency+taxablePop*.84;
  const fatigue=1-Math.min(.42,(c.warExhaustion||0)*.0042);
  const difficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;

@@ -6,7 +6,9 @@ function divisionStartStrength(quality){return quality==='mercenary'?20:quality=
 // One reserve, measured in millions of people. Expansion alters the same reserve cap,
 // rather than creating a second population or a recurring monthly manpower payment.
 function manpowerCost(quality,strength=divisionStartStrength(quality)){return quality==='mercenary'?0:Math.max(0,strength)*.00012}
-function recruitablePopulation(c){return coreRecruitCounties(c.id).reduce((n,t)=>n+t.p,0)}
+// Recruitment capacity tracks integrated population gradually. Deployment locations
+// still require homeland or a fully integrated recruiting center.
+function recruitablePopulation(c){return countryStats(c).holdings.reduce((n,t)=>n+t.p*(t.coreOwner===c.id?1:Math.pow(countyIntegration(t),1.35)*.85),0)}
 function manpowerCapacity(c){return recruitablePopulation(c)*(c.manpowerExpanded?.21:.13)}
 function initManpower(c){
  if(c.manpowerUsed===undefined){
@@ -41,15 +43,25 @@ advanceCabinet=function(days){
   const difficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
   const isPlayer=gameMode==='player'&&c.id===humanId;
   const budget=typeof initAgency==='function'?(initAgency(c),c.budget?.diplomacy||0):0;
-  const baseRate=isPlayer?(difficulty==='easy'?.029:difficulty==='hard'?.004:.011):.013;
-  const adminRate=baseRate+budget*(isPlayer&&difficulty==='hard'?.0013:.0023);
+  const baseRate=isPlayer?(difficulty==='easy'?.027:difficulty==='hard'?.0055:.0115):.012;
+  const authority=c.authorityPolicy||'balanced';
+  // Centralization integrates institutions quickly but aggravates dissent.
+  // Decentralization integrates somewhat faster through local cooperation.
+  const authoritySpeed=authority==='centralized'?1.35:authority==='decentralized'?1.15:1;
+  const diplomacyRate=budget*(isPlayer&&difficulty==='hard'?.0015:.0025);
+  const initiative=typeof programUses==='function'?Math.min(2,programUses(c,'integration')):0;
+  const initiativeSpeed=1+initiative*.22;
+  const adminRate=(baseRate+diplomacyRate)*authoritySpeed*initiativeSpeed;
   for(const t of countryStats(c).holdings){
    if(t.coreOwner===c.id)continue;
    if(t.integrationForOwner!==c.id){t.integrationForOwner=c.id;t.integrationProgress=0;}
-   // War and institutional collapse delay integration; heavy administrative funding speeds it.
-   const peacePenalty=enemies(c.id).length?.55:1;
+   // Ideological neighbors share institutions; hostile former regimes resist.
+   const former=countries[t.coreOwner];
+   const ideological=typeof ideologyAffinity==='function'&&former?ideologyAffinity(c,former):.5;
+   const similaritySpeed=clamp(.65+ideological*.7,.65,1.35);
+   const peacePenalty=enemies(c.id).length?.65:1;
    const health=clamp((c.stability||50)/65,.35,1.2);
-   t.integrationProgress=Math.min(1,(t.integrationProgress||0)+months*adminRate*peacePenalty*health);
+   t.integrationProgress=Math.min(1,(t.integrationProgress||0)+months*adminRate*similaritySpeed*peacePenalty*health);
   }
   initManpower(c);
   // No automatic reserve refill: population growth and integration increase the
@@ -63,7 +75,8 @@ advanceCabinet=function(days){
   const deficit=typeof recurringLedger==='function'?Math.max(0,-recurringLedger(c).net):0;
   const lowStability=Math.max(0,45-c.stability),exhausted=Math.max(0,(c.warExhaustion||0)-30);
   const occupation=integrationPressure(c);
-  const civicPenalty=occupation.ratio*(difficulty==='easy'?.25:difficulty==='hard'?2.6:1.15);
+  const authorityUnrest=c.authorityPolicy==='centralized'?1.45:c.authorityPolicy==='decentralized'?.72:1;
+  const civicPenalty=occupation.ratio*authorityUnrest*(difficulty==='easy'?.25:difficulty==='hard'?2.6:1.15);
   c.stability=clamp(c.stability-civicPenalty*months,5,99);
   if(difficulty==='hard'&&occupation.ratio>.28&&c.stability<45)c.readiness=clamp(c.readiness-.25*months,5,100);
   const stabilityDrift=(difficulty==='easy'?.12:difficulty==='hard'?.88:.47)*
@@ -78,16 +91,7 @@ armyDisplay=function(){beforePopulationArmyDisplay();const c=countries[humanId];
 const beforePopulationHud=update;
 update=function(){beforePopulationHud();if(gameMode!=='player'||humanId===null)return;
  const c=countries[humanId];if(!c)return;
- const label=document.getElementById('armyCountry');if(label){initManpower(c);label.title='Recruitable population: '+Math.round(c.manpowerPool*1e6).toLocaleString()+' citizens. Recruitment requires home or fully integrated territory; occupied land cannot recruit. Mercenaries use no population.';}
+ const label=document.getElementById('armyCountry');if(label){initManpower(c);label.title='Recruitable population: '+Math.round(c.manpowerPool*1e6).toLocaleString()+' citizens. Recruits come gradually from integrated populations. Divisions spawn in homeland or fully integrated territory; mercenaries use no population.';}
 };
 
-// Make integration visible without adding extra clutter or another policy system.
-const cabinetBeforeIntegrationStatus=cabinetStatus;
-cabinetStatus=function(){
- const base=cabinetBeforeIntegrationStatus();
- if(gameMode!=='player'||humanId===null||!countries[humanId])return base;
- const c=countries[humanId],occupied=integrationPressure(c),hold=countryStats(c).holdings;
- const captured=hold.filter(t=>t.coreOwner!==c.id),integrated=captured.length?Math.round(100*(1-captured.reduce((n,t)=>n+(1-countyIntegration(t)),0)/captured.length)):100;
- const difficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
- return base+'<div class="cabinet-section">REGIONAL INTEGRATION</div><p class="cabinet-muted">'+captured.length+' conquered counties · '+integrated+'% integrated · '+occupied.count+' still integrating. Unintegrated territory pays reduced taxes, cannot supply recruits, increases administrative costs and raises instability.'+(difficulty==='hard'?' Hard: particularly high rebellion risk.':'')+' Improve with Administration & diplomacy spending or the Regional integration initiative. Integration slows during war.</p>';
-};
+// A single passive integration summary is rendered by v65-ui.js in Government.
