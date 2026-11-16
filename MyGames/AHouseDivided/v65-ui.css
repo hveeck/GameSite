@@ -1,10 +1,13 @@
-.v65-manpower-stat{display:inline-flex!important;flex-direction:column;gap:3px}
-.v65-manpower-stat small{font-size:10px;opacity:.7}
-.v65-integration{margin:14px 0;padding:13px 14px;border:1px solid rgba(158,186,176,.4);border-radius:8px;background:rgba(65,115,100,.11);font-size:12px;line-height:1.5}
-.v65-section-heading{font-size:12px;font-weight:850;letter-spacing:.075em;color:#c9ddb6;margin-bottom:8px}
-.v65-integration p{margin:5px 0 10px}
-.v65-integration small{opacity:.78;display:block;line-height:1.5}
-
+.government-overview{margin-bottom:16px}
+.government-metrics{margin:0 0 12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:7px}
+.government-metrics>div{padding:9px;background:#ffffff0b;border:1px solid #ffffff1d;border-radius:5px}
+.government-metrics dt{font-size:11px;color:#c4cccd}
+.government-metrics dd{margin:3px 0 0;font:600 16px Georgia,serif;color:#f4e2bd}
+.recruitment-policy{padding:12px;border:1px solid #ffffff20;border-radius:5px;background:#ffffff07}
+.recruitment-policy h3{margin:0 0 6px;font-size:13px;color:#f4e2bd}
+.recruitment-policy p{margin:5px 0 8px;font-size:12px}
+.recruitment-policy label,.recruitment-policy small{display:block;font-size:11px;color:#c4cccd}
+.recruitment-policy select{width:100%;margin-top:4px}
 /* v66: instantly visible recruiting resource in the Military tab. */
 .military-manpower-display{display:flex;flex-direction:column;gap:4px;margin:12px 0 14px;padding:12px 13px;border:1px solid rgba(111,180,168,.47);border-radius:8px;background:rgba(56,119,101,.14);line-height:1.35}
 .military-manpower-display strong{font-size:11px;letter-spacing:.075em;color:#bbddc8}

@@ -3,7 +3,7 @@ const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const ctx={console,Math,daysElapsed:0,geomReady:true,gameMode:'player',humanId:1,aiChallenge:'medium',
   territories:[{owner:1,coreOwner:1,p:.45,i:0,e:1,res:1,infra:1}, {owner:1,coreOwner:2,p:.7,i:1,e:1,res:1,infra:1}],
   countries:[null,{id:1,stability:65,readiness:65,treasury:200,budget:{diplomacy:4},industryBonus:0, taxPolicy:'normal',ideology:'republicanism',initialCount:1}],
-  enemies:()=>[],countryStats(c){const holdings=ctx.territories.filter(t=>t.owner===c.id);return {holdings,pop:holdings.reduce((n,t)=>n+t.p,0),economy:1.5,resources:1,industry:1}},
+  militaryPosture:()=>({tier:'balanced'}),enemies:()=>ctx.wartime?[2]:[],countryStats(c){const holdings=ctx.territories.filter(t=>t.owner===c.id);return {holdings,pop:holdings.reduce((n,t)=>n+t.p,0),economy:1.5,resources:1,industry:1}},
   validCountries(){return [ctx.countries[1]]},clamp:(x,a,b)=>Math.max(a,Math.min(b,x)),invalidate:()=>{},
   advanceCabinet:()=>{},armyDisplay:()=>{},update:()=>{},cabinetStatus:()=>'<p>Cabinet</p>',
   document:{getElementById:()=>({textContent:'',title:''})},
@@ -15,7 +15,7 @@ assert.equal(E('coreRecruitCounties(1).length'),1,'occupied land must not recrui
 assert.equal(E('countyIntegration(territories[1])'),0);
 assert.equal(E('canSupplyManpower(countries[1],"mercenary",18)'),true);
 const homePop=ctx.territories[0].p;
-assert(Math.abs(E('manpowerCapacity(countries[1])')-homePop*.13)<1e-9,'normal capacity is 13% eligible people');
+assert(Math.abs(E('manpowerCapacity(countries[1])')-homePop*.10)<1e-9,'normal capacity is 10% eligible people');
 E('initManpower(countries[1])');
 const opening=E('countries[1].manpowerPool');
 E('spendManpower(countries[1],"militia",9)');
@@ -24,24 +24,42 @@ assert.equal(ctx.territories[0].p,homePop,'soldiers remain counted in total civi
 const after=E('countries[1].manpowerPool');
 E('spendManpower(countries[1],"mercenary",20)');
 assert.equal(E('countries[1].manpowerPool'),after,'mercenaries require no recruits');
-E('setExpandedRecruitment(countries[1],true)');
-assert(Math.abs(E('manpowerCapacity(countries[1])')-homePop*.21)<1e-9,'expansion gives 21% capacity');
-assert(ctx.countries[1].stability===60,'expanding recruitment immediately costs stability');
-E('setExpandedRecruitment(countries[1],false)');
-assert(Math.abs(E('countries[1].manpowerPool')-after)<1e-9,'policy toggling cannot farm recruits');
-E('setExpandedRecruitment(countries[1],true)');
-assert(Math.abs(E('countries[1].manpowerPool')-(homePop*.21-.00108))<1e-9,'expanded reserve preserves already spent recruits');
+assert(E('setRecruitmentRate(countries[1],20)'));
+assert(Math.abs(E('manpowerCapacity(countries[1])')-homePop*.20)<1e-9,'mobilization gives 20% capacity');
+assert(!E('setRecruitmentRate(countries[1],7)'), 'policy is locked for 90 days');
+E('daysElapsed=90');
+assert(E('setRecruitmentRate(countries[1],7)'));
+assert(Math.abs(E('countries[1].manpowerPool')-(homePop*.07-.00108))<1e-9,'limited policy preserves previously spent recruits');
+E('daysElapsed=180');
+assert(E('setRecruitmentRate(countries[1],15)'));
+assert(Math.abs(E('countries[1].manpowerPool')-(homePop*.15-.00108))<1e-9,'expanded reserve preserves already spent recruits');
 const beforeMonth=E('countries[1].manpowerPool');
 E('advanceCabinet(31)');
-assert(Math.abs(E('countries[1].manpowerPool')-(beforeMonth+E('manpowerCapacity(countries[1])')-homePop*.21))<1e-9,'manpower changes only through newly integrated population, not monthly reserve refill');
-assert(ctx.countries[1].stability<55,'expanded mobilization causes ongoing stability cost');
+assert(Math.abs(E('countries[1].manpowerPool')-(beforeMonth+E('manpowerCapacity(countries[1])')-homePop*.15))<1e-9,'manpower changes only through newly integrated population, not monthly reserve refill');
+assert(ctx.countries[1].stability<65,'expanded mobilization causes ongoing stability cost');
 assert(ctx.territories[1].integrationProgress>0,'integration progresses');
 assert(ctx.countries[1].stability<65,'conquered population causes regular stability pressure');
 E('territories[1].integrationForOwner=1;territories[1].integrationProgress=.99;');
 assert.equal(E('coreRecruitCounties(1).length'),2,'fully integrated counties become recruiting territory');
-assert(E('manpowerCapacity(countries[1])')>homePop*.21,'integrating counties gradually expand pool');
+assert(E('manpowerCapacity(countries[1])')>homePop*.15,'integrating counties gradually expand pool');
 E('territories[1].owner=2;');
 assert.equal(E('countyIntegration(territories[1])'),1,'former core owner recovers core land');
 E('territories[1].owner=1;territories[1].integrationForOwner=2;');
 assert.equal(E('countyIntegration(territories[1])'),0,'reconquest by old invader cannot inherit other owner integration');
-console.log('PASS: single 13/21% pool, policy toggle and stability cost, no refill, mercenaries, integration, eligible territory.');
+E('territories[1].owner=2;resetManpower(countries[1]);daysElapsed=270;gameMode="watch";');
+const oldAI=ctx.countries[1].stability;
+E('advanceCabinet(31)');
+assert.equal(E('recruitmentRate(countries[1])'),7,'AI can choose the limited policy in peace');
+E('daysElapsed=360;countries[1].manpowerUsed=.04;');
+ctx.wartime=true;
+E('advanceCabinet(31)');
+assert.equal(E('recruitmentRate(countries[1])'),15,'AI can expand under wartime manpower pressure');
+assert(ctx.countries[1].stability>oldAI,'AI received the same limited-policy stability benefit');
+const wartimeStability=ctx.countries[1].stability;
+E('daysElapsed=450;countries[1].manpowerUsed=.065;');
+E('advanceCabinet(31)');
+assert.equal(E('recruitmentRate(countries[1])'),20,'AI can mobilize under heavier reserve pressure');
+assert(ctx.countries[1].stability<wartimeStability,'AI pays the same expanded-policy stability penalty');
+E('countries[1].manpowerUsed=manpowerCapacity(countries[1]);globalThis.unit={quality:"militia",strength:9};reinforceDivision(countries[1],unit,2);');
+assert.equal(E('unit.strength'),9,'reinforcements cannot exceed the shared reserve');
+console.log('PASS: four shared recruitment policies, cooldown, reinforcement, AI selection, no refill, mercenaries and integration.');

@@ -81,7 +81,7 @@ const govChoices=[
  {id:'cut',icon:'◇',label:'Cut taxes',cost:35,desc:'Treasury −35, economic productivity +4%, stability +2.',act:c=>{c.baseEconomyFactor=clamp(c.baseEconomyFactor+.04,.45,1.8);c.stability+=2}},
  {id:'welfare',icon:'✚',label:'Fund public services',cost:28,desc:'Stability +7, population recovery, treasury −28.',act:c=>{c.stability+=7;c.recovery+=.00035;c.warExhaustion=Math.max(0,c.warExhaustion-3)}},
  {id:'infra',icon:'▥',label:'Build infrastructure',cost:40,desc:'Economic productivity +6%; treasury −40.',act:c=>{c.baseEconomyFactor=clamp(c.baseEconomyFactor+.06,.45,1.8)}},
- {id:'draft',icon:'⚔',label:'Enact conscription',cost:15,desc:'Strength +13 and fresh recruits; stability −6, economy −2%.',act:c=>{c.readiness=clamp(c.readiness+13,5,100);c.stability-=6;c.baseEconomyFactor=clamp(c.baseEconomyFactor-.02,.45,1.8);for(const a of ownedArmies(c.id))a.strength+=2}},
+ {id:'draft',icon:'⚔',label:'Enact conscription',cost:15,desc:'Strength +13 and fresh recruits; stability −6, economy −2%.',act:c=>{c.readiness=clamp(c.readiness+13,5,100);c.stability-=6;c.baseEconomyFactor=clamp(c.baseEconomyFactor-.02,.45,1.8);for(const a of ownedArmies(c.id))reinforceDivision(c,a,2)}},
  {id:'demob',icon:'☮',label:'Demobilize',cost:0,desc:'Strength −12, treasury +14, stability +5.',act:c=>{c.readiness=clamp(c.readiness-12,5,100);c.treasury+=14;c.stability+=5}},
  {id:'reconcile',icon:'♧',label:'National reconciliation',cost:24,desc:'Stability +8, war exhaustion −7; treasury −24.',act:c=>{c.stability+=8;c.warExhaustion=Math.max(0,c.warExhaustion-7)}},
  {id:'research',icon:'⚙',label:'Invest in research',cost:50,desc:'Productivity +4%, military strength +4.',act:c=>{c.baseEconomyFactor=clamp(c.baseEconomyFactor+.04,.45,1.8);c.readiness=clamp(c.readiness+4,5,100)}}
@@ -90,25 +90,15 @@ let govFeedback='';
 function renderGovernance(){
  if(gameMode!=='player'||humanId===null){govPanel.hidden=true;return}
  const c=countries[humanId];if(!c){govPanel.hidden=true;return}govPanel.hidden=false;
- initializePolitics(c);const st=countryStats(c),ide=ideologies[c.ideology];
- const income=revenueEstimate(c)-budgetExpense(c)-(c.nationalAgenda==='recovery'?1.25:0);
+ initializePolitics(c);const ide=ideologies[c.ideology];
  const locked=daysElapsed-c.governanceCooldown<28;
  govPanel.innerHTML='<div class="gov-section-title">GOVERNMENT & IDEOLOGY</div><div class="ideology-title">'+ide.label+'</div><p class="gov-desc">'+ide.desc+'</p>'+
- '<div class="gov-metrics"><span><b>'+st.pop.toFixed(2)+'M</b> Population</span><span><b>'+Math.round(st.economy)+'</b> Economy</span><span><b>'+Math.round(st.power)+'</b> Power</span><span><b>'+Math.round(c.warExhaustion)+'</b> War fatigue</span></div>'+
- '<div class="gov-effects">Economy ×'+ide.economy.toFixed(2)+' · Military ×'+ide.army.toFixed(2)+' · Tax income ×'+ide.treasury.toFixed(2)+' · Cohesion '+(ide.cohesion>=1?'+':'')+Math.round((ide.cohesion-1)*100)+'% · Monthly balance '+(income>=0?'+':'')+income.toFixed(1)+'</div>'+
+ '<div class="gov-effects">Economy ×'+ide.economy.toFixed(2)+' · Military ×'+ide.army.toFixed(2)+' · Tax income ×'+ide.treasury.toFixed(2)+' · Cohesion '+(ide.cohesion>=1?'+':'')+Math.round((ide.cohesion-1)*100)+'%'+'</div>'+
  '<label class="gov-ideology-label">Political system <select id="ideologySelect">'+ideologyKeys.map(id=>'<option value="'+id+'" '+(id===c.ideology?'selected':'')+'>'+ideologies[id].label+'</option>').join('')+'</select></label>'+
  '<button id="reformGov" class="gov-reform" '+(daysElapsed-c.ideologyCooldown<1095?'disabled':'')+'>Reform political system · 60 treasury / −12 stability</button>'+
  '<div class="gov-section-title">DOMESTIC DECISIONS <small>'+(locked?'Next decision in '+Math.ceil(28-(daysElapsed-c.governanceCooldown))+' days':'One decision per 28 days')+'</small></div>'+
  '<div class="gov-actions">'+govChoices.map(g=>'<button data-gov="'+g.id+'" '+(locked||c.treasury<g.cost?'disabled':'')+' title="'+g.desc+'"><b>'+g.icon+' '+g.label+'</b><small>'+g.desc+'</small></button>').join('')+'</div>'+
  (govFeedback?'<p class="gov-feedback">'+govFeedback+'</p>':'');
- const warsOfNation=typeof coalitionWars==='undefined'?[]:[...coalitionWars.values()].filter(w=>w.sides?.some(s=>s.includes(c.id))&&daysElapsed-w.started>=180);
- const levyAllowed=warsOfNation.some(w=>{const enemy=w.leaders.find(id=>id!==c.id);return enemy===undefined||typeof treatyMomentum!=='function'||treatyMomentum(c.id,enemy)<.3});
- const levyActive=(c.warTaxUntil||0)>daysElapsed;
- const levyButton=document.createElement('button');levyButton.id='warLevyButton';levyButton.className='gov-reform';levyButton.disabled=!levyAllowed||levyActive||daysElapsed<(c.lastWarTaxDay||-10000)+365;
- levyButton.textContent=levyActive?'War taxes active · '+Math.ceil((c.warTaxUntil-daysElapsed)/30)+' months remaining': 'Levy war taxes · +32% revenue for 12 months';
- levyButton.title='After six months of a contested war: temporary revenue bonus, but monthly stability, productivity and exhaustion penalties.';
- govPanel.append(levyButton);
- levyButton.onclick=()=>{if(!levyAllowed||levyActive)return;c.warTaxUntil=daysElapsed+365;c.lastWarTaxDay=daysElapsed;log(c.name+' levies emergency war taxes for a year.','warlog');update()};
  govPanel.querySelector('#reformGov').onclick=()=>{
   const target=govPanel.querySelector('#ideologySelect').value;
   if(target===c.ideology){govFeedback='Choose a different system first.';renderGovernance();return}

@@ -24,5 +24,5 @@ assert(opposed.progress<balanced.progress,'ideological differences slow integrat
 assert(initiative.progress>balanced.progress,'initiative speeds integration');
 assert(hard.progress<balanced.progress,'Hard integrates more slowly');
 assert(balanced.cap>balanced.before,'partial integration contributes recruitment before 97%');
-assert.equal(scenario('balanced',0).before,.13,'home pop of one million fully integrated');
+assert.equal(scenario('balanced',0).before,.10,'home pop of one million fully integrated');
 console.log('PASS passive integration: authority, stability, funding, ideology, initiative, difficulty, gradual manpower, homeland');

@@ -274,20 +274,6 @@ advanceCabinet=function(days){
  lastTreasureZone=low;
 };
 
-// Simple, live, decision-facing summary in Government.
-const originalPostureCabinet=renderCabinet;
-renderCabinet=function(force=false){
- originalPostureCabinet(force);
- const c=countries[humanId],body=document.getElementById('cabinetBody');
- if(!c||!body||gameMode!=='player')return;
- const p=militaryPosture(c),ledger=recurringLedger(c),panel=document.createElement('div');
- panel.className='posture-summary';
- const names={underdefended:'Underdefended',balanced:'Balanced',strong:'Strong',oversized:'Overextended'};
- const consequences={underdefended:'Cheap; higher rebellion risk, slight instability.',balanced:'Manageable upkeep; slight stability bonus.',strong:'Higher upkeep; stability and rebellion resistance improve.',oversized:'Highest upkeep; stability and strength suffer, rebellion harder.'};
- panel.innerHTML='<div class="cabinet-section">NATIONAL CAPACITY</div><div class="capacity-row"><b>Military: '+names[p.tier]+'</b><small>'+ownedArmies(c.id).length+' divisions · '+consequences[p.tier]+'</small></div><div class="capacity-row"><b>War exhaustion: '+Math.round(c.warExhaustion)+'/100</b><small>Wars and losses raise it; peace and relief lower it. High exhaustion weakens revenue and stability.</small></div><div class="capacity-row"><b>Monthly balance: '+(ledger.net>=0?'+':'')+ledger.net.toFixed(1)+'</b><small>Includes government, divisions, and administration of conquered territory.</small></div>';
- body.querySelector('.national-programs')?.before(panel);
-};
-
 const tutorial=document.querySelector('.play-guide');
 if(tutorial)tutorial.insertAdjacentHTML('beforeend','<p><b>Military scale:</b> A defensive army improves security, but enormous militaries strain stability and finances. <b>War fatigue:</b> Conquests and casualties raise exhaustion; relief and peace restore it. <b>Border demands:</b> More counties require much greater leverage, and accepted transfers cost at least 100 treasury and secure five years of peace.</p>');
 

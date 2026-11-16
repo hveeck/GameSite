@@ -50,8 +50,7 @@ function campaignReview(){
 function renderCampaignStory(){
  const c=countries[humanId];if(gameMode!=='player'||!c){commandBrief.hidden=true;return}
  commandBrief.hidden=false;
- const st=countryStats(c);
- commandBrief.innerHTML='<div class="quick-section-title">YOUR NATIONAL STRATEGY</div><div class="quick-summary"><span>Territory <b>'+st.holdings.length+' counties</b></span><span>Stability <b>'+Math.round(c.stability)+'/100</b></span><span>Treasury <b>'+Math.round(c.treasury)+'</b></span></div><div class="quick-section-title">YOUR CAMPAIGN STORY <small>Major developments and consequences</small></div><div class="campaign-story">'+(campaignHistory.length?campaignHistory.slice(0,6).map(h=>'<div><small>'+h.date+'</small><strong>'+h.title+'</strong><span>'+h.detail+'</span></div>').join(''):'<p>Choose a strategy or launch an initiative. Progress reports appear here as time passes.</p>')+'</div>';
+ commandBrief.innerHTML='<div class="quick-section-title">YOUR CAMPAIGN STORY <small>Major developments and consequences</small></div><div class="campaign-story">'+(campaignHistory.length?campaignHistory.slice(0,6).map(h=>'<div><small>'+h.date+'</small><strong>'+h.title+'</strong><span>'+h.detail+'</span></div>').join(''):'<p>Choose a strategy or launch an initiative. Progress reports appear here as time passes.</p>')+'</div>';
 }
 const originalCampaignLog=log;
 log=function(message,type=''){
@@ -93,8 +92,6 @@ showMapPick=function(){originalShowPick();campaignPickInfo.innerHTML='<span>Choo
 // One national priority replaces repetitive department-by-department sliders.
 const originalQuickCabinet=renderCabinet;
 renderCabinet=function(force=false){originalQuickCabinet(force);const body=$('cabinetBody');if(!body||gameMode!=='player')return;
- const monthlyTitle=[...body.querySelectorAll('.cabinet-section')].find(e=>e.textContent.includes('MONTHLY BUDGET'));
- if(monthlyTitle){monthlyTitle.hidden=false;let next=monthlyTitle.nextElementSibling;if(next?.classList.contains('cabinet-muted'))next.hidden=false;body.querySelectorAll('.budget-row').forEach(x=>x.hidden=false)}
  const agendaTitle=[...body.querySelectorAll('.cabinet-section')].find(e=>e.textContent.includes('NATIONAL PRIORITY'));
  if(agendaTitle){agendaTitle.hidden=true;for(const id of ['cabinetAgenda','cabinetAgendaDescription','setAgenda']){const el=$(id);if(el)el.hidden=true}}
  const preset=$('autoPreset'),apply=$('applyBudgetPreset'),toggle=$('toggleAutoCabinet');

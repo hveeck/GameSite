@@ -6,7 +6,7 @@ const agencyPrograms={
  factories:{name:'Industrial complex',cost:70,days:330,description:'County industry +30%, economy +8%.',finish:(c,t)=>{t.industryOutput*=1.3;t.e*=1.08}},
  energy:{name:'Energy development',cost:55,days:270,description:'Resource production +32% and economic growth.',finish:(c,t)=>{t.resourceOutput*=1.32;t.e*=1.045}},
  defenses:{name:'Fortified district',cost:38,days:135,description:'Entrench local armies and improve border fortifications.',finish:(c,t)=>{c.fort=clamp(c.fort+.035,0,.7);for(const a of ownedArmies(c.id).filter(x=>x.county===t.i))a.entrench=clamp(a.entrench+.4,0,1)}},
- academy:{name:'Officer academy',cost:48,days:240,description:'Military strength +9 and army experience.',finish:(c,t)=>{c.readiness=clamp(c.readiness+9,5,100);for(const a of ownedArmies(c.id))a.strength+=1}}
+ academy:{name:'Officer academy',cost:48,days:240,description:'Military strength +9 and army experience.',finish:(c,t)=>{c.readiness=clamp(c.readiness+9,5,100);for(const a of ownedArmies(c.id))reinforceDivision(c,a,1)}}
 };
 const cabinetBudgetAreas={
  welfare:{name:'Health & welfare',desc:'Stability and relief from war exhaustion'},
@@ -58,8 +58,9 @@ function revenueEstimate(c){
  const fatigue=1-Math.min(.42,(c.warExhaustion||0)*.0042);
  const difficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
  const playerDifficulty=gameMode==='player'&&c.id===humanId?(difficulty==='easy'?1.28:difficulty==='hard'?.82:1):1;
- const warLevy=(c.warTaxUntil||0)>daysElapsed?1.32:1;
- return economicBase*(1+c.industryBonus)*taxMultiplier*taxRate*fatigue*playerDifficulty*warLevy*(c.manpowerExpanded?.86:1);
+ const warLevy=c.emergencyMeasures?.warTaxes?1.20:1;
+ const productionFactor=c.emergencyMeasures?.warProduction?.90:1;
+ return economicBase*(1+c.industryBonus)*taxMultiplier*taxRate*fatigue*playerDifficulty*warLevy*productionFactor*(typeof recruitmentPolicy==='function'?recruitmentPolicy(c).taxFactor:1);
 }
 function recurringLedger(c){
  const revenue=revenueEstimate(c),civilAndArmy=budgetExpense(c),priority=c.nationalAgenda==='recovery'?1.25:0;
@@ -87,18 +88,14 @@ function budgetExpense(c){
  const empireServices=Math.max(0,s.pop-8)*.055;
  const overextension=typeof militaryPosture==='function'?militaryPosture(c):null;
  const oversized=overextension?.tier==='oversized'?military*.18:0;
- return civil+military+administration+empireServices+oversized;
+ return civil+military+administration+empireServices+oversized+(c.emergencyMeasures?.propaganda?8:0);
 }
 function cabinetStatus(){
  const c=countries[humanId];if(gameMode!=='player'||!c||!countryStats(c).holdings.length)return '<p class="cabinet-muted">Choose a country in Play mode to open its national cabinet.</p>';
- initAgency(c);const s=countryStats(c),ledger=recurringLedger(c),net=ledger.net;
- const county=selectedCounty===null?null:territories[selectedCounty],owned=county?.owner===humanId;
- const selected=owned?county:null;
- return '<div class="cabinet-summary"><strong>'+c.treasury.toFixed(1)+'</strong><span>Treasury</span><strong class="'+(net<0?'negative':'')+'">'+(net>=0?'+':'')+net.toFixed(2)+'</strong><span>Monthly balance</span><strong>'+Math.round(c.stability)+'</strong><span>Stability</span><strong>'+Math.round(c.readiness)+'</strong><span>Strength</span></div><p class="cabinet-muted">Monthly income +'+ledger.revenue.toFixed(1)+' · Government & military −'+ledger.civilAndArmy.toFixed(1)+(ledger.priority?' · Reconstruction −'+ledger.priority.toFixed(1):'')+'. At this rate a 7-day week changes treasury by '+(net*7/30.44>=0?'+':'')+(net*7/30.44).toFixed(2)+', excluding separate purchases, deals and events.</p>'+
- '<div class="cabinet-section">MONTHLY BUDGET <small>Changes take effect next advance</small></div><p class="cabinet-muted">Set each department from 0 (austerity) to 5 (maximum spending). Higher funding drains the treasury but produces stronger benefits.</p>'+
+ initAgency(c);
+ return '<div class="cabinet-section">DEPARTMENT FUNDING</div>'+
  Object.entries(cabinetBudgetAreas).map(([id,a])=>'<div class="budget-row"><div><strong>'+a.name+'</strong><small>'+a.desc+'</small></div><select data-budget="'+id+'">'+[0,1,2,3,4,5].map(n=>'<option value="'+n+'" '+(c.budget[id]===n?'selected':'')+'>'+n+' / 5</option>').join('')+'</select></div>').join('')+
- '<div class="cabinet-section">NATIONAL PRIORITY <small>Change once per year</small></div><select id="cabinetAgenda">'+Object.entries(cabinetAgendas).map(([id,a])=>'<option value="'+id+'" '+(c.nationalAgenda===id?'selected':'')+'>'+a.name+'</option>').join('')+'</select><p id="cabinetAgendaDescription" class="cabinet-muted">'+cabinetAgendas[c.nationalAgenda].desc+'</p>'+
- '<button id="setAgenda" '+(daysElapsed-c.agendaCooldown<365?'disabled':'')+'>Adopt national priority</button>'+
+
  (agencyNotice?'<div class="agency-notice">'+agencyNotice+'</div>':'');
 }
 function renderCabinet(force=false){
@@ -241,8 +238,6 @@ function advanceCabinet(days){
   const arrears=Math.max(0,-(c.treasury+ledger.net*months));
   const balanceCredit=Math.max(0,c.treasury+ledger.net*months)-c.treasury;
   c.treasury+=balanceCredit;
-  c.lastRecurringCredit=balanceCredit;
-  c.lastRecurringDays=days;
   // Insolvent states suffer readiness and supply penalties, not mysterious
   // permanent casualties while their soldiers are standing still.
   if(arrears>0){
@@ -253,11 +248,8 @@ function advanceCabinet(days){
   }else if(typeof ownedArmies==='function'){
    for(const army of ownedArmies(c.id))army.supplyPenalty=Math.max(0,(army.supplyPenalty||0)-months*1.2);
   }
-  if((c.warTaxUntil||0)>daysElapsed){
-   c.stability=clamp(c.stability-1.45*months,5,99);
-   c.baseEconomyFactor=clamp(c.baseEconomyFactor-.0025*months,.45,1.8);
-   c.warExhaustion=clamp((c.warExhaustion||0)+.5*months,0,100);
-  }
+  // Persistent wartime measures are maintained centrally; no annual expiry.
+  if(typeof updateEmergencyMeasures==='function')updateEmergencyMeasures(c,months);
   const funding=c.treasury>0?1:.2;
   const spending=Object.fromEntries(Object.entries(c.budget).map(([key,level])=>[key,effectiveDepartmentFunding(level)*months]));
   c.stability=clamp(c.stability+(spending.welfare*.18+spending.diplomacy*.12-.30*months)*funding,5,99);

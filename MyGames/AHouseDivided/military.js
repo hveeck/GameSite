@@ -247,7 +247,7 @@ function moveArmies(days){
      const reinforcementDays=funding==='high'?10:funding==='low'?22:15;
      const reinforcementSize=funding==='high'?2:funding==='low'?.5:1;
      if(a.plan.blockedDays>=14&&Math.floor(a.plan.blockedDays/reinforcementDays)>Math.floor((a.plan.blockedDays-days)/reinforcementDays)){
-       a.strength=Math.max(a.strength,Math.min(a.quality==='elite'?22:12,a.strength+reinforcementSize));
+       reinforceDivision(countries[a.owner],a,Math.min(reinforcementSize,(a.quality==='elite'?22:12)-a.strength));
       }
       a.travelDays=Math.min(a.travelDays,2);break;
      }
@@ -440,11 +440,8 @@ function emergencyAiWarResponse(){
   const desired=Math.max(2,Math.ceil(baseDesired*({easy:.57,medium:.55,hard:1.13})[challenge]));
   const reserve=threatened?Math.max(5,c.treasury*.12):Math.max(25,c.treasury*.4);
   // Defensive emergency funding is temporary and carries a political cost.
-  if(threatened&&c.treasury<countryDivisionRecruitPrice(c,'militia')*3&&
-     daysElapsed>=(c.lastWarTaxDay||-10000)+365&&(c.warTaxUntil||0)<=daysElapsed){
-   c.warTaxUntil=daysElapsed+365;c.lastWarTaxDay=daysElapsed;
-   c.stability=clamp(c.stability-2,5,99);
-  }
+  // Emergency government measures are chosen by the Hard AI after
+  // six months of war; normal AI recruitment never levies taxes automatically.
   // Regular AI cannot replace a large army in a single emergency cycle.
   const maxRecruit=threatened?(typeof aiChallenge!=='undefined'&&aiChallenge==='hard'?3:2):1;
   for(let n=0;n<maxRecruit&&own.length<desired;n++){

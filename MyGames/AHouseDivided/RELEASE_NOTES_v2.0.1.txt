@@ -1,0 +1,17 @@
+A HOUSE DIVIDED — v2.0.1
+Based on v72 Government and Recruitment release.
+
+- Recruitable population and 7/10/15/20 recruitment-policy options appear in Military rather than Government.
+- Government treasury stat shows current cash and projected net treasury per month together.
+- The ineffective visible National Priority controls are removed; underlying cabinet presets remain intact.
+- New Emergency Government Measures section: War Taxes, War Production, National Propaganda.
+- Each requires 180 days of continuous war, can be toggled off manually, and ends automatically with peace.
+- War Taxes: +20% tax receipts; -3 stability upfront; -0.20/month while active.
+- War Production: -15% recruitment prices; -10% tax receipts; slight military strength recovery.
+- National Propaganda: costs 8 treasury/month; +0.25 stability/month; -0.5 war exhaustion/month.
+- Only Hard-difficulty AI countries will choose these measures automatically.
+- Updated on-screen version stamp and cache-busting query on local files.
+
+Tests: test_population_integration.js, test_passive_integration.js, test_emergency_measures.js.
+
+Note: Browser music and gameplay not verified manually in this release.

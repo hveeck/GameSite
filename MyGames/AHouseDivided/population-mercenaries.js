@@ -3,21 +3,32 @@ function coreRecruitCounties(id){return typeof territories==='undefined'?[]:terr
 function countyIntegration(t){if(!t)return 0;return t.coreOwner===t.owner?1:t.integrationForOwner===t.owner?Math.max(0,Math.min(1,t.integrationProgress||0)):0}
 function integrationPressure(c){const held=countryStats(c).holdings;let foreign=0,unintegrated=0;for(const t of held){if(t.coreOwner===c.id)continue;foreign+=Math.max(.01,t.p);unintegrated+=Math.max(.01,t.p)*(1-countyIntegration(t));}return {foreign,unintegrated,ratio:unintegrated/Math.max(.01,countryStats(c).pop),count:held.filter(t=>t.coreOwner!==c.id&&countyIntegration(t)<.97).length};}
 function divisionStartStrength(quality){return quality==='mercenary'?20:quality==='elite'?15:9}
-// One reserve, measured in millions of people. Expansion alters the same reserve cap,
-// rather than creating a second population or a recurring monthly manpower payment.
+// One reserve, measured in millions. Policy changes its cap while preserving recruits already used.
+const recruitmentPolicies={
+ 7:{name:'Limited',taxFactor:1.06,stability:.25,description:'+6% tax revenue · +0.25 stability/month'},
+ 10:{name:'Standard',taxFactor:1,stability:0,description:'Standard reserve · no recurring modifier'},
+ 15:{name:'Expanded',taxFactor:.93,stability:-.40,description:'−7% tax revenue · −0.40 stability/month'},
+ 20:{name:'Mobilized',taxFactor:.86,stability:-.85,description:'−14% tax revenue · −0.85 stability/month'}
+};
+const recruitmentReviewDays=90;
+function recruitmentRate(c){
+ return Object.hasOwn(recruitmentPolicies,c.recruitmentRate)?Number(c.recruitmentRate):c.manpowerExpanded?20:10;
+}
+function recruitmentPolicy(c){return recruitmentPolicies[recruitmentRate(c)]}
+function recruitmentChangeDays(c){return Math.max(0,Math.ceil(recruitmentReviewDays-(daysElapsed-(c.recruitmentChangedAt??-Infinity))))}
 function manpowerCost(quality,strength=divisionStartStrength(quality)){return quality==='mercenary'?0:Math.max(0,strength)*.00012}
 // Recruitment capacity tracks integrated population gradually. Deployment locations
 // still require homeland or a fully integrated recruiting center.
 function recruitablePopulation(c){return countryStats(c).holdings.reduce((n,t)=>n+t.p*(t.coreOwner===c.id?1:Math.pow(countyIntegration(t),1.35)*.85),0)}
-function manpowerCapacity(c){return recruitablePopulation(c)*(c.manpowerExpanded?.21:.13)}
+function manpowerCapacity(c){return recruitablePopulation(c)*recruitmentRate(c)/100}
 function initManpower(c){
  if(c.manpowerUsed===undefined){
   // Older saves may have a reserve but no consumption ledger.
-  c.manpowerUsed=c.manpowerPool===undefined?0:Math.max(0,manpowerCapacity(c)-c.manpowerPool);
+  c.manpowerUsed=c.manpowerPool===undefined?0:Math.max(0,recruitablePopulation(c)*(c.manpowerExpanded?.21:.13)-c.manpowerPool);
  }
  c.manpowerPool=Math.max(0,manpowerCapacity(c)-c.manpowerUsed);
 }
-function resetManpower(c){c.manpowerUsed=0;c.manpowerExpanded=false;initManpower(c)}
+function resetManpower(c){c.manpowerUsed=0;c.recruitmentRate=10;delete c.manpowerExpanded;delete c.recruitmentChangedAt;initManpower(c)}
 function canSupplyManpower(c,quality,strength){if(!c)return false;initManpower(c);return quality==='mercenary'||c.manpowerPool+1e-9>=manpowerCost(quality,strength)}
 function spendManpower(c,quality,strength){
  initManpower(c);if(quality==='mercenary')return;
@@ -26,13 +37,36 @@ function spendManpower(c,quality,strength){
  if(typeof invalidate==='function')invalidate();
 }
 function returnManpower(c,amount){initManpower(c);c.manpowerUsed=Math.max(0,c.manpowerUsed-Math.max(0,amount));initManpower(c)}
-function setExpandedRecruitment(c,enabled){
+function setRecruitmentRate(c,rate){
+ rate=Number(rate);
+ if(!Object.hasOwn(recruitmentPolicies,rate)||recruitmentRate(c)===rate||recruitmentChangeDays(c))return false;
  initManpower(c);
- if(!!c.manpowerExpanded===!!enabled)return false;
- c.manpowerExpanded=!!enabled;
- if(enabled){c.stability=clamp(c.stability-5,5,99);}
+ c.recruitmentRate=rate;
+ c.recruitmentChangedAt=daysElapsed;
+ delete c.manpowerExpanded;
  initManpower(c);
+ if(typeof invalidate==='function')invalidate();
  return true;
+}
+function reinforceDivision(c,division,amount){
+ if(amount<=0||!canSupplyManpower(c,division.quality,amount))return;
+ division.strength+=amount;
+ spendManpower(c,division.quality,amount);
+}
+function planAiRecruitment(c){
+ if(daysElapsed<recruitmentReviewDays||recruitmentChangeDays(c))return;
+ const wartime=enemies(c.id).length>0;
+ const usedShare=c.manpowerUsed/Math.max(.00001,recruitablePopulation(c));
+ const exhausted=(c.warExhaustion||0)>45;
+ const posture=militaryPosture(c);
+ let rate=10;
+ if(wartime&&c.stability>=48&&c.treasury>15){
+  if(c.stability>=57&&!exhausted&&usedShare>=.12)rate=20;
+  else if(usedShare>=.075)rate=15;
+ }else if(!wartime&&posture.tier!=='underdefended'&&usedShare<.05){
+  rate=7;
+ }
+ setRecruitmentRate(c,rate);
 }
 const beforePopulationAdvance=advanceCabinet;
 advanceCabinet=function(days){
@@ -63,14 +97,11 @@ advanceCabinet=function(days){
    const health=clamp((c.stability||50)/65,.35,1.2);
    t.integrationProgress=Math.min(1,(t.integrationProgress||0)+months*adminRate*similaritySpeed*peacePenalty*health);
   }
+  // Growth and integration increase capacity without refilling recruits already spent.
   initManpower(c);
-  // No automatic reserve refill: population growth and integration increase the
-  // shared pool capacity; disbanding surviving soldiers returns some recruits.
-  initManpower(c);
-  if(c.manpowerExpanded){
-   const strain=isPlayer&&difficulty==='hard'?1.25:.75;
-   c.stability=clamp(c.stability-strain*months,5,99);
-  }
+  const policy=recruitmentPolicy(c);
+  c.stability=clamp(c.stability+policy.stability*months,5,99);
+  if(!isPlayer&&typeof militaryPosture==='function')planAiRecruitment(c);
   if(!isPlayer)continue;
   const deficit=typeof recurringLedger==='function'?Math.max(0,-recurringLedger(c).net):0;
   const lowStability=Math.max(0,45-c.stability),exhausted=Math.max(0,(c.warExhaustion||0)-30);
@@ -94,4 +125,4 @@ update=function(){beforePopulationHud();if(gameMode!=='player'||humanId===null)r
  const label=document.getElementById('armyCountry');if(label){initManpower(c);label.title='Recruitable population: '+Math.round(c.manpowerPool*1e6).toLocaleString()+' citizens. Recruits come gradually from integrated populations. Divisions spawn in homeland or fully integrated territory; mercenaries use no population.';}
 };
 
-// A single passive integration summary is rendered by v65-ui.js in Government.
+

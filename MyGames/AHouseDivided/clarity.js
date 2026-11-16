@@ -142,15 +142,3 @@ const priorWarUpdate=update;
 update=function(){priorWarUpdate();refreshWarReport()};
 refreshWarReport(true);
 
-// Make balancing a budget a deliberate, understandable central decision.
-const priorFiscalCabinet=renderCabinet;
-renderCabinet=function(force=false){
- priorFiscalCabinet(force);
- const body=document.getElementById('cabinetBody');
- const c=typeof humanId==='number'?countries[humanId]:null;
- if(!body||gameMode!=='player'||!c)return;
- const net=revenueEstimate(c)-budgetExpense(c)-(c.nationalAgenda==='recovery'?1.25:0);
- const box=document.createElement('section');box.className='fiscal-action';
- box.innerHTML='<div><strong>MONTHLY BUDGET</strong><span class="'+(net<0?'negative':'')+'">'+(net>=0?'+':'')+net.toFixed(1)+' treasury / month</span></div><p>Adjust your four departmental spending levels from 0–5. This is the recurring net, before one-time purchases, peace payments, and events.</p>';
- body.prepend(box);
-};

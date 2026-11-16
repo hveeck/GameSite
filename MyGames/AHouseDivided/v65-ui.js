@@ -1,26 +1,32 @@
-/* v71: one passive regional integration summary; no micromanagement. */
-(function(){
- 'use strict';
- const $id=id=>document.getElementById(id);
- const current=()=>gameMode==='player'&&humanId!=null?countries[humanId]:null;
- const fmt=n=>Math.round(n).toLocaleString('en-US');
- function manpowerHtml(c){initManpower(c);return '<span class="v65-manpower-stat"><b>'+fmt(c.manpowerPool*1e6)+'</b> Recruitable population<small>'+(c.manpowerExpanded?'Expanded · 21%':'Normal · 13%')+' of integrated population</small></span>';}
- function renderPopulationStat(){const c=current(),metrics=$id('governanceControls')?.querySelector('.gov-metrics');if(!c||!metrics)return;const existing=metrics.querySelector('.v65-manpower-stat');if(existing)existing.outerHTML=manpowerHtml(c);else metrics.querySelector('span')?.insertAdjacentHTML('afterend',manpowerHtml(c));}
- function renderIntegrationSummary(){
-  const c=current(),root=$id('governanceControls');if(!c||!root)return;
-  root.querySelectorAll('.v65-integration').forEach(e=>e.remove());
-  const foreign=countryStats(c).holdings.filter(t=>t.coreOwner!==c.id);
-  const total=foreign.length;
-  const average=total?Math.round(100*foreign.reduce((n,t)=>n+countyIntegration(t)*Math.max(.01,t.p),0)/foreign.reduce((n,t)=>n+Math.max(.01,t.p),0)):100;
-  const unfinished=foreign.filter(t=>countyIntegration(t)<.999).length;
-  const el=document.createElement('section');el.className='v65-integration';
-  el.innerHTML='<div class="v65-section-heading">REGIONAL INTEGRATION</div><p><b>'+average+'%</b> population-weighted integration · <b>'+unfinished+'</b> counties integrating</p><small>Automatic. Administration & diplomacy, authority, ideology and the Regional Integration initiative affect progress. Taxes and recruitable manpower grow with integration; poorly integrated regions increase unrest.</small>';
-  root.append(el);
- }
- const priorGov=renderGovernance;
- renderGovernance=function(){priorGov.apply(this,arguments);renderPopulationStat();renderIntegrationSummary();};
- const priorUpdate=update;
- update=function(){priorUpdate.apply(this,arguments);renderPopulationStat();};
- const priorFront=renderNationalFront;
- renderNationalFront=function(){priorFront.apply(this,arguments);const sel=$id('nationalQuality');if(sel&&![...sel.options].some(o=>o.value==='mercenary'))console.error('mercenary option missing');};
-})();
+/* Government overview and recruitment policy. */
+function integrationPercent(c){
+ const holdings=countryStats(c).holdings;
+ const total=holdings.reduce((sum,t)=>sum+t.p,0);
+ return total>0?Math.round(100*holdings.reduce((sum,t)=>sum+t.p*countyIntegration(t),0)/total):0;
+}
+
+const beforeGovernmentOverview=renderCabinet;
+renderCabinet=function(force=false){
+ if(!force&&timer&&+interval.value<=100&&Date.now()-agencyLastRender<350)return;
+ beforeGovernmentOverview(force);
+ const c=countries[humanId];
+ cards.command.querySelector('.government-overview')?.remove();
+ if(gameMode!=='player'||!c)return;
+ const holdings=countryStats(c).holdings;
+ if(!holdings.length)return;
+
+ const overview=document.createElement('section');
+ overview.className='government-overview';
+ const militaryLabels={underdefended:'Underdefended',balanced:'Balanced',strong:'Strong',oversized:'Military state'};
+ const metrics=[
+  ['Territory',holdings.length.toLocaleString()+' counties'],
+  ['Stability',Math.round(c.stability)+'/100'],
+  ['Treasury',c.treasury.toFixed(1)+' <small class="treasury-net">'+(recurringLedger(c).net>=0?'+':'')+recurringLedger(c).net.toFixed(1)+'/month</small>'],
+  ['War exhaustion',Math.round(c.warExhaustion||0)+'/100'],
+  ['Military strength',militaryLabels[militaryPosture(c).tier]],
+  ['Integrated',integrationPercent(c)+'%']
+ ];
+ overview.innerHTML='<dl class="government-metrics">'+metrics.map(([label,value])=>
+  '<div><dt>'+label+'</dt><dd>'+value+'</dd></div>').join('')+'</dl>';
+ commandBrief.before(overview);
+};

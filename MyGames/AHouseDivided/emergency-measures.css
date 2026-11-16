@@ -1,0 +1,13 @@
+/* v2.0.1 — one understated government measure group. */
+.government-metrics dd .treasury-net{display:block;margin-top:5px;font:500 12px/1.2 system-ui,sans-serif;color:#aed5b8}
+.war-emergency-section{margin-top:18px;border-top:1px solid rgba(220,210,180,.15);padding-top:12px}
+.emergency-context{color:#c6c8c2;font-size:12px;line-height:1.45;margin:7px 0 12px}
+.emergency-measure{display:flex;align-items:center;gap:14px;justify-content:space-between;cursor:pointer;padding:11px 0;border-top:1px solid rgba(220,210,180,.12)}
+.emergency-measure span{display:flex;flex-direction:column;gap:5px;flex:1}
+.emergency-measure strong{font-size:13px;color:#f1e6cf}
+.emergency-measure small{font-size:11px;color:#b7bfc0;line-height:1.4}
+.emergency-measure input{flex:none;width:20px;height:20px;accent-color:#bfa56f;cursor:pointer}
+.emergency-measure input:disabled{opacity:.38;cursor:not-allowed}
+.military-recruitment-policy{padding:12px;margin:14px 0;border:1px solid rgba(111,180,168,.35);border-radius:7px;background:rgba(56,119,101,.09)}
+.military-recruitment-policy>strong,.military-recruitment-policy label,.military-recruitment-policy small{display:block;font-size:11px;margin-bottom:7px}
+.military-recruitment-policy select{width:100%;margin-top:5px}

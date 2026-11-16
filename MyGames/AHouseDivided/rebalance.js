@@ -28,22 +28,13 @@ function projectedPolicyBalance(c,p){
 function renderSimpleGovernment(){
  const panel=document.getElementById('cabinetBody'),c=countries[humanId];
  if(!panel||gameMode!=='player'||!c)return;
- const l=recurringLedger(c),section=document.createElement('section');section.className='simple-government';
- const issue=c.stability<45?'Political stability is low. National reconciliation can help.':
-  l.net<0?'Government is spending more than it earns. Reduce military upkeep or favor a balanced policy.':
-  enemies(c.id).length&&c.readiness<50?'Your forces are at war but strength is low. Mobilization is worth considering.':
-  c.treasury<45?'Your cash reserve is low. Let a positive budget rebuild it before new projects.':
-  'Your government is functioning. Consider whether growth, unity, or strength matters most for your next campaign.';
- section.innerHTML='<div class="cabinet-section">NATIONAL GOVERNMENT <small>Choose independent spending levels below</small></div>'+
- '<p class="cabinet-muted">Income +'+l.revenue.toFixed(1)+' / month · Recurring costs −'+(l.civilAndArmy+l.priority).toFixed(1)+' / month · <b>Net '+(l.net>=0?'+':'')+l.net.toFixed(1)+'</b>. Weekly changes are proportional; investments and events are one-time.</p>'+
- '<p class="cabinet-muted">Set each department from 0–5. Every increase raises monthly costs; higher levels have diminishing benefits.</p>'+
+ const section=document.createElement('section');section.className='simple-government';
+ section.innerHTML=
  '<div class="cabinet-section">THREE NATIONAL LEVERS <small>Change anytime · effects accumulate gradually</small></div>'+
  '<div class="national-levers">'+Object.entries(policyLevers).map(([key,lever])=>{
    const value=c[key]||Object.keys(lever.options)[1];
    return '<label><b>'+lever.name+'</b><select data-national-lever="'+key+'">'+Object.entries(lever.options).map(([id,p])=>'<option value="'+id+'" '+(value===id?'selected':'')+'>'+p.name+'</option>').join('')+'</select><small>'+lever.options[value].effect+'</small></label>';
- }).join('')+'</div>'+
- '<div class="policy-advice"><b>YOUR CABINET ADVISES</b><span>'+issue+'</span></div>'+
- '<p class="cabinet-muted">Policies act continuously. Ideologies also affect tax income, production, military power and stability. One-time national projects remain available below.</p>';
+ }).join('')+'</div>';
  panel.prepend(section);
  section.querySelectorAll('[data-national-lever]').forEach(select=>select.onchange=()=>{
   c[select.dataset.nationalLever]=select.value;

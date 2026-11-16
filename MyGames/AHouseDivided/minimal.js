@@ -46,7 +46,7 @@ renderNationalFront=function(){
  const availablePeople=Math.round(c.manpowerPool*1e6).toLocaleString('en-US');
  const totalPeople=Math.round(manpowerCapacity(c)*1e6).toLocaleString('en-US');
  frontSection.innerHTML='<div class="quick-section-title">WAR FRONTS <small>'+all.length+' divisions · '+reserve.length+' reserve</small></div>'+
- '<div class="military-manpower-display"><strong>RECRUITABLE POPULATION · '+(c.manpowerExpanded?'EXPANDED 21%':'NORMAL 13%')+'</strong><span>'+availablePeople+' <small>/ '+totalPeople+' recruitable</small></span><small>From homeland and integrating regions · Mercenaries require none</small><button type="button" id="toggleExpandedRecruitment">'+(c.manpowerExpanded?'End expanded recruitment':'Expand recruitment to 21%')+'</button><small>'+(c.manpowerExpanded?'Expanded policy active: −14% tax income, −'+(aiChallenge==='hard'?'1.25':'0.75')+' stability/month.':'Expanding costs 5 stability immediately, then −14% tax income and monthly stability. No extra pool or monthly refill.')+'</small></div>'+ 
+ '<div class="military-manpower-display"><strong>RECRUITABLE POPULATION · '+recruitmentRate(c)+'%</strong><span>'+availablePeople+' <small>/ '+totalPeople+' recruitable</small></span><small>Recruitment policy is below · Mercenaries require no recruits</small></div>'+
  (foeIds.length?foeIds.map(id=>{
   const f=fronts.find(x=>x.target===id),n=f?.armyIds?.length||0;
   const mix=f?.mix||(f?{breakthrough:f.strategy==='breakthrough'?100:0,balanced:f.strategy==='balanced'?100:0,cautious:f.strategy==='cautious'?100:0,defend:0}:{breakthrough:0,balanced:100,cautious:0,defend:0});
@@ -59,12 +59,6 @@ renderNationalFront=function(){
  const qualityPicker=frontSection.querySelector('#nationalQuality'),recruitButton=frontSection.querySelector('#raiseNationalForce');
  function refreshRecruit(){const quality=qualityPicker.value,affordable=c.treasury>=divisionRecruitPrice(quality),manpower=canSupplyManpower(c,quality,divisionStartStrength(quality));recruitButton.disabled=!affordable||!manpower||!coreRecruitCounties(c.id).length;recruitButton.textContent='＋ Recruit '+divisionName(quality)+' · '+divisionRecruitPrice(quality)+' treasury';frontSection.querySelector('#recruitTraits').textContent={militia:'9 strength · fast, low upkeep · uses recruitable population',elite:'15 strength · durable frontline force · uses recruitable population',mercenary:'20 strength · 220% combat · highly durable · NO population required · extremely expensive upkeep'}[quality]+(!manpower?' · NOT ENOUGH RECRUITABLE POPULATION':'')}
  qualityPicker.onchange=()=>{selectedRecruitQuality=qualityPicker.value;refreshRecruit()};refreshRecruit();
- frontSection.querySelector('#toggleExpandedRecruitment').onclick=()=>{
-  setExpandedRecruitment(c,!c.manpowerExpanded);
-  if(typeof log==='function')log(c.name+(c.manpowerExpanded?' expands recruitment nationwide.':' ends expanded recruitment.'));
-  if(typeof invalidate==='function')invalidate();
-  renderNationalFront();update();
- };
  function adjust(id,delta){
   let f=activeFronts(c).find(x=>x.target===id);
   if(!f&&delta>0){f={target:id,strategy:'mixed',mix:{breakthrough:0,balanced:100,cautious:0,defend:0},divisions:0,armyIds:[],message:''};c.frontOrders.push(f)}
@@ -110,7 +104,6 @@ renderNationalFront=function(){
 function compactPanels(){
  const cabinet=document.querySelector('#cabinetBody');
  document.querySelectorAll('#governanceControls .gov-section-title').forEach(x=>{if(x.textContent.includes('DOMESTIC DECISIONS'))x.remove()});
- cabinet?.querySelectorAll('.policy-advice,.fiscal-action').forEach(x=>x.remove());
  cabinet?.querySelectorAll('.gov-section-title').forEach(x=>{if(x.textContent.includes('DOMESTIC DECISIONS'))x.remove()});
  const policy=cabinet?.querySelector('.simple-government');
  if(policy){const paras=policy.querySelectorAll(':scope > p');paras.forEach(p=>p.remove());}
