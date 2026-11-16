@@ -29,13 +29,13 @@ async function publicState(me?: string, admin=false) {
   const {data:events}=await db.from('sa_events').select('*').order('created_at',{ascending:false}).limit(30);
   const {data:announcements,error:announcementError}=await db.from('sa_announcements').select('id,title,body,pinned,created_at,updated_at').order('pinned',{ascending:false}).order('created_at',{ascending:false}).limit(50);check({error:announcementError});
   const names=new Map(all.map(p=>[p.id,p.full_name]));
-  const mapped=await Promise.all((elims||[]).filter(e=>admin||e.status==='confirmed'||e.assassin_id===me||e.victim_id===me).map(async e=>({
-    id:e.id,assassin_id:e.assassin_id,victim_id:e.victim_id,assassin:names.get(e.assassin_id),victim:names.get(e.victim_id),caption:e.caption,status:e.status,submitted_at:e.submitted_at,
-    photo_url:e.photo_path?(await db.storage.from('sa-photos').createSignedUrl(e.photo_path,3600)).data?.signedUrl:null
+  const mapped=await Promise.all((elims||[]).filter(e=>admin||['confirmed','voided'].includes(e.status)||e.assassin_id===me||e.victim_id===me).map(async e=>({
+    id:e.id,assassin_id:e.assassin_id,victim_id:e.victim_id,assassin:names.get(e.assassin_id),victim:names.get(e.victim_id),caption:e.caption,status:e.status,submitted_at:e.submitted_at,can_void:admin&&e.status==='confirmed'&&!!e.void_snapshot&&!e.void_snapshot.chain_hook_changed_target,
+    photo_url:e.status!=='voided'&&e.photo_path?(await db.storage.from('sa-photos').createSignedUrl(e.photo_path,3600)).data?.signedUrl:null
   })));
   const own=all.find(p=>p.id===me);
   return {phase:s.phase,started_at:s.started_at,starts_at:s.starts_at,winner:s.winner_id?names.get(s.winner_id):null,invite_set:!!s.invite_code,
-    me:own?{id:own.id,name:own.full_name,alive:own.alive,kills:own.kills,shield_until:own.shield_until,last_accusation_date:own.last_accusation_date,target:own.alive&&own.target_id?names.get(own.target_id):null}:null,
+    me:own?{id:own.id,name:own.full_name,alive:own.alive,kills:own.kills,shield_until:own.shield_until,last_accusation_date:own.last_accusation_date,target_id:own.alive?own.target_id:null,target:own.alive&&own.target_id?names.get(own.target_id):null}:null,
     players:all.map(p=>({id:p.id,name:p.full_name,alive:p.alive,kills:p.kills})),eliminations:mapped,events:events||[],announcements:announcements||[],is_admin:admin,
     ...(admin?{pending:mapped.filter(e=>e.status==='pending'||e.status==='disputed')}: {})};
 }
@@ -115,11 +115,7 @@ Deno.serve(async req=>{
       if(sess.is_admin)return fail('Use a player account');
       const p=await player(sess.player_id);const s=await settings();
       if(s.phase!=='live'||!p.alive||!p.target_id)return fail('No active target');
-      if(p.shield_until && new Date(p.shield_until)>new Date()){} // shield affects the target, not attacker
-      const victim=await player(p.target_id);
-      if(victim.shield_until&&new Date(victim.shield_until)>new Date()) return fail('Your target is protected');
-      const {data:existing}=await db.from('sa_eliminations').select('id').eq('victim_id',p.target_id).in('status',['pending','disputed']).maybeSingle();
-      if(existing)return fail('This target already has a pending claim');
+      if(clean(body.target_id)!==p.target_id) return fail('Your assignment changed. Reload and check your current target.',409);
       let path:null|string=null;
       if(body.photo && typeof body.photo==='string') {
         const match=body.photo.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);
@@ -128,15 +124,30 @@ Deno.serve(async req=>{
         path=`${p.id}/${crypto.randomUUID()}.${match[1].split('/')[1]}`;
         check(await db.storage.from('sa-photos').upload(path,bytes,{contentType:match[1]}));
       }
-      check(await db.from('sa_eliminations').insert({assassin_id:p.id,victim_id:p.target_id,photo_path:path,caption:clean(body.caption).slice(0,400)}));
-      return reply({ok:true,message:'Claim submitted. Waiting for confirmation.'});
+      const {data,error}=await db.rpc('sa_instant_elimination',{
+        p_action:'submit',p_data:{player_id:p.id,target_id:p.target_id,photo_path:path,caption:clean(body.caption).slice(0,400)}
+      });
+      if(error){
+        // A PostgreSQL exception guarantees rollback. Transport errors may follow a commit.
+        if(path&&error.code==='P0001') await db.storage.from('sa-photos').remove([path]);
+        return fail(error.code==='P0001'?error.message:'Could not record the elimination. Check History before retrying.',error.code==='P0001'?409:500);
+      }
+      return reply(data);
+    }
+    if(action==='void_elimination') {
+      if(!sess.is_admin) return fail('Organizer only',403);
+      const id=clean(body.id);
+      if(!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) return fail('Invalid elimination ID');
+      const {data,error}=await db.rpc('sa_instant_elimination',{p_action:'void',p_data:{id}});
+      if(error)return fail(error.code==='P0001'?error.message:'Could not void the elimination.',error.code==='P0001'?409:500);
+      return reply(data);
     }
     if(action==='resolve') {
       const id=clean(body.id),approve=!!body.approve;
       const {data:claim}=await db.from('sa_eliminations').select('*').eq('id',id).single();if(!claim)return fail('Claim not found');
       if(!sess.is_admin && sess.player_id!==claim.victim_id)return fail('Only the target or admin may decide',403);
       if(!['pending','disputed'].includes(claim.status))return fail('Already resolved');
-      if(!approve&&!sess.is_admin) {check(await db.from('sa_eliminations').update({status:'disputed'}).eq('id',id));return reply({ok:true,message:'Disputed. An admin will review.'});}
+      if(!approve&&!sess.is_admin) {check(await db.from('sa_eliminations').update({status:'disputed'}).eq('id',id).in('status',['pending','disputed']));return reply({ok:true,message:'Disputed. An admin will review.'});}
       return reply(await locked('resolve',{id,approve}));
     }
 
