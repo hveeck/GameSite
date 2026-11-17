@@ -2,12 +2,20 @@
 .government-metrics dd .treasury-net{display:block;margin-top:5px;font:500 12px/1.2 system-ui,sans-serif;color:#aed5b8}
 .war-emergency-section{margin-top:18px;border-top:1px solid rgba(220,210,180,.15);padding-top:12px}
 .emergency-context{color:#c6c8c2;font-size:12px;line-height:1.45;margin:7px 0 12px}
-.emergency-measure{display:flex;align-items:center;gap:14px;justify-content:space-between;cursor:pointer;padding:11px 0;border-top:1px solid rgba(220,210,180,.12)}
-.emergency-measure span{display:flex;flex-direction:column;gap:5px;flex:1}
-.emergency-measure strong{font-size:13px;color:#f1e6cf}
-.emergency-measure small{font-size:11px;color:#b7bfc0;line-height:1.4}
-.emergency-measure input{flex:none;width:20px;height:20px;accent-color:#bfa56f;cursor:pointer}
-.emergency-measure input:disabled{opacity:.38;cursor:not-allowed}
+/* Compact, accessible, single-row government controls. */
+.emergency-measure{display:grid;grid-template-columns:minmax(0,1fr) 42px;align-items:center;column-gap:10px;min-width:0;min-height:40px;cursor:pointer;padding:8px 0;border-top:1px solid rgba(220,210,180,.12);position:relative}
+.emergency-copy{display:flex;align-items:baseline;gap:10px;min-width:0;overflow:hidden;white-space:nowrap}
+.emergency-copy strong{flex:none;font-size:12px;color:#f1e6cf;font-weight:700}
+.emergency-copy small{display:block;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#b7bfc0}
+.emergency-checkbox{position:absolute;right:0;width:42px;height:26px;opacity:0;cursor:pointer;z-index:2;margin:0}
+.emergency-switch{justify-self:end;width:38px;height:22px;border-radius:99px;background:#34424b;border:1px solid rgba(181,189,190,.36);box-shadow:inset 0 1px 3px #0006;display:flex;align-items:center;padding:2px;transition:background .15s,border-color .15s;box-sizing:border-box}
+.emergency-switch i{display:block;width:16px;height:16px;border-radius:50%;background:#c4c6c0;box-shadow:0 1px 3px #0008;transition:transform .15s,background .15s}
+.emergency-checkbox:checked+.emergency-switch{background:#75603d;border-color:#d1ae69}
+.emergency-checkbox:checked+.emergency-switch i{transform:translateX(16px);background:#f8de9e}
+.emergency-checkbox:focus-visible+.emergency-switch{outline:2px solid #f2d18d;outline-offset:3px}
+.emergency-measure.is-disabled{opacity:.48;cursor:not-allowed}
+.emergency-checkbox:disabled{cursor:not-allowed}
+@media(max-width:700px){.emergency-copy{gap:7px}.emergency-copy strong{font-size:11px}.emergency-copy small{font-size:9px}}
 .military-recruitment-policy{padding:12px;margin:14px 0;border:1px solid rgba(111,180,168,.35);border-radius:7px;background:rgba(56,119,101,.09)}
 .military-recruitment-policy>strong,.military-recruitment-policy label,.military-recruitment-policy small{display:block;font-size:11px;margin-bottom:7px}
 .military-recruitment-policy select{width:100%;margin-top:5px}

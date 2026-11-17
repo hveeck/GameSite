@@ -71,7 +71,7 @@ function progressDate(){
 }
 function regionalUprising(parent){
  const holdings=countryStats(parent).holdings;
- if(holdings.length<4||parent.stability>=40)return false;
+ if(holdings.length<4||parent.stability>=(gameMode==='player'&&parent.id===humanId&&aiChallenge==='medium'?30:40))return false;
  const avgE=nums(holdings.map(t=>t.e))/holdings.length;
  const avgR=nums(holdings.map(t=>t.res))/holdings.length;
  const ideologyRegions=typeof ideologyByRegion==='undefined'?{}:ideologyByRegion;
@@ -102,7 +102,7 @@ function regionalUprising(parent){
  if(!name)name=seed.name+' '+names[seed.state]+' Assembly';
  const rebels={id,name,anchor:seed.name,color:'#d6a06a',capital:seed.state,origin:seed.region,
   stability:Math.round(40+rand()*18),morale:Math.round(45+rand()*22),aggression:.35+rand()*.3,
-  diplomacy:rand(),inclusion:.6+rand()*.3};
+  diplomacy:rand(),inclusion:.6+rand()*.3,breakawayFrom:parent.id,independenceWarStarted:daysElapsed};
  const alternate=(ideologyRegions[seed.region]||ideologyKeys).filter(x=>x!==parent.ideology);
  rebels.ideology=alternate.length?choice(alternate):'republicanism';
  countries.push(rebels);
@@ -221,7 +221,18 @@ function simulatePeriod(){
   }else if(rand()<.3)log('Offensives stall around '+target.name+' County, '+target.state+'.','warlog');
  }
  if($('interventions').checked){
-  const candidates=validCountries().filter(c=>(countryStats(c).holdings.length>=70||gameMode==='player'&&c.id===humanId&&countryStats(c).holdings.length>=3)&&c.stability<40);
+  // On Regular, a player gets time to address an unstable government before
+  // an independence movement can escalate into an armed uprising.
+  for(const c of validCountries()){
+   if(gameMode!=='player'||c.id!==humanId||aiChallenge!=='medium')continue;
+   c.rebellionCrisisDays=c.stability<30?(c.rebellionCrisisDays||0)+days:0;
+  }
+  const candidates=validCountries().filter(c=>{
+   const regularPlayer=gameMode==='player'&&c.id===humanId&&aiChallenge==='medium';
+   const cutoff=regularPlayer?30:40;
+   return (countryStats(c).holdings.length>=70||gameMode==='player'&&c.id===humanId&&countryStats(c).holdings.length>=3)
+     &&c.stability<cutoff&&(!regularPlayer||(c.rebellionCrisisDays||0)>=90);
+  });
   for(const c of candidates){
    const instability=clamp((32-c.stability)/32,0,1);
    const authorities=['fascism','communism','military_junta','theocracy','monarchy'];
@@ -237,9 +248,9 @@ function simulatePeriod(){
    const difficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
    const isPlayer=gameMode==='player'&&c.id===humanId;
    const civicShock=clamp((40-c.stability)/30,0,1);
-   const severeRisk=isPlayer?({easy:.08,medium:.25,hard:.48})[difficulty]*civicShock:0;
-   const integrationRisk=typeof integrationPressure==='function'?integrationPressure(c).ratio*({easy:.03,medium:.18,hard:.44})[difficulty]:0;
-   const annualRisk=clamp((.015+instability*.10)*authoritarian*institutional*military*governed*vol+severeRisk+integrationRisk,0,.85);
+   const severeRisk=isPlayer?({easy:.08,medium:.07,hard:.48})[difficulty]*civicShock:0;
+   const integrationRisk=typeof integrationPressure==='function'?integrationPressure(c).ratio*({easy:.03,medium:.06,hard:.44})[difficulty]:0;
+   const annualRisk=clamp((.015+instability*.10)*authoritarian*institutional*military*governed*vol*(isPlayer&&difficulty==='medium'?.60:1)+severeRisk+integrationRisk,0,.85);
    if(chance(annualRisk,days))regionalUprising(c);
   }
   if(!candidates.length&&chance(.09*vol,days)){

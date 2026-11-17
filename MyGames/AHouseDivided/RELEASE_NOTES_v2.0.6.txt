@@ -1,0 +1,25 @@
+A HOUSE DIVIDED v2.0.6 — Independence Peace & Manpower
+
+RECRUITMENT
+- Starting recruitment is 5% of eligible home and integrated population.
+- Available policies: Limited 3%, Standard 5%, Expanded 10%, Mobilized 15%.
+- Lower recruitment policies modestly benefit stability and taxes; expansion/mobilization have continuing costs.
+- AI decision thresholds updated to use new percentage choices.
+- No monthly refill or free troops from changing policy. Mercenaries still use no manpower.
+
+SECESSION / PEACE
+- Rebel countries created by the regional uprising mechanic remember their former parent.
+- Rebels are much more willing to accept white peace with their former parent, and their former parent gains a smaller willingness bonus.
+- Rebel leaders offer status quo peace more readily and can begin offering after 90 days instead of 180 days.
+- White peace confirms the borders at the outbreak of the rebellion: breakaway counties retain independence, wartime occupations revert. No concessions or annexations.
+- Normal wars and peace calculations are unchanged.
+
+TESTS
+- test_independence_peace.js
+- test_population_integration.js
+- test_passive_integration.js
+- test_emergency_measures.js
+- test_ai_force_development.js
+- test_debt_bonds.js
+
+This release incorporates v2.0.5 changes and previous updates.

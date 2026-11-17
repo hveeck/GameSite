@@ -1,0 +1,8 @@
+A HOUSE DIVIDED v2.0.4 — USEFUL FINANCING
+
+Bonds give an immediate cash injection with difficulty-scaled consequences.
+Easy: 2.5%-6% annual interest, negligible revenue penalty (max 2.5%), stability/productivity consequences only after extreme debt.
+Regular: 4.5%-14.5% annual interest, moderate revenue penalty (max 12%), gradual pressure when debt exceeds 28 months of revenue.
+Hard: 7%-24% annual interest, up to 27% revenue reduction with substantial debt and more serious political/economic pressure.
+On Easy and Regular issuing bonds itself has no immediate stability penalty. On Hard major/emergency issuance costs 1/2 stability.
+Monthly debt servicing, repayment buttons, ceilings, and the existing borrowing sizes remain intact.

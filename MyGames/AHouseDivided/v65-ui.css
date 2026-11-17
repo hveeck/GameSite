@@ -14,3 +14,9 @@
 .military-manpower-display span{font-size:21px;font-weight:750;color:#f1eee1;font-variant-numeric:tabular-nums}
 .military-manpower-display small{font-size:11px;opacity:.8}
 .military-manpower-display span small{font-weight:450;font-size:12px}
+
+/* v2.0.2: prevent longer Military Strength tiers from overflowing metrics. */
+.government-metrics{grid-template-columns:repeat(auto-fit,minmax(min(100%,108px),1fr));min-width:0}
+.government-metrics>div{min-width:0;overflow:hidden}
+.government-metrics dt{overflow-wrap:anywhere}
+.government-metrics dd{max-width:100%;min-width:0;overflow-wrap:anywhere;word-break:normal;line-height:1.16;font-size:clamp(12px,1.22vw,16px)}

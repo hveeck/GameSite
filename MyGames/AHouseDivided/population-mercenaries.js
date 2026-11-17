@@ -5,14 +5,18 @@ function integrationPressure(c){const held=countryStats(c).holdings;let foreign=
 function divisionStartStrength(quality){return quality==='mercenary'?20:quality==='elite'?15:9}
 // One reserve, measured in millions. Policy changes its cap while preserving recruits already used.
 const recruitmentPolicies={
- 7:{name:'Limited',taxFactor:1.06,stability:.25,description:'+6% tax revenue · +0.25 stability/month'},
- 10:{name:'Standard',taxFactor:1,stability:0,description:'Standard reserve · no recurring modifier'},
- 15:{name:'Expanded',taxFactor:.93,stability:-.40,description:'−7% tax revenue · −0.40 stability/month'},
- 20:{name:'Mobilized',taxFactor:.86,stability:-.85,description:'−14% tax revenue · −0.85 stability/month'}
+ 3:{name:'Limited',taxFactor:1.05,stability:.22,description:'+5% tax revenue · +0.22 stability/month'},
+ 5:{name:'Standard',taxFactor:1,stability:0,description:'Standard reserve · no recurring modifier'},
+ 10:{name:'Expanded',taxFactor:.94,stability:-.32,description:'−6% tax revenue · −0.32 stability/month'},
+ 15:{name:'Mobilized',taxFactor:.87,stability:-.75,description:'−13% tax revenue · −0.75 stability/month'}
 };
 const recruitmentReviewDays=90;
 function recruitmentRate(c){
- return Object.hasOwn(recruitmentPolicies,c.recruitmentRate)?Number(c.recruitmentRate):c.manpowerExpanded?20:10;
+ // Translate former policies if an old session survives an update.
+ const legacy={7:3,20:15};
+ const current=Number(c.recruitmentRate);
+ if(Object.hasOwn(legacy,current))return legacy[current];
+ return Object.hasOwn(recruitmentPolicies,current)?current:c.manpowerExpanded?15:5;
 }
 function recruitmentPolicy(c){return recruitmentPolicies[recruitmentRate(c)]}
 function recruitmentChangeDays(c){return Math.max(0,Math.ceil(recruitmentReviewDays-(daysElapsed-(c.recruitmentChangedAt??-Infinity))))}
@@ -24,11 +28,11 @@ function manpowerCapacity(c){return recruitablePopulation(c)*recruitmentRate(c)/
 function initManpower(c){
  if(c.manpowerUsed===undefined){
   // Older saves may have a reserve but no consumption ledger.
-  c.manpowerUsed=c.manpowerPool===undefined?0:Math.max(0,recruitablePopulation(c)*(c.manpowerExpanded?.21:.13)-c.manpowerPool);
+  c.manpowerUsed=c.manpowerPool===undefined?0:Math.max(0,recruitablePopulation(c)*(c.manpowerExpanded?.15:.05)-c.manpowerPool);
  }
  c.manpowerPool=Math.max(0,manpowerCapacity(c)-c.manpowerUsed);
 }
-function resetManpower(c){c.manpowerUsed=0;c.recruitmentRate=10;delete c.manpowerExpanded;delete c.recruitmentChangedAt;initManpower(c)}
+function resetManpower(c){c.manpowerUsed=0;c.recruitmentRate=5;delete c.manpowerExpanded;delete c.recruitmentChangedAt;initManpower(c)}
 function canSupplyManpower(c,quality,strength){if(!c)return false;initManpower(c);return quality==='mercenary'||c.manpowerPool+1e-9>=manpowerCost(quality,strength)}
 function spendManpower(c,quality,strength){
  initManpower(c);if(quality==='mercenary')return;
@@ -59,12 +63,12 @@ function planAiRecruitment(c){
  const usedShare=c.manpowerUsed/Math.max(.00001,recruitablePopulation(c));
  const exhausted=(c.warExhaustion||0)>45;
  const posture=militaryPosture(c);
- let rate=10;
+ let rate=5;
  if(wartime&&c.stability>=48&&c.treasury>15){
-  if(c.stability>=57&&!exhausted&&usedShare>=.12)rate=20;
-  else if(usedShare>=.075)rate=15;
- }else if(!wartime&&posture.tier!=='underdefended'&&usedShare<.05){
-  rate=7;
+  if(c.stability>=57&&!exhausted&&usedShare>=.085)rate=15;
+  else if(usedShare>=.038)rate=10;
+ }else if(!wartime&&posture.tier!=='underdefended'&&usedShare<.023){
+  rate=3;
  }
  setRecruitmentRate(c,rate);
 }
@@ -77,7 +81,7 @@ advanceCabinet=function(days){
   const difficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
   const isPlayer=gameMode==='player'&&c.id===humanId;
   const budget=typeof initAgency==='function'?(initAgency(c),c.budget?.diplomacy||0):0;
-  const baseRate=isPlayer?(difficulty==='easy'?.027:difficulty==='hard'?.0055:.0115):.012;
+  const baseRate=isPlayer?(difficulty==='easy'?.038:difficulty==='hard'?.0065:.021):.017;
   const authority=c.authorityPolicy||'balanced';
   // Centralization integrates institutions quickly but aggravates dissent.
   // Decentralization integrates somewhat faster through local cooperation.
@@ -93,7 +97,7 @@ advanceCabinet=function(days){
    const former=countries[t.coreOwner];
    const ideological=typeof ideologyAffinity==='function'&&former?ideologyAffinity(c,former):.5;
    const similaritySpeed=clamp(.65+ideological*.7,.65,1.35);
-   const peacePenalty=enemies(c.id).length?.65:1;
+   const peacePenalty=enemies(c.id).length?.82:1;
    const health=clamp((c.stability||50)/65,.35,1.2);
    t.integrationProgress=Math.min(1,(t.integrationProgress||0)+months*adminRate*similaritySpeed*peacePenalty*health);
   }
@@ -106,14 +110,14 @@ advanceCabinet=function(days){
   const deficit=typeof recurringLedger==='function'?Math.max(0,-recurringLedger(c).net):0;
   const lowStability=Math.max(0,45-c.stability),exhausted=Math.max(0,(c.warExhaustion||0)-30);
   const occupation=integrationPressure(c);
-  const authorityUnrest=c.authorityPolicy==='centralized'?1.45:c.authorityPolicy==='decentralized'?.72:1;
-  const civicPenalty=occupation.ratio*authorityUnrest*(difficulty==='easy'?.25:difficulty==='hard'?2.6:1.15);
+  const authorityUnrest=c.authorityPolicy==='centralized'?2.1:c.authorityPolicy==='decentralized'?.58:1;
+  const civicPenalty=occupation.ratio*authorityUnrest*(difficulty==='easy'?.22:difficulty==='hard'?2.6:.55);
   c.stability=clamp(c.stability-civicPenalty*months,5,99);
   if(difficulty==='hard'&&occupation.ratio>.28&&c.stability<45)c.readiness=clamp(c.readiness-.25*months,5,100);
-  const stabilityDrift=(difficulty==='easy'?.12:difficulty==='hard'?.88:.47)*
+  const stabilityDrift=(difficulty==='easy'?.12:difficulty==='hard'?.88:.28)*
      (deficit/Math.max(5,revenueEstimate(c))*.65+exhausted*.012+(c.treasury<=0?.5:0));
   c.stability=clamp(c.stability-stabilityDrift*months,5,99);
-  c.readiness=clamp(c.readiness-(difficulty==='easy'?.10:difficulty==='hard'?.75:.40)*(lowStability*.018+deficit/Math.max(6,revenueEstimate(c))+.15*(c.treasury<=0?1:0))*months,5,100);
+  c.readiness=clamp(c.readiness-(difficulty==='easy'?.10:difficulty==='hard'?.75:.25)*(lowStability*.018+deficit/Math.max(6,revenueEstimate(c))+.15*(c.treasury<=0?1:0))*months,5,100);
  }
 };
 const beforePopulationArmyDisplay=armyDisplay;

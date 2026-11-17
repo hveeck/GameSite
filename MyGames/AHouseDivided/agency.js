@@ -52,15 +52,16 @@ function revenueEstimate(c){
  // industry contribute: empty territory is not an unlimited money generator.
  // Resource-bearing and industrial counties also generate taxable production,
  // so capturing a productive county has value beyond its raw headcount.
- const taxablePop=s.holdings.reduce((n,t)=>n+t.p*(.20+.80*countyIntegration(t)),0);
- const taxEfficiency=(s.pop>0?.65+.35*taxablePop/s.pop:1)*(c.authorityPolicy==='decentralized'?.95:1);
+ const taxablePop=s.holdings.reduce((n,t)=>n+t.p*(.52+.48*countyIntegration(t)),0);
+ const taxEfficiency=(s.pop>0?.84+.16*taxablePop/s.pop:1)*(c.authorityPolicy==='decentralized'?.95:1);
  const economicBase=2+(Math.sqrt(Math.max(0,s.economy))*1.35+Math.sqrt(Math.max(0,s.resources||0))*.75+Math.sqrt(Math.max(0,s.industry||0))*.65)*taxEfficiency+taxablePop*.84;
  const fatigue=1-Math.min(.42,(c.warExhaustion||0)*.0042);
  const difficulty=typeof aiChallenge==='undefined'?'medium':aiChallenge;
  const playerDifficulty=gameMode==='player'&&c.id===humanId?(difficulty==='easy'?1.28:difficulty==='hard'?.82:1):1;
  const warLevy=c.emergencyMeasures?.warTaxes?1.20:1;
  const productionFactor=c.emergencyMeasures?.warProduction?.90:1;
- return economicBase*(1+c.industryBonus)*taxMultiplier*taxRate*fatigue*playerDifficulty*warLevy*productionFactor*(typeof recruitmentPolicy==='function'?recruitmentPolicy(c).taxFactor:1);
+ const debtTaxPenalty=typeof houseDividedDebt!=="undefined"&&!houseDividedDebt.isCalculating()?houseDividedDebt.debtMetrics(c).taxPenalty:0;
+ return economicBase*(1-debtTaxPenalty)*(1+c.industryBonus)*taxMultiplier*taxRate*fatigue*playerDifficulty*warLevy*productionFactor*(typeof recruitmentPolicy==='function'?recruitmentPolicy(c).taxFactor:1);
 }
 function recurringLedger(c){
  const revenue=revenueEstimate(c),civilAndArmy=budgetExpense(c),priority=c.nationalAgenda==='recovery'?1.25:0;
@@ -84,11 +85,11 @@ function budgetExpense(c){
  // new regions have not been integrated into the national institutions.
  const holdings=s.holdings?.length??(c.initialCount||0),core=Math.max(4,c.initialCount||holdings);
  const expansion=Math.max(0,holdings-core),unfinished=integrationPressure(c);
- const administration=(expansion*.012+unfinished.count*.038+unfinished.unintegrated*.32+Math.pow(expansion/160,1.3)*1.25)*(c.authorityPolicy==='centralized'?1.20:c.authorityPolicy==='decentralized'?.93:1);
- const empireServices=Math.max(0,s.pop-8)*.055;
+ const administration=(expansion*.007+unfinished.count*.016+unfinished.unintegrated*.13+Math.pow(expansion/190,1.25)*.65)*(c.authorityPolicy==='centralized'?1.20:c.authorityPolicy==='decentralized'?.93:1);
+ const empireServices=Math.max(0,s.pop-8)*.032;
  const overextension=typeof militaryPosture==='function'?militaryPosture(c):null;
  const oversized=overextension?.tier==='oversized'?military*.18:0;
- return civil+military+administration+empireServices+oversized+(c.emergencyMeasures?.propaganda?8:0);
+ return civil+military+administration+empireServices+oversized+(c.emergencyMeasures?.propaganda?8:0)+(typeof houseDividedDebt!=="undefined"?houseDividedDebt.debtMetrics(c).interest:0);
 }
 function cabinetStatus(){
  const c=countries[humanId];if(gameMode!=='player'||!c||!countryStats(c).holdings.length)return '<p class="cabinet-muted">Choose a country in Play mode to open its national cabinet.</p>';
@@ -236,6 +237,7 @@ function advanceCabinet(days){
   // the UI estimated revenue but advances only deducted expenditure.
   const ledger=recurringLedger(c);
   const arrears=Math.max(0,-(c.treasury+ledger.net*months));
+  if(typeof houseDividedDebt!=="undefined")houseDividedDebt.evolve(c,months,arrears);
   const balanceCredit=Math.max(0,c.treasury+ledger.net*months)-c.treasury;
   c.treasury+=balanceCredit;
   // Insolvent states suffer readiness and supply penalties, not mysterious
@@ -252,9 +254,11 @@ function advanceCabinet(days){
   if(typeof updateEmergencyMeasures==='function')updateEmergencyMeasures(c,months);
   const funding=c.treasury>0?1:.2;
   const spending=Object.fromEntries(Object.entries(c.budget).map(([key,level])=>[key,effectiveDepartmentFunding(level)*months]));
-  c.stability=clamp(c.stability+(spending.welfare*.18+spending.diplomacy*.12-.30*months)*funding,5,99);
+  const playerRegular=gameMode==='player'&&c.id===humanId&&(typeof aiChallenge==='undefined'||aiChallenge==='medium');
+  const stableInvestment=playerRegular?spending.welfare*.24+spending.diplomacy*.15-.17*months:spending.welfare*.18+spending.diplomacy*.12-.30*months;
+  c.stability=clamp(c.stability+stableInvestment*funding,5,99);
   c.baseEconomyFactor=clamp(c.baseEconomyFactor+(spending.industry*.00095-.001*months)*funding,.45,1.8);
-  c.readiness=clamp(c.readiness+(spending.defense*.27-.35*months)*funding,5,100);
+  c.readiness=clamp(c.readiness+(playerRegular?spending.defense*.34-.18*months:spending.defense*.27-.35*months)*funding,5,100);
   c.integration=clamp((c.integration||0)+spending.diplomacy*.00015*funding,0,.58);
   // Three national levers are independent of the broad governing agenda.
   // Their regular budget effects are reflected above in recurringLedger().
@@ -275,6 +279,16 @@ function advanceCabinet(days){
     c.stability=clamp(c.stability+.50*months,5,99);
     c.readiness=clamp(c.readiness+.58*months,5,100);
     c.warExhaustion=Math.max(0,(c.warExhaustion||0)-.35*months);
+   }else if(level==='medium'){
+    // A well-governed Regular country should recover when players invest.
+    if(c.treasury>0){
+     // A solvent, actively funded administration can recover from a crisis.
+     // The bonus tapers above 55 stability; it is not a free path to 99.
+     const civicRecovery=c.stability<35?.50:c.stability<55?.30:.12;
+     const fundedRecovery=(spending.welfare+spending.diplomacy)>=1.5?.20:0;
+     c.stability=clamp(c.stability+(civicRecovery+fundedRecovery)*months,5,99);
+     c.readiness=clamp(c.readiness+.18*months,5,100);
+    }
    }else if(level==='hard'){
     c.stability=clamp(c.stability-.26*months,5,99);
     c.readiness=clamp(c.readiness-.22*months,5,100);

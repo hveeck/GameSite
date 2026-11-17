@@ -1,0 +1,11 @@
+A HOUSE DIVIDED v2.0.2 — MILITARY BALANCE & GOVERNMENT UI
+
+- Military Strength tier labels wrap safely within their Government metric tile.
+- War Taxes, War Production, and National Propaganda are compact, single-row
+  controls with styled switches, keyboard focus, and disabled state.
+- AI countries gradually recruit affordable home-territory divisions in peace
+  and war, aiming for a balanced military posture instead of sitting
+  underdefended indefinitely. This complements existing wartime response AI.
+- Recurring affordability and recruitable manpower checks prevent infinite
+  buildup; Easy, Medium, and Hard have different force limits.
+- All rules and soundtrack from v2.0.1 are retained.

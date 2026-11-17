@@ -89,8 +89,10 @@
    '<p class="emergency-context">'+reason+'. All measures automatically end when the war ends.</p>'+
    keys.map(key=>{
     const p=policyDefs[key],checked=flags[key],disabled=!eligible&&!checked;
-    return '<label class="emergency-measure"><span><strong>'+p.title+'</strong><small>'+p.description+'</small></span>'+
-     '<input type="checkbox" data-emergency="'+key+'" '+(checked?'checked ':'')+(disabled?'disabled':'')+'></label>';
+    return '<label class="emergency-measure'+(disabled?' is-disabled':'')+'" title="'+p.description+'">'+
+     '<span class="emergency-copy"><strong>'+p.title+'</strong><small>'+p.description+'</small></span>'+ 
+     '<input class="emergency-checkbox" type="checkbox" data-emergency="'+key+'" '+(checked?'checked ':'')+(disabled?'disabled':'')+'>'+ 
+     '<span class="emergency-switch" aria-hidden="true"><i></i></span></label>';
    }).join('');
   area.append(box);
   box.querySelectorAll('[data-emergency]').forEach(el=>{

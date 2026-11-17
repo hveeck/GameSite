@@ -51,6 +51,18 @@ function treatyMomentum(a,b){
 function normalizedTreaty(offer){
  return {...offer,give:offer.give||[],take:offer.take||[],pay:Math.max(0,Math.floor(+offer.pay||0)),receive:Math.max(0,Math.floor(+offer.receive||0))};
 }
+// Breakaway states are fighting to secure independence, rather than expand.
+// Restrict peace preferences to their original rebellion war.
+function independencePair(a,b){
+ const A=countries[a],B=countries[b];
+ return !!(A&&B&&(A.breakawayFrom===b||B.breakawayFrom===a));
+}
+function independenceRebel(a,b){
+ const A=countries[a],B=countries[b];
+ if(A?.breakawayFrom===b)return a;
+ if(B?.breakawayFrom===a)return b;
+ return null;
+}
 function treatyAcceptance(offer){
  const o=normalizedTreaty(offer),giver=countries[o.from],receiver=countries[o.to];
  if(!giver||!receiver||!atWar(o.from,o.to))return 0;
@@ -60,7 +72,16 @@ function treatyAcceptance(offer){
  const momentum=treatyMomentum(o.from,o.to),fatigue=(receiver.warExhaustion||0)/100;
  const base=.32+momentum*.63+fatigue*.3;
  const priceFactor=net/Math.max(42,countryStats(receiver).economy*13+receiver.treasury*.14);
- return clamp(base+priceFactor*.42-(o.white?.03:0),.02,.96);
+ let result=base+priceFactor*.42-(o.white?.03:0);
+ // The rebel government strongly values international recognition and peace.
+ // Its former parent is also more willing to settle a costly civil war after
+ // the breakaway government has held out. Neither gets a bonus for land demands.
+ if(o.white&&independencePair(o.from,o.to)){
+  const rebel=independenceRebel(o.from,o.to);
+  const rebellionAge=Math.max(0,daysElapsed-(countries[rebel]?.independenceWarStarted??daysElapsed));
+  result+=o.to===rebel?.42:.16+Math.min(.16,rebellionAge/1100);
+ }
+ return clamp(result,.02,.97);
 }
 function validateTreaty(offer){
  const o=normalizedTreaty(offer),from=countries[o.from],to=countries[o.to];
@@ -253,6 +274,7 @@ peaceAction.onclick=()=>{
 };
 function generateBotOffer(from,to){
  const momentum=treatyMomentum(from,to),sender=countries[from];
+ const independenceWar=independencePair(from,to);
  const losing=momentum<-.08;
  const offer={from,to,give:[],take:[],pay:0,receive:0,white:false};
  // AI territorial concessions must connect to the recipient's land, or to
@@ -262,7 +284,10 @@ function generateBotOffer(from,to){
   return treatyCounties(giver,recipient).filter(t=>!included.has(t.i)&&(countyGraph[t.i]||[]).some(j=>territories[j]?.owner===recipient||included.has(j)))
    .sort((a,b)=>treatyCountyValue(a)-treatyCountyValue(b));
  };
- if(losing){
+ if(independenceWar){
+  // A rebellion seeks recognized independence, not new territory.
+  offer.white=true;
+ }else if(losing){
   const candidates=adjacentConcessions(from,to);
   if(candidates.length&&countryStats(sender).holdings.length>3)offer.give=[candidates[0].i];
   else offer.pay=Math.min(Math.floor(sender.treasury*.14),40);
@@ -272,7 +297,7 @@ function generateBotOffer(from,to){
   else offer.receive=Math.min(Math.floor(countries[to].treasury*.1),25);
  }else offer.white=true;
  const rejected=peaceLastOffers.get(pactKey(from,to))||0;
- if(rejected){
+ if(rejected&&!independenceWar){
   // An opponent cannot simply resend the same rejected terms.
   offer.white=false;offer.take=[];offer.receive=0;
   const minCount=peaceMinimumCounties.get(pactKey(from,to))??rejected;
@@ -292,12 +317,14 @@ simulatePeriod=function(){
  const before=daysElapsed;priorPeaceTick();if(daysElapsed-before<=0)return;
  if(daysElapsed-peaceOfferDays<91)return;peaceOfferDays=daysElapsed;
  for(const c of [...coalitionWars.values()]){
-  if(daysElapsed-c.started<180)continue;
+  const rebellion=independencePair(c.leaders[0],c.leaders[1]);
+  if(daysElapsed-c.started<(rebellion?90:180))continue;
   const [a,b]=c.leaders;if(!atWar(a,b))continue;
   const exhausted=Math.max(countries[a].warExhaustion||0,countries[b].warExhaustion||0);
-  if(exhausted<20&&daysElapsed-c.started<730)continue;
-  if(rand()>.18+exhausted/250)continue;
-  const sender=treatyMomentum(a,b)<0?a:b,receiver=sender===a?b:a;
+  if(!rebellion&&exhausted<20&&daysElapsed-c.started<730)continue;
+  if(rand()>(rebellion?.58:.18)+exhausted/250)continue;
+  // Rebel AI proactively offers white peace to its former parent.
+  const sender=rebellion?independenceRebel(a,b):(treatyMomentum(a,b)<0?a:b),receiver=sender===a?b:a;
   if(gameMode==='player'&&receiver===humanId&&peaceCapitulationOnly.has(pactKey(sender,receiver)))continue;
   const offer=generateBotOffer(sender,receiver);
   if(!offer)continue;

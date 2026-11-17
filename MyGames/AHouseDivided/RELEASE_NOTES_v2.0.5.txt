@@ -1,0 +1,10 @@
+A HOUSE DIVIDED v2.0.5 — CONQUEST ECONOMY, INTEGRATION & REGULAR DIFFICULTY
+
+- Conquered county population contributes 52% of its potential tax revenue immediately, rising to 100% with integration (previously 20%).
+- Reduced the additional tax-efficiency penalty on unintegrated territory.
+- Reduced per-county integration/administrative overhead and empire service costs, while preserving costs for managing large empires.
+- Passive integration is faster on Easy and Regular, with smaller wartime slowdowns.
+- On Regular, low integration and modest deficits cause less automatic stability/readiness erosion.
+- On Regular, welfare/administration spending improves stability more effectively; defense funding improves military strength more effectively. A solvent Regular player gets modest civic and readiness recovery.
+- Hard retains more demanding integration, penalties, and military economics.
+- All debt, recruitment, war measures, and other features remain included.

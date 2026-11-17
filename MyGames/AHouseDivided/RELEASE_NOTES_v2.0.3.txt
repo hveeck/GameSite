@@ -1,0 +1,7 @@
+A HOUSE DIVIDED — v2.0.3: NATIONAL DEBT & BONDS
+
+Government now has one National Debt & Bonds section, allowing the player to issue sovereign bonds equal to roughly 6, 18, or 36 months of baseline monthly tax receipts. Total public debt may not exceed 60 months of base revenue. Players can repay 10%, 25%, or all of the outstanding principal using their treasury.
+
+Interest is an actual monthly Government expense, starting near 9% annually and increasing to 30% at high debt ratios. Debt also reduces effective tax income (up to 33%) and erodes stability and economic productivity over time. Unpaid interest capitalizes into debt when the treasury runs short. The debt screen displays principal, monthly interest, and current annual interest rate.
+
+All previous v2.0.2 features, music, AI military buildup, integration, and emergency government measures are retained. The top-right version badge reads v2.0.3.

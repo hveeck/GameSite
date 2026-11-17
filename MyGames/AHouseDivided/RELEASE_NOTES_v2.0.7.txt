@@ -1,0 +1,6 @@
+A House Divided v2.0.7 — Regular Stability & Rebellions
+
+- Regular player rebellions require stability below 30 for at least 90 simulated days (rather than below 40).
+- Lowered Regular rebellion hazard from crisis and occupation; Hard unchanged.
+- Improved stability recovery for solvent Regular governments, especially when welfare and administration receive funding.
+- No changes to independence peace outcomes, recruitment percentages, loans, or AI war logic.
